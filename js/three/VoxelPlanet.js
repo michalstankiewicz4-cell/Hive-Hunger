@@ -92,11 +92,6 @@ export class VoxelPlanet {
       if (this.style === 'smooth') this.mesh.visible = false;
     }
 
-    // the atmosphere glow is a ring around a sphere; other shapes go without it
-    if (this.shape === 'sphere') {
-      this.atmosphere = this.createAtmosphere();
-      scene.add(this.atmosphere);
-    }
   }
 
   /** How much voxel normals tilt towards the sphere normal (spheres only; other shapes keep flat faces). */
@@ -477,7 +472,6 @@ export class VoxelPlanet {
   /** Shatters the rest of the planet; the callback gets (idx, colour) for exposed voxels. */
   shatter(onCell) {
     this.alive = false;
-    if (this.atmosphere) this.scene.remove(this.atmosphere);
     for (let s = 0; s < this.count; s++) {
       const idx = this.idxOfSlot[s];
       onCell(idx, this.colorOf(idx));
@@ -497,52 +491,11 @@ export class VoxelPlanet {
     this.dirty = false;
   }
 
-  createAtmosphere() {
-    const a = this.cfg.atmosphere;
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        uColor: { value: new THREE.Color(a.color[0] / 255, a.color[1] / 255, a.color[2] / 255) },
-        uInner: { value: this.R },
-        uOuter: { value: this.R * a.scale },
-        uPower: { value: a.power },
-        uIntensity: { value: a.intensity },
-      },
-      vertexShader: `
-        varying vec3 vWorld;
-        void main() {
-          vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
-          gl_Position = projectionMatrix * viewMatrix * vec4(vWorld, 1.0);
-        }`,
-      fragmentShader: `
-        uniform vec3 uColor;
-        uniform float uInner, uOuter, uPower, uIntensity;
-        varying vec3 vWorld;
-        void main() {
-          // distance of the view ray from the planet centre (centre at 0,0,0)
-          vec3 dir = normalize(vWorld - cameraPosition);
-          float d = length(cross(dir, -cameraPosition));
-          // only a ring outside the planet — the glow does not show through eaten holes
-          float f = d < uInner ? 0.0 : pow(clamp((uOuter - d) / (uOuter - uInner), 0.0, 1.0), uPower);
-          gl_FragColor = vec4(uColor * f * uIntensity, 1.0);
-        }`,
-      side: THREE.BackSide,
-      blending: THREE.AdditiveBlending,
-      transparent: true,
-      depthWrite: false,
-    });
-    return new THREE.Mesh(new THREE.SphereGeometry(this.R * a.scale, 64, 32), material);
-  }
-
   dispose() {
     this.surface?.dispose();
     this.surfaceMaterial?.dispose();
     this.scene.remove(this.mesh);
     this.geometry.dispose();
     this.material.dispose();
-    if (this.atmosphere) {
-      this.scene.remove(this.atmosphere);
-      this.atmosphere.geometry.dispose();
-      this.atmosphere.material.dispose();
-    }
   }
 }

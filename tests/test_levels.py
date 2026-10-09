@@ -22,7 +22,6 @@ BUILD = """(level) => {
   const ms = performance.now() - t;
   const pl = g.planet;
   return { level: g.level, R: pl.R, half: pl.half, shape: pl.shape, style: pl.style, total: pl.total, ms: Math.round(ms),
-    atmosphere: Boolean(pl.atmosphere),
     cubesVisible: pl.mesh.visible, triangles: pl.surface ? pl.surface.triangles : 0 };
 }"""
 
@@ -64,7 +63,6 @@ async def main():
                  f"planet {level}: {shape}, {b['style']}", f"{b['total']} voxels, built in {b['ms']} ms")
             if shape in ('sphere', 'cube'):
                 t.ok(abs(b['half'] - R * want['radiusScale']) <= 0.25, f"planet {level}: size {2 * b['half']:.1f}")
-            t.ok(b['atmosphere'] == (shape == 'sphere'), f'planet {level}: atmosphere only around spheres')
             if want.get('style', 'cubes') == 'cubes':
                 t.ok(b['cubesVisible'] and b['triangles'] == 0, f'planet {level}: plain cubes')
             else:

@@ -2,10 +2,10 @@
 
 Two end-to-end tests drive the real game in headless Chromium (Playwright, WebGL in software via SwiftShader):
 
-- `test_solo.py` — start screen; nothing moves before a mode is chosen; Single player; **Menu** pauses and resumes; a big, fast swarm eats the whole planet to the last voxel with no unit inside solid voxels and no shared bites; the swarm returns home and the next planet appears.
+- `test_solo.py` — start screen; nothing moves before a mode is chosen; Single player; **Esc** pauses and resumes; no Menu button or atmosphere; a big, fast swarm eats the whole planet to the last voxel with no unit inside solid voxels and no shared bites; the swarm returns home and the next planet appears.
 - `test_levels.py` — the level cycle: shapes, sizes and styles of planets 1–7 (the cube is full, the text has 7 letters in 7 colours and can be eaten), the smooth and wedge surfaces being built and rebuilt after eating (`SHOTS=<folder>` saves a screenshot of every level).
 - `test_tree.py` — points (1 voxel = 1 point, shown at the top), the Tab view (pixel art), buying (parent first, enough points, once), bonuses on top of the sliders, chain lightning firing on its own and weakening voxels without destroying them, the destruction animation.
-- `test_multi.py` — with a local PeerJS server: PvP room, two guests; spawns 120° apart and the same on every page; **Start / Not ready**; the match starts only when everyone is ready; host and guests have the same planet and eaten voxels; pings measured and shown; "Pink left the room" after a goodbye; "Green: connection lost" after a dropped connection; spawns spread again (180°); joining a running match; "The host left the room".
+- `test_multi.py` — with a local PeerJS server: the host plays single player first, then its room starts from scratch (only the settings panel stays); PvP room, two guests; spawns 120° apart and the same on every page; **Start / Not ready**; the match starts only when everyone is ready; host and guests have the same planet and eaten voxels; pings measured and shown; "Pink left the room" after a goodbye; "Green: connection lost" after a dropped connection; spawns spread again (180°); joining a running match; "The host left the room".
 
 ## Setup (once)
 
@@ -36,4 +36,4 @@ Each prints PASS / FAIL lines and exits with 1 if anything failed.
 - `peer-server.js` is a PeerJS signalling server on `127.0.0.1:9000` (`PEER_PORT` to change); pages get `window.HIVE_PEER_OPTIONS` pointing to it.
 - Time is fast-forwarded with `game.update()` in chunks of 50 frames, so timers and network messages still run in between.
 - Guest pages are paused after joining (`__dbg.stop()`): several pages rendering WebGL in software can starve a small machine. Paused pages still receive messages.
-- Buttons are selected by class (`.menu-choice`, `.menu-start`, `#menu-button`), not by text — the page has hidden text for search engines with the same words.
+- Buttons are selected by class (`.menu-choice`, `.menu-start`), not by text — the page has hidden text for search engines with the same words.

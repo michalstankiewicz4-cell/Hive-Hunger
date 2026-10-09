@@ -18,7 +18,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **3D only** (a 2D version existed early on and was removed on request).
 - **Points & upgrades:** 1 voxel = 1 point (counter at the top). Tab opens a pixel-art upgrade tree growing upwards: units, speed, power, chain lightning (+ jumps / voltage / capacitor). Upgrades add to the sliders (sliders stay). No saving — reset on reload; in multiplayer every player has their own. Lightning fires on its own every few seconds and only weakens voxels. Voxels have a destruction animation; they are still one bite for now (harder voxels planned later).
 - **Levels:** a cycle of six planets, repeated until more levels are designed — 1 smaller (radius −30%), 2 the usual, 3 smooth surface, 4 cubes with wedges in the steps, 5 a cube with the edge of planet 1's diameter, 6 the text TEST LVL in coloured letters. Smooth/wedges are **graphics only** (owner's choice); new levels are meant to try new graphics approaches.
-- **Planet:** voxel sphere with Earth-like terrain, clouds, ice caps, atmosphere glow; rock inside (no coloured layered interior — removed on request). Small voxels for a smooth look. Slowly spins.
+- **Planet:** voxel sphere with Earth-like terrain, clouds, ice caps; rock inside (no coloured layered interior — removed on request). Small voxels for a smooth look. Slowly spins.
 - **Swarm = flock (boids):** units keep spacing, align, stay together; **every unit has the same constant speed**; turning on screen is smoothed.
 - **Eating is deliberate:** a unit claims its own voxel, flies to it, lands and eats; **one voxel is eaten by one unit only** unless there are no more free voxels; **no eating in passing**; **no bouncing and no passing through voxels** (units slide along surfaces).
 - **"Eat nearest block"** toggle (test mechanic, on by default): after eating, a unit goes straight to the nearest uneaten voxel; no free flying.
@@ -26,7 +26,8 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Beacon** at the spawn point (about one planet radius above the surface, on screen, away from the panel): clicking it calls the swarm home.
 - **100% means every voxel is gone.** Then the swarm returns home and only then does the next planet appear.
 - **Defaults:** units 20, speed 0.05, power 0.5, spacing 1.5, cohesion 1.0, "Eat nearest block" on. "Reset to default" restores them.
-- **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player a **Menu** button pauses and returns to it (no reload).
+- **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player **Esc** pauses and opens it, Esc again carries on (no Menu button — removed on request). No atmosphere glow (removed on request).
+- **Fair rooms:** creating a Co-op/PvP room starts from scratch (planet 1, no points/upgrades/eaten voxels from single player); only the settings panel stays.
 - **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (points per player, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
 - **SEO:** title, description, keywords (including "incremental free"), Open Graph/Twitter thumbnail (`og-image.png`, rendered from the game — not the owner's early screenshot), `VideoGame` JSON-LD, sitemap.
 
@@ -63,12 +64,12 @@ Lessons from writing them:
 
 - Fast-forward `game.update()` in chunks (e.g. 50 frames, then yield) — one long synchronous loop starves timers and network messages, so pings time out and players get dropped.
 - On a small machine, pause guest pages after they join (`__dbg.stop()`); 4–5 pages rendering WebGL in software starve the CPU and the last one can't join. Paused pages still receive messages.
-- Don't select buttons by text (`text=Single player`): the page has a visually hidden description for search engines with the same words. Use classes (`.menu-choice`, `.menu-start`, `#menu-button`).
+- Don't select buttons by text (`text=Single player`): the page has a visually hidden description for search engines with the same words. Use classes (`.menu-choice`, `.menu-start`) and keys (Esc, Tab).
 - Pass/fail conditions about a new planet must allow for the swarm having started eating it already.
 
 ## Pitfalls (bugs that already happened)
 
-- **`started` vs `running`** in `Game3D`: `running` = the render loop is on (`start()` / `stop()`); `started` = the match has begun (start screen / waiting room / Menu pause before or between). A text replacement once put `started = false` into `stop()`, which froze single player in tests.
+- **`started` vs `running`** in `Game3D`: `running` = the render loop is on (`start()` / `stop()`); `started` = the match has begun (start screen / waiting room / Esc pause before or between). A text replacement once put `started = false` into `stop()`, which froze single player in tests.
 - **Planet frame:** the simulation (swarms, voxels) never rotates; the camera, sky, sun and beacons turn around the planet by `spin`. Beacon positions are in the space frame (`spawnSpace`), compare them with swarm positions only through `spawnWorld()`.
 - **No `hp <= 0` guard in `VoxelPlanet.remove()`**: an early return there once stopped every voxel from being removed (scores went up, the planet never shrank).
 - **Ending at 100%:** never shatter the planet early (it used to shatter at 97%); units must be able to land on isolated scraps (`reachDistance`), or the last voxels are circled forever.
@@ -93,6 +94,7 @@ Lessons from writing them:
 | 0.10.0 | tag `v0.10.0` | levels 5 (cube) and 6 (TEST LVL text), `shapes.js` |
 | 0.11.0 | tag `v0.11.0` | points, upgrade tree (Tab, pixel art), chain lightning, destruction animation |
 | 0.11.1 | tag `v0.11.1` | Atmosphere on/off switch in the settings panel |
+| 0.12.0 | tag `v0.12.0` | atmosphere removed, Esc instead of the Menu button, rooms start from scratch |
 
 ## Known limitations
 

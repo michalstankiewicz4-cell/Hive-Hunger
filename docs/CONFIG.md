@@ -21,7 +21,6 @@ Every tunable value is in `js/config.js`. Units: 1 = one unit of the 3D world (a
 | `planet.terrainDepth` | 1.6 | thickness of the coloured surface layer; rock below | |
 | `planet.spinSpeed` | 0.0005 | rotation in radians per frame (one turn ≈ 3.5 min) | 0 = no spin |
 | `planet.sphereShading` | 0.7 | 0 = flat cube faces, 1 = smooth sphere lighting | |
-| `planet.atmosphere` | | glow ring: colour, size (`scale`), sharpness (`power`), `intensity` | |
 | `planet.surface` | | terrain noise (`noiseScale`, `octaves`), `seaLevel`, polar ice (`iceLatitude`), `clouds`, colour `palette` | |
 
 ## Swarm brain (`leader`)
@@ -84,7 +83,7 @@ Default: sphere 0.7 cubes, sphere 1 cubes, sphere 1 smooth, sphere 1 wedges, cub
 
 ## Settings panel (`controls`)
 
-Slider ranges and steps (`min`, `max`, `step`, `decimals`) and the toggles (`Eat nearest block`; `Atmosphere` — the glow, graphics only, not sent to the host). Defaults come from `swarm` above; "Reset to default" restores them.
+Slider ranges and steps (`min`, `max`, `step`, `decimals`) and the `Eat nearest block` toggle. Defaults come from `swarm` above; "Reset to default" restores them.
 
 ## Beacon (`beacon`)
 

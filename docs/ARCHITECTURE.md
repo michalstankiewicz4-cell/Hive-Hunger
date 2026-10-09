@@ -13,7 +13,7 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/three/Player.js` | One player: swarm + leader + beacon + settings + score; per-player simulation step, commands, recall, return home |
 | `js/three/Swarm3D.js` | The flock (boids), feeding, collisions, getting unstuck, drawing; `aroundPlanet()` path helper |
 | `js/core/Leader.js` | The swarm's "brain": a point the flock heads for; stays at matter, finds new matter, follows clicks |
-| `js/three/VoxelPlanet.js` | Voxel planet: terrain, claims, eating, exposed-voxel instancing, raycast, seed, removal log, solid bitsets, atmosphere |
+| `js/three/VoxelPlanet.js` | Voxel planet: terrain, claims, eating, exposed-voxel instancing, raycast, seed, removal log, solid bitsets |
 | `js/three/PlanetSurface.js` | Extra planet graphics over the voxels: `smooth` (surface nets) and `wedges` (ramps and corner pieces in the steps), built per 16³ chunk and rebuilt as voxels are eaten |
 | `js/three/shapes.js` | Which voxels are solid for a level's `shape`: `sphere`, `cube`, `text` (voxel letters with a colour per letter) |
 | `js/core/SkillTree.js` | Upgrade tree data and rules: nodes (branch, parent, cost, effect, layout), buying, adding up the effects |
@@ -39,7 +39,8 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 stateDiagram-v2
     [*] --> StartScreen
     StartScreen --> Playing: Single player
-    Playing --> StartScreen: Menu (pause)
+    Playing --> StartScreen: Esc (pause, single player)
+    StartScreen --> Playing: Esc (single player, after a pause)
     StartScreen --> WaitingRoom: Multiplayer · Co-op / PvP
     [*] --> WaitingRoom: open a room link
     WaitingRoom --> WaitingRoom: Start / Not ready, players join or leave
@@ -53,7 +54,7 @@ stateDiagram-v2
     }
 ```
 
-- **Start screen** and **waiting room** are the overlay (`StartScreen`); `game.started` is `false`, so swarms wait at their beacons and the planet doesn't turn. The single-player **Menu** button sets `started` back to `false` (pause) and shows the start screen; **Single player** carries on.
+- **Start screen** and **waiting room** are the overlay (`StartScreen`); `game.started` is `false`, so swarms wait at their beacons and the planet doesn't turn. In single player **Esc** sets `started` back to `false` (pause) and shows the start screen; Esc again or **Single player** carries on. Creating a room (`Game3D.becomeHost`) starts from scratch: a new planet 1 and a new host player (no points, upgrades or eaten voxels from single player); only the settings panel values are kept.
 - **Playing:** `game.started` is `true`. In multiplayer the room panel (`Lobby`, bottom left) has the link and **Leave room**; leaving reloads the page without `?room=`, i.e. back to the start screen.
 - Someone who opens a room link while the match is running skips the waiting room.
 - **Returning home:** after the last voxel, every swarm flies to its beacon; the next planet appears when all have gathered (or after `beacon.returnTimeoutFrames`). In multiplayer the summary (`Summary`) is open meanwhile and the next planet also waits until every player has pressed **Next planet** (`Player.nextReady`).
@@ -62,7 +63,7 @@ stateDiagram-v2
 
 `CONFIG.levels` is a cycle: planet `n` uses entry `(n − 1) mod length` — `shape`, `radiusScale` (× `planet.radius`) and `style`. `Game3D.levelLook(level)` turns it into the planet's radius and style; every client builds the same planet from the level and the seed, so multiplayer needs nothing extra.
 
-Shapes (`shapes.js`) decide which voxels are solid. The grid is always a cube centred on the origin (`half` = half its edge); each shape also gives the radius the swarm flies around on long trips (`R`: the sphere's radius, the cube's half-edge, half the text's thickness) and a bounding sphere for clicks (`bound`). Terrain colours follow the surface: sphere — depth under the radius, cube — depth under the nearest face; the text uses a colour per letter. Only spheres get the atmosphere glow and the smoothed shading.
+Shapes (`shapes.js`) decide which voxels are solid. The grid is always a cube centred on the origin (`half` = half its edge); each shape also gives the radius the swarm flies around on long trips (`R`: the sphere's radius, the cube's half-edge, half the text's thickness) and a bounding sphere for clicks (`bound`). Terrain colours follow the surface: sphere — depth under the radius, cube — depth under the nearest face; the text uses a colour per letter. Only spheres get the smoothed shading.
 
 Styles change only the graphics — collisions, claims and eating always use the voxels:
 
@@ -86,7 +87,7 @@ The simulation runs in the **planet's frame**: voxels never move. To make the pl
 
 ## One frame (solo / host)
 
-Until the match has started (`game.started`: Single player chosen, or every player in the room pressed Start; the single-player **Menu** button sets it back to `false`, which pauses the game) the frame only draws: swarms wait at their beacons and the planet doesn't turn.
+Until the match has started (`game.started`: Single player chosen, or every player in the room pressed Start; Esc in single player sets it back to `false`, which pauses the game) the frame only draws: swarms wait at their beacons and the planet doesn't turn.
 
 1. `spin += spinSpeed`, apply it to camera, sky and sun.
 2. For every player (`Player.update`):

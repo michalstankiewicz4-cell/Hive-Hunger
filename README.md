@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.11.1 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.12.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -25,7 +25,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 - **Right mouse button / two fingers** — rotate the camera
 - **Mouse wheel** — zoom
 - **Tab** — upgrade tree (Esc closes it)
-- **Menu** (bottom left, single player) — pause and go back to the start screen; **Single player** carries on with the same game
+- **Esc** — single player: pause and open the start screen; Esc again (or **Single player**) carries on with the same game. Also closes the upgrade tree
 - **Panel in the top-right corner** — adjust your swarm live:
   - **Units** — number of units in the swarm
   - **Speed** — the shared flying speed
@@ -33,12 +33,11 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Spacing** — distance units keep from each other
   - **Cohesion** — how strongly units stay with the group
   - **Eat nearest block** (test mechanic) — when on, every unit flies straight from the voxel it just ate to the nearest uneaten, unclaimed voxel; no free flying, only spacing between units is kept
-  - **Atmosphere** — the glow around the planet on or off (only on your screen)
   - **Reset to default** — restore all settings to their starting values
 
 ## Multiplayer
 
-The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). The match begins when every player in the room has pressed **Start** (**Not ready** takes it back).
+The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). A room always starts from scratch — a fresh planet 1, no points or upgrades — even if you were playing single player before (only your settings panel stays). The match begins when every player in the room has pressed **Start** (**Not ready** takes it back).
 
 - **Co-op** — everyone eats the same planet together; the scoreboard shows each player's share.
 - **PvP** — a race on the same planet: whoever eats more of it wins the planet.
@@ -94,7 +93,7 @@ js/
   core/SkillTree.js     upgrade tree: nodes, costs, effects
   three/Game3D.js       scene, camera, input, game loop, roles (solo / host / guest)
   three/Player.js       one player: swarm, brain, beacon, settings, score
-  three/VoxelPlanet.js  voxel planet + atmosphere
+  three/VoxelPlanet.js  voxel planet
   three/PlanetSurface.js smooth / wedge surfaces over the voxels (levels 3 and 4)
   three/shapes.js       shapes of the levels: sphere, cube, text
   three/Swarm3D.js      the flock (boids) with collisions and feeding

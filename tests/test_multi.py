@@ -41,10 +41,25 @@ async def main():
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(args=h.BROWSER_ARGS)
             host = await h.open_page(browser, url, errors, 'host', peer=True)
+            # play single player first: points, an upgrade, part of the planet eaten …
+            await host.click('.menu-choice >> nth=0')
+            await host.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 200); p.setSetting('speed', 0.4); }")
+            await h.fast_forward(host, 400)
+            await host.evaluate("() => { window.__dbg.localPlayer.score += 100; window.__dbg.buyUpgrade('units1'); }")
+            solo = await host.evaluate('() => ({ score: window.__dbg.localPlayer.score, left: window.__dbg.planet.left, total: window.__dbg.planet.total })')
+            await host.keyboard.press('Escape')
+            # … then a PvP room: nothing carries over except the settings panel
             await host.click('.menu-choice >> nth=2')  # Multiplayer · PvP
             await host.wait_for_selector('.menu-card .lobby-link', timeout=20000)
             code = (await host.input_value('.menu-card .lobby-link')).split('room=')[1]
             t.ok(len(code) == 6, 'room created', code)
+            fresh = await host.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
+              return { score: p.score, owned: [...p.tree.owned], level: g.level, left: g.planet.left, total: g.planet.total,
+                count: p.base.count, units: p.swarm.count }; }''')
+            t.ok(solo['score'] > 0 and fresh['score'] == 0 and fresh['owned'] == ['core'] and fresh['level'] == 1
+                 and fresh['left'] == fresh['total'], 'a room starts from scratch (no points, upgrades or eaten planet from single player)', fresh)
+            t.ok(fresh['count'] == 200 and fresh['units'] == 200, 'the settings panel values stay', fresh['count'])
+            await host.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('speed', 0.05); }")
 
             guests = []
             for k in range(2):

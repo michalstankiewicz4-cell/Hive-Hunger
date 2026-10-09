@@ -12,7 +12,6 @@ const hudEl = document.getElementById('hud');
 const lobbyEl = document.getElementById('lobby');
 const menuEl = document.getElementById('menu');
 const pointsEl = document.getElementById('points');
-const menuButton = document.getElementById('menu-button');
 document.getElementById('version').textContent = `v${VERSION}`;
 
 // a room link looks like …/Hive-Hunger/?room=ABC123
@@ -38,23 +37,19 @@ if (!window.THREE) {
     },
   });
   new ControlPanel(document.getElementById('controls'), CONFIG.controls,
-    {
-      ...Object.fromEntries(['count', 'speed', 'power', 'spacing', 'cohesion', 'nearest'].map((k) => [k, bind(k)])),
-      // graphics only, on this screen (not sent to the host)
-      atmosphere: { get: () => game.showAtmosphere, set: (v) => game.setAtmosphere(v) },
-    });
+    Object.fromEntries(['count', 'speed', 'power', 'spacing', 'cohesion', 'nearest'].map((k) => [k, bind(k)])));
 
   // start screen → (multiplayer) waiting room → match; the room panel stays during the match
+  let soloPlayed = false; // single player has been started (Esc can return to it)
   const lobby = new Lobby(lobbyEl);
   const menu = new StartScreen(menuEl, {
     available: canNet,
     onSolo: () => {
       game.started = true;
+      soloPlayed = true;
       menu.hide();
-      menuButton.hidden = false;
     },
     onCreate: (mode) => {
-      menuButton.hidden = true;
       menu.showBusy('Multiplayer', 'Creating room…');
       new NetHost(game, mode, (status, info) => {
         if (status === 'error') menu.showMessage(info.message);
@@ -93,19 +88,22 @@ if (!window.THREE) {
     onBuy: (id) => game.buyUpgrade(id),
   });
   pointsEl.addEventListener('click', () => tree.toggle());
+  // Tab: upgrade tree. Esc: closes the tree; in single player it opens the start screen
+  // (the game pauses) and closes it again (the game carries on)
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Tab' && game.started && menuEl.hidden) {
       e.preventDefault();
       tree.toggle();
-    } else if (e.key === 'Escape' && tree.isOpen) tree.close();
-  });
-
-  // single player: "Menu" pauses the game and goes back to the start screen
-  menuButton.addEventListener('click', () => {
-    tree.close();
-    game.started = false;
-    menuButton.hidden = true;
-    menu.showStart();
+    } else if (e.key === 'Escape') {
+      if (tree.isOpen) tree.close();
+      else if (game.role === 'solo' && game.started) {
+        game.started = false;
+        menu.showStart();
+      } else if (game.role === 'solo' && soloPlayed && !menuEl.hidden) {
+        game.started = true;
+        menu.hide();
+      }
+    }
   });
 
   /** Who is in the room, for the waiting room and the room panel. */

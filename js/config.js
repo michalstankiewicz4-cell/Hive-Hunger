@@ -47,7 +47,6 @@ export const CONFIG = Object.freeze({
     rockCore: [58, 50, 46], // darker rock near the core
     light: [-0.55, 0.6, 0.58],
     sphereShading: 0.7,    // 0 = flat cube faces, 1 = smooth sphere
-    atmosphere: { color: [120, 180, 255], scale: 1.12, power: 2.2, intensity: 0.5 },
 
     surface: {
       noiseScale: 2.2,
@@ -129,7 +128,6 @@ export const CONFIG = Object.freeze({
     { id: 'spacing',  label: 'Spacing',  min: 0.3, max: 3,   step: 0.1, decimals: 1 },
     { id: 'cohesion', label: 'Cohesion', min: 0,   max: 3,   step: 0.1, decimals: 1 },
     { id: 'nearest', type: 'toggle', label: 'Eat nearest block' },
-    { id: 'atmosphere', type: 'toggle', label: 'Atmosphere' }, // the glow around the planet (only on this screen)
   ],
 
   // beacon at the spawn point: click it to call the swarm back; after a planet is eaten

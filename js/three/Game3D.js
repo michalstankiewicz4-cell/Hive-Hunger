@@ -80,7 +80,6 @@ export class Game3D {
     this.debris = new Debris3D(this.scene, this.cfg.debris);
     this.marker = new ClickMarker(this.scene, this.cfg.marker);
     this.lightning = new Lightning3D(this.scene);
-    this.showAtmosphere = true; // the glow around the planet (settings panel)
     this.onTreeChange = null; // () => void — the upgrade tree view refreshes
 
     this.resize(); // camera aspect is needed to keep the spawn point on screen
@@ -185,14 +184,24 @@ export class Game3D {
   becomeHost(mode) {
     this.role = 'host';
     this.mode = mode;
-    this.localPlayer.beacon.setColor(PLAYERS[0].color);
+    // a room starts from scratch — nothing carries over from single player (planet, points,
+    // upgrades, swarm), so co-op and PvP are fair; only the settings panel values stay
+    const old = this.localPlayer;
+    const keep = ['count', 'speed', 'power', 'spacing', 'cohesion', 'nearest'].map((k) => [k, old.getSetting(k)]);
+    this.removePlayer(0);
+    this.planet.dispose();
+    this.level = 0;
+    this.spin = 0;
+    this.banner = '';
+    this.spawnPlanet();
+    const p = this.addPlayer(0);
+    for (const [k, v] of keep) p.setSetting(k, v);
     this.planet.log = [];
   }
 
   spawnPlanet(seed) {
     this.level++;
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level));
-    if (this.planet.atmosphere) this.planet.atmosphere.visible = this.showAtmosphere;
     if (this.role === 'host') this.planet.log = [];
     for (const p of this.activePlayers()) p.onNewPlanet();
     this.banner = '';
@@ -411,12 +420,6 @@ export class Game3D {
     this.onSummaryChange?.(summary);
   }
 
-  /** Turns the atmosphere glow around the planet on or off (this screen only). */
-  setAtmosphere(on) {
-    this.showAtmosphere = Boolean(on);
-    if (this.planet?.atmosphere) this.planet.atmosphere.visible = this.showAtmosphere;
-  }
-
   /** Draws a chain-lightning bolt (and, on the host, sends it to the guests). */
   showBolt(player, path) {
     this.lightning.show(path, player.color);
@@ -607,7 +610,7 @@ export class Game3D {
         : me.homeMode === 'recall'
           ? 'called back · click the planet to send the swarm out again'
           : 'click: steer the swarm · click the beacon: call it back · right button / two fingers: rotate · wheel: zoom'
-            + (this.multiplayer ? '' : ' · Menu (bottom left): pause');
+            + (this.multiplayer ? '' : ' · Esc: menu');
 
     const scores = this.multiplayer
       ? this.activePlayers().map((p) => ({
