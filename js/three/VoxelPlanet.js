@@ -1,5 +1,6 @@
 import { terrainColor, mix } from '../utils/terrain.js';
 import { PlanetSurface } from './PlanetSurface.js';
+import { buildShape } from './shapes.js';
 
 const THREE = window.THREE;
 
@@ -16,21 +17,28 @@ const NEIGHBORS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 
  *
  * `look.style` picks the graphics (physics and eating are always the voxels):
  * 'cubes' — the voxels themselves; 'smooth' / 'wedges' — see PlanetSurface.
+ * `look.shape` picks which voxels are solid: 'sphere', 'cube', 'text' — see shapes.js.
  */
 export class VoxelPlanet {
   /**
    * @param {number} [seed] terrain seed — the same seed gives the same planet in every
    *   browser, which is how multiplayer guests build the host's planet
-   * @param {{radius?:number, style?:'cubes'|'smooth'|'wedges'}} [look] size and graphics of this planet
+   * @param {{radius?:number, style?:'cubes'|'smooth'|'wedges', shape?:'sphere'|'cube'|'text', text?:string}} [look]
+   *   size, shape and graphics of this planet
    */
   constructor(scene, cfg, seed, look = {}) {
     this.scene = scene;
     this.cfg = cfg;
     this.s = cfg.voxelSize;
     this.style = look.style || 'cubes';
-    this.R = look.radius || cfg.radius;     // radius in world units
-    this.Rv = Math.round(this.R / this.s);  // radius in voxels
-    this.N = this.Rv * 2;
+    const shape = buildShape({ ...look, radius: look.radius || cfg.radius }, this.s);
+    this.shape = look.shape || 'sphere';
+    this.N = shape.N;
+    this.half = shape.half;     // half of the grid's edge: voxel i's centre is (i + 0.5)·s − half
+    this.R = shape.radius;      // what the swarm flies around on long trips (the sphere's radius)
+    this.bound = shape.bound;   // a sphere containing the whole shape
+    this.surfaceKind = shape.surface;
+    this.tagColors = shape.colors;
     this.seed = seed ?? ((Math.random() * 1e6) | 0);
     this.alive = true;
     this.log = null; // multiplayer host: indices of removed voxels since the last network update
@@ -43,14 +51,18 @@ export class VoxelPlanet {
     this.slotOf = new Int32Array(n3).fill(-1);
     // how many units have claimed this voxel to eat
     this.claims = new Uint16Array(n3);
+    // shape tag of each solid voxel (the text's letter number, for its colour)
+    this.tags = shape.colors ? new Uint8Array(n3) : null;
 
     let total = 0;
     for (let k = 0; k < N; k++) {
       for (let j = 0; j < N; j++) {
         for (let i = 0; i < N; i++) {
-          const x = i + 0.5 - this.Rv, y = j + 0.5 - this.Rv, z = k + 0.5 - this.Rv;
-          if (x * x + y * y + z * z <= this.Rv * this.Rv) {
-            this.hp[(k * N + j) * N + i] = cfg.strength;
+          const tag = shape.fill(i, j, k);
+          if (tag) {
+            const idx = (k * N + j) * N + i;
+            this.hp[idx] = cfg.strength;
+            if (this.tags) this.tags[idx] = tag;
             total++;
           }
         }
@@ -63,7 +75,7 @@ export class VoxelPlanet {
     this.material = this.createMaterial();
     this.capacity = 0;
     this.count = 0;
-    this.createMesh(Math.ceil(4 * Math.PI * this.Rv * this.Rv * 2.2));
+    this.createMesh(Math.max(1024, Math.ceil(total * 0.25)));
 
     this._v = new THREE.Vector3();
     this._m = new THREE.Matrix4();
@@ -80,8 +92,16 @@ export class VoxelPlanet {
       if (this.style === 'smooth') this.mesh.visible = false;
     }
 
-    this.atmosphere = this.createAtmosphere();
-    scene.add(this.atmosphere);
+    // the atmosphere glow is a ring around a sphere; other shapes go without it
+    if (this.shape === 'sphere') {
+      this.atmosphere = this.createAtmosphere();
+      scene.add(this.atmosphere);
+    }
+  }
+
+  /** How much voxel normals tilt towards the sphere normal (spheres only; other shapes keep flat faces). */
+  get shading() {
+    return (this.shape === 'sphere' ? this.cfg.sphereShading : 0).toFixed(2);
   }
 
   createMaterial() {
@@ -91,7 +111,7 @@ export class VoxelPlanet {
       shader.vertexShader = shader.vertexShader.replace(
         '#include <beginnormal_vertex>',
         `vec3 sphereNormal = normalize((instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz + 1e-4);
-         vec3 objectNormal = normalize(mix(vec3(normal), sphereNormal, ${this.cfg.sphereShading.toFixed(2)}));`,
+         vec3 objectNormal = normalize(mix(vec3(normal), sphereNormal, ${this.shading}));`,
       );
     };
     return material;
@@ -104,7 +124,7 @@ export class VoxelPlanet {
       shader.vertexShader = shader.vertexShader.replace(
         '#include <beginnormal_vertex>',
         `vec3 sphereNormal = normalize(position + 1e-4);
-         vec3 objectNormal = normalize(mix(vec3(normal), sphereNormal, ${this.cfg.sphereShading.toFixed(2)}));`,
+         vec3 objectNormal = normalize(mix(vec3(normal), sphereNormal, ${this.shading}));`,
       );
     };
     return material;
@@ -157,13 +177,15 @@ export class VoxelPlanet {
   cellCenter(idx, out) {
     const [i, j, k] = this.coords(idx);
     const s = this.s;
-    return out.set((i + 0.5) * s - this.R, (j + 0.5) * s - this.R, (k + 0.5) * s - this.R);
+    const h = this.half;
+    return out.set((i + 0.5) * s - h, (j + 0.5) * s - h, (k + 0.5) * s - h);
   }
 
   /** Index of the voxel at a point (object with x, y, z), or -1. */
   cellAt(p) {
     const s = this.s;
-    return this.index(Math.floor((p.x + this.R) / s), Math.floor((p.y + this.R) / s), Math.floor((p.z + this.R) / s));
+    const h = this.half;
+    return this.index(Math.floor((p.x + h) / s), Math.floor((p.y + h) / s), Math.floor((p.z + h) / s));
   }
 
   isSolid(p) {
@@ -177,10 +199,18 @@ export class VoxelPlanet {
     const p = this.cellCenter(idx, this._v);
     const d = p.length() || 1;
     let rgb;
-    if (d > this.R - this.cfg.terrainDepth) {
+    if (this.tags) {
+      const c = this.tagColors[this.tags[idx]] || this.cfg.rock;
+      return [c[0] / 255, c[1] / 255, c[2] / 255];
+    }
+    // depth under the surface: sphere — from the radius, cube — from the nearest face
+    const depth = this.surfaceKind === 'cube'
+      ? this.half - Math.max(Math.abs(p.x), Math.abs(p.y), Math.abs(p.z))
+      : this.R - d;
+    if (depth < this.cfg.terrainDepth) {
       rgb = terrainColor(p.x / d, -p.y / d, p.z / d, this.seed, this.cfg.surface);
     } else {
-      rgb = mix(this.cfg.rockCore, this.cfg.rock, d / this.R);
+      rgb = mix(this.cfg.rockCore, this.cfg.rock, Math.min(1, d / this.R));
     }
     return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255];
   }
@@ -305,8 +335,8 @@ export class VoxelPlanet {
   exposedNear(p, r, out) {
     out.length = 0;
     if (!this.alive) return 0;
-    const s = this.s, R = this.R;
-    const ci = (p.x + R) / s, cj = (p.y + R) / s, ck = (p.z + R) / s;
+    const s = this.s, h = this.half;
+    const ci = (p.x + h) / s, cj = (p.y + h) / s, ck = (p.z + h) / s;
     const rv = r / s, rv2 = rv * rv;
     const i0 = Math.max(0, Math.floor(ci - rv)), i1 = Math.min(this.N - 1, Math.floor(ci + rv));
     const j0 = Math.max(0, Math.floor(cj - rv)), j1 = Math.min(this.N - 1, Math.floor(cj + rv));
@@ -381,7 +411,7 @@ export class VoxelPlanet {
 
   /** First solid voxel along a ray, or null. */
   raycastSolid(ray, out) {
-    const R = this.R;
+    const R = this.bound;
     const o = ray.origin, d = ray.direction;
     const b = o.dot(d);
     const disc = b * b - (o.lengthSq() - R * R);
@@ -402,7 +432,7 @@ export class VoxelPlanet {
   /** Shatters the rest of the planet; the callback gets (idx, colour) for exposed voxels. */
   shatter(onCell) {
     this.alive = false;
-    this.scene.remove(this.atmosphere);
+    if (this.atmosphere) this.scene.remove(this.atmosphere);
     for (let s = 0; s < this.count; s++) {
       const idx = this.idxOfSlot[s];
       onCell(idx, this.colorOf(idx));
@@ -462,10 +492,12 @@ export class VoxelPlanet {
     this.surface?.dispose();
     this.surfaceMaterial?.dispose();
     this.scene.remove(this.mesh);
-    this.scene.remove(this.atmosphere);
     this.geometry.dispose();
     this.material.dispose();
-    this.atmosphere.geometry.dispose();
-    this.atmosphere.material.dispose();
+    if (this.atmosphere) {
+      this.scene.remove(this.atmosphere);
+      this.atmosphere.geometry.dispose();
+      this.atmosphere.material.dispose();
+    }
   }
 }

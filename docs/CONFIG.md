@@ -38,14 +38,16 @@ The point the flock heads for.
 
 ## Levels (`levels`)
 
-A cycle of planets: planet 1 uses the first entry, planet 5 the first again.
+A cycle of planets: planet 1 uses the first entry, planet 7 the first again.
 
 | Field | What it does |
 | --- | --- |
-| `radiusScale` | planet radius = `radiusScale × planet.radius` (0.7 = 30% smaller; voxel count grows with the cube of it) |
+| `shape` | `sphere` (default), `cube` (half-edge = radius) or `text` (voxel letters) |
+| `radiusScale` | radius (sphere) or half-edge (cube) = `radiusScale × planet.radius` (0.7 = 30% smaller; voxel count grows with the cube of it) |
+| `text`, `pixel`, `depth`, `colors` | text only: the words (letters T, E, S, L, V and space so far), voxels per font pixel, thickness in voxels, letter colours in turn |
 | `style` | graphics only: `cubes`, `smooth` (smooth surface, cubes hidden) or `wedges` (cubes + ramps and corners in the steps) |
 
-Default: `0.7 cubes`, `1 cubes`, `1 smooth`, `1 wedges`.
+Default: sphere 0.7 cubes, sphere 1 cubes, sphere 1 smooth, sphere 1 wedges, cube 0.7, text "TEST LVL".
 
 ## Flock (`swarm`)
 

@@ -126,7 +126,7 @@ for (let a = 0; a < 8; a++) for (let b = a + 1; b < 8; b++) {
 }
 
 function buildSmooth(planet, x0, y0, z0, size, out) {
-  const { N, hp, s, R } = planet;
+  const { N, hp, s } = planet, R = planet.half;
   const solid = (i, j, k) => (i >= 0 && j >= 0 && k >= 0 && i < N && j < N && k < N && hp[(k * N + j) * N + i] > 0 ? 1 : 0);
   // cells (cubes between voxel centres) this chunk needs: its own plus one before on each axis
   const W = size + 1;
@@ -169,7 +169,7 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
         solids++;
       }
     }
-    // world position: voxel centre of index i is (i + 0.5) * s - R
+    // world position: voxel centre of index i is (i + 0.5) * s - half
     const wx = (ci + 0.5 + px) * s - R, wy = (cj + 0.5 + py) * s - R, wz = (ck + 0.5 + pz) * s - R;
     let gl = Math.hypot(gx, gy, gz);
     if (gl < 1e-6) { gx = wx; gy = wy; gz = wz; gl = Math.hypot(wx, wy, wz) || 1; }
@@ -230,7 +230,7 @@ const OUTER = { // fill under u = a + b - 1 (solid only at the +a+b diagonal)
 };
 
 function buildWedges(planet, x0, y0, z0, size, out) {
-  const { N, hp, s, R } = planet;
+  const { N, hp, s } = planet, R = planet.half;
   const solid = (i, j, k) => i >= 0 && j >= 0 && k >= 0 && i < N && j < N && k < N && hp[(k * N + j) * N + i] > 0;
   const lo = Math.max(0, x0), loJ = Math.max(0, y0), loK = Math.max(0, z0);
   const e = [0, 0, 0];

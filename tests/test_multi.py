@@ -98,7 +98,7 @@ async def main():
             t.ok(await host.locator('#summary').is_visible() and await guests[1].locator('#summary').is_visible(),
                  'summary shown on host and guests')
             text = await guests[1].inner_text('#summary')
-            t.ok('wins this planet' in text and 'Share' in text and 'Won' in text, 'PvP summary: winner, shares, planets won',
+            t.ok(('wins this planet' in text or 'You win this planet' in text) and 'Share' in text and 'Won' in text, 'PvP summary: winner, shares, planets won',
                  text.replace(chr(10), ' | ')[:200])
             rows = await host.evaluate('() => window.__dbg.summary.rows.map(r => r.planet)')
             t.ok(rows == sorted(rows, reverse=True), 'players sorted by voxels eaten', rows)

@@ -16,7 +16,7 @@ A recovery file: everything needed to pick the project up again — what it is, 
 These came from the owner's requests; keep them unless he asks otherwise.
 
 - **3D only** (a 2D version existed early on and was removed on request).
-- **Levels:** a cycle of four planets, repeated until more levels are designed — 1 smaller (radius −30%), 2 the usual, 3 smooth surface, 4 cubes with wedges in the steps. Smooth/wedges are **graphics only** (owner's choice); new levels are meant to try new graphics approaches.
+- **Levels:** a cycle of six planets, repeated until more levels are designed — 1 smaller (radius −30%), 2 the usual, 3 smooth surface, 4 cubes with wedges in the steps, 5 a cube with the edge of planet 1's diameter, 6 the text TEST LVL in coloured letters. Smooth/wedges are **graphics only** (owner's choice); new levels are meant to try new graphics approaches.
 - **Planet:** voxel sphere with Earth-like terrain, clouds, ice caps, atmosphere glow; rock inside (no coloured layered interior — removed on request). Small voxels for a smooth look. Slowly spins.
 - **Swarm = flock (boids):** units keep spacing, align, stay together; **every unit has the same constant speed**; turning on screen is smoothed.
 - **Eating is deliberate:** a unit claims its own voxel, flies to it, lands and eats; **one voxel is eaten by one unit only** unless there are no more free voxels; **no eating in passing**; **no bouncing and no passing through voxels** (units slide along surfaces).
@@ -89,6 +89,7 @@ Lessons from writing them:
 | 0.7.1 | tag `v0.7.1` | Menu button in single player, Not ready in the waiting room |
 | 0.8.0 | tag `v0.8.0` | planet summary with Next planet, ping and connection stats, joined / left / connection lost notices, tests in `tests/`, MIT licence, more docs |
 | 0.9.0 | tag `v0.9.0` | planet levels: smaller planet, smooth surface, wedges |
+| 0.10.0 | tag `v0.10.0` | levels 5 (cube) and 6 (TEST LVL text), `shapes.js` |
 
 ## Known limitations
 

@@ -68,15 +68,24 @@ export const CONFIG = Object.freeze({
     },
   },
 
-  // Planets in a cycle: planet 1 uses the first entry, planet 5 the first again, …
-  // radiusScale × planet.radius = the planet's radius. style = graphics only (physics and eating
-  // always use the voxels): 'cubes' — the voxels; 'smooth' — a smooth surface over them;
-  // 'wedges' — cubes plus low-poly wedges in the steps. New looks are tried out as new levels.
+  // Planets in a cycle: planet 1 uses the first entry, planet 7 the first again, …
+  // shape: 'sphere' (default), 'cube' (half-edge = radius), 'text' (voxel letters, see shapes.js).
+  // radiusScale × planet.radius = the radius (sphere) or half-edge (cube).
+  // style = graphics only (physics and eating always use the voxels): 'cubes' — the voxels;
+  // 'smooth' — a smooth surface over them; 'wedges' — cubes plus low-poly wedges in the steps.
+  // New looks and shapes are tried out as new levels.
   levels: [
     { radiusScale: 0.7, style: 'cubes' },
     { radiusScale: 1, style: 'cubes' },
     { radiusScale: 1, style: 'smooth' },
     { radiusScale: 1, style: 'wedges' },
+    { shape: 'cube', radiusScale: 0.7, style: 'cubes' }, // the size of planet 1's sphere
+    {
+      shape: 'text', text: 'TEST LVL', style: 'cubes',
+      pixel: 3,  // voxels per font pixel
+      depth: 10, // thickness in voxels
+      colors: [[255, 84, 84], [255, 160, 60], [255, 220, 70], [110, 220, 90], [70, 200, 230], [90, 120, 255], [200, 100, 240]],
+    },
   ],
 
   // Flock (boids). Every unit flies at the same constant speed — only its direction changes.

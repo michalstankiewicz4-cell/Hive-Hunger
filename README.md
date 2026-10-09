@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.9.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.10.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -10,7 +10,7 @@ The swarm moves like a flock of birds (boids): units keep their distance from ea
 
 Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), flies to it, lands on it and eats it, then picks the next one. One voxel is eaten by one unit only — bites are shared only when the planet has fewer exposed voxels left than there are units. Units never eat in passing. They don't bounce off matter or pass through it; they slide along the surface. The swarm target moves on once no free voxels are left nearby.
 
-Planets come in a cycle of levels: 1 — a smaller planet, 2 — the usual one, 3 — a smooth surface without steps, 4 — cubes with wedges in the steps; then it starts again. The smooth and wedge looks are graphics only — the swarm still eats voxels. New levels are used to try new looks.
+Planets come in a cycle of levels: 1 — a smaller planet, 2 — the usual one, 3 — a smooth surface without steps, 4 — cubes with wedges in the steps, 5 — a cube the size of planet 1, 6 — the text TEST LVL in coloured letters; then it starts again. The smooth and wedge looks are graphics only — the swarm still eats voxels. New levels are used to try new looks.
 
 A planet counts as eaten only when its last voxel is gone. The swarm then flies back to its spawn point (the beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
 
@@ -89,6 +89,7 @@ js/
   three/Player.js       one player: swarm, brain, beacon, settings, score
   three/VoxelPlanet.js  voxel planet + atmosphere
   three/PlanetSurface.js smooth / wedge surfaces over the voxels (levels 3 and 4)
+  three/shapes.js       shapes of the levels: sphere, cube, text
   three/Swarm3D.js      the flock (boids) with collisions and feeding
   three/Debris3D.js     debris
   three/ClickMarker.js  ring marking the clicked spot

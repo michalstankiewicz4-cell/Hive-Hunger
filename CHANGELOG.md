@@ -2,6 +2,17 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.10.0] — 2026-10-09
+
+### Added
+- Level 5: a **cube** with the edge of planet 1's diameter (33.6 — the small sphere would just fit inside), with terrain on its faces.
+- Level 6: the text **TEST LVL** made of voxels, every letter in its own colour.
+- `js/three/shapes.js` — shapes of a level (`sphere`, `cube`, `text`); new shapes are added there and used as `shape` in `CONFIG.levels`. The cycle now has six levels.
+
+### Changed
+- Only spheres get the atmosphere glow and the smoothed day/night shading; the cube and the text keep flat faces.
+- Small fix: the planet grid is centred exactly on the origin (planet 1 was off by 0.2).
+
 ## [0.9.0] — 2026-10-09
 
 ### Added
@@ -93,6 +104,7 @@ All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https:
 ### Added
 - First release on GitHub Pages: a 3D swarm (boids, constant speed) that eats a voxel planet; deliberate feeding with one claimed voxel per unit; live sliders for units, speed, power, spacing and cohesion; space background with nebulae and stars; GitHub Pages deployment workflow.
 
+[0.10.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.7.0...v0.7.1

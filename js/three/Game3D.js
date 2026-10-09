@@ -200,7 +200,7 @@ export class Game3D {
   levelLook(level) {
     const list = this.cfg.levels;
     const l = list[(level - 1) % list.length];
-    return { radius: this.cfg.planet.radius * l.radiusScale, style: l.style };
+    return { ...l, radius: this.cfg.planet.radius * (l.radiusScale || 1), style: l.style || 'cubes' };
   }
 
   // --- input ---

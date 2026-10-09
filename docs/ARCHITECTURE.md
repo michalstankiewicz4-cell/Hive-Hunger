@@ -15,6 +15,7 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/core/Leader.js` | The swarm's "brain": a point the flock heads for; stays at matter, finds new matter, follows clicks |
 | `js/three/VoxelPlanet.js` | Voxel planet: terrain, claims, eating, exposed-voxel instancing, raycast, seed, removal log, solid bitsets, atmosphere |
 | `js/three/PlanetSurface.js` | Extra planet graphics over the voxels: `smooth` (surface nets) and `wedges` (ramps and corner pieces in the steps), built per 16³ chunk and rebuilt as voxels are eaten |
+| `js/three/shapes.js` | Which voxels are solid for a level's `shape`: `sphere`, `cube`, `text` (voxel letters with a colour per letter) |
 | `js/three/Debris3D.js` | Debris point cloud |
 | `js/three/Space3D.js` | Sky sphere with nebulae + star layers (one group, turned by the spin) |
 | `js/three/SpawnBeacon.js` | Clickable beacon at each player's spawn point |
@@ -56,7 +57,9 @@ stateDiagram-v2
 
 ## Planet levels and looks
 
-`CONFIG.levels` is a cycle: planet `n` uses entry `(n − 1) mod length` — `radiusScale` (× `planet.radius`) and `style`. `Game3D.levelLook(level)` turns it into the planet's radius and style; every client builds the same planet from the level and the seed, so multiplayer needs nothing extra.
+`CONFIG.levels` is a cycle: planet `n` uses entry `(n − 1) mod length` — `shape`, `radiusScale` (× `planet.radius`) and `style`. `Game3D.levelLook(level)` turns it into the planet's radius and style; every client builds the same planet from the level and the seed, so multiplayer needs nothing extra.
+
+Shapes (`shapes.js`) decide which voxels are solid. The grid is always a cube centred on the origin (`half` = half its edge); each shape also gives the radius the swarm flies around on long trips (`R`: the sphere's radius, the cube's half-edge, half the text's thickness) and a bounding sphere for clicks (`bound`). Terrain colours follow the surface: sphere — depth under the radius, cube — depth under the nearest face; the text uses a colour per letter. Only spheres get the atmosphere glow and the smoothed shading.
 
 Styles change only the graphics — collisions, claims and eating always use the voxels:
 
@@ -64,7 +67,7 @@ Styles change only the graphics — collisions, claims and eating always use the
 - `smooth` — the cubes are hidden; `PlanetSurface` draws a surface net: one vertex per grid cell the surface passes through (the average of the solid/empty crossings on its edges) and a quad for every solid/empty pair of neighbouring voxels. Steps become slopes and corners round off without a case table. Colours are averaged from the solid voxels around each vertex.
 - `wedges` — the cubes stay; every empty cell resting on a solid voxel (below = towards the planet centre along the main axis) gets a piece: a ramp next to one solid side, an inner corner next to two adjacent sides, an outer corner next to a solid diagonal.
 
-The surface is split into chunks of 16³ voxels. `VoxelPlanet.remove()` marks the chunks around the voxel dirty and `sync()` rebuilds up to 8 per frame (a guest joining mid-planet rebuilds all at once). To try a new look: add a builder to `BUILDERS` in `PlanetSurface.js` and a level with its name in `CONFIG.levels`.
+The surface is split into chunks of 16³ voxels. `VoxelPlanet.remove()` marks the chunks around the voxel dirty and `sync()` rebuilds up to 8 per frame (a guest joining mid-planet rebuilds all at once). To try a new look: add a builder to `BUILDERS` in `PlanetSurface.js`; a new shape: a case in `shapes.js`; then a level with its name in `CONFIG.levels`.
 
 ## Frames of reference and the planet spin
 
