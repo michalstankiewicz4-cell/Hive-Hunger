@@ -3,6 +3,7 @@ import { VoxelPlanet } from './VoxelPlanet.js';
 import { Swarm3D, aroundPlanet } from './Swarm3D.js';
 import { Debris3D } from './Debris3D.js';
 import { Space3D } from './Space3D.js';
+import { ClickMarker } from './ClickMarker.js';
 import { Leader } from '../core/Leader.js';
 
 const THREE = window.THREE;
@@ -47,6 +48,7 @@ export class Game3D {
     const start = this.spawnPoint();
     this.leader = new Leader(this.cfg.leader, start, ['x', 'y', 'z']);
     this.debris = new Debris3D(this.scene, this.cfg.debris);
+    this.marker = new ClickMarker(this.scene, this.cfg.marker);
     this.swarm = new Swarm3D(this.scene, this.cfg.swarm, new THREE.Vector3(start.x, start.y, start.z));
     this.spawnPlanet();
 
@@ -227,7 +229,9 @@ export class Game3D {
       // a tap: left button / one finger, with no rotation and no drag
       if (e.type === 'pointerup' && tap && !rotated && pointers.size === 0 &&
           Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 8) {
-        this.command(this.pointFromScreen(this.toNdc(e)));
+        const point = this.pointFromScreen(this.toNdc(e));
+        this.command(point);
+        this.marker.show(point, this.lastPickHit, this.camera);
       }
       if (pointers.size === 0) { rotating = false; tap = null; } else last = center();
     };
@@ -259,6 +263,7 @@ export class Game3D {
     this.raycaster.setFromCamera(ndc, this.camera);
     const ray = this.raycaster.ray;
     const hit = this.planet && this.planet.raycastSolid(ray, this.tmp);
+    this.lastPickHit = Boolean(hit);
     if (!hit) {
       const t = -ray.origin.dot(ray.direction);
       this.tmp.copy(ray.direction).multiplyScalar(t).add(ray.origin);
@@ -301,6 +306,7 @@ export class Game3D {
 
     pl.sync();
     this.debris.update();
+    this.marker.update();
     this.hud.update({
       level: this.level,
       eaten: pl.eatenFraction,

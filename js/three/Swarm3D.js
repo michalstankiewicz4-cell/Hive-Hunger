@@ -63,8 +63,15 @@ export class Swarm3D {
     this.foodPos = new Float32Array(this.max * 3);
     // 1 = the unit has landed on its bite and is eating it
     this.landed = new Uint8Array(this.max);
-    // 1 = the swarm was just sent somewhere by a click; the next bite is picked near the clicked point
+    // 1 = the unit was sent somewhere by a click and has not arrived yet;
+    // in nearest-block mode its next bite is picked near the clicked point
     this.redirect = new Uint8Array(this.max);
+    // getting unstuck: best distance to the current target so far, frames without progress,
+    // and the last voxel that blocked the unit (with how many frames ago that was)
+    this.best = new Float32Array(this.max).fill(Infinity);
+    this.stuck = new Uint16Array(this.max);
+    this.lastBlock = new Int32Array(this.max).fill(-1);
+    this.blockAge = new Uint8Array(this.max).fill(255);
 
     // parameters changed by sliders
     this.separationDistance = cfg.separationDistance;
@@ -107,6 +114,10 @@ export class Swarm3D {
         this.food[i] = -1;
         this.landed[i] = 0;
         this.redirect[i] = 0;
+        this.best[i] = Infinity;
+        this.stuck[i] = 0;
+        this.lastBlock[i] = -1;
+        this.blockAge[i] = 255;
       }
     }
     // removed units release their claims
@@ -158,7 +169,7 @@ export class Swarm3D {
   update(target, world) {
     const c = this.cfg;
     const w = c.weights;
-    const { pos, dir, food, foodPos, landed } = this;
+    const { pos, dir, food, foodPos, landed, best, stuck, lastBlock, blockAge } = this;
     const cell = this.perception;
     const per2 = cell * cell;
     const sep2 = this.separationDistance * this.separationDistance;
@@ -216,10 +227,11 @@ export class Swarm3D {
         } else {
           food[i] = world.pickFood(p);
         }
-        if (food[i] >= 0) this.redirect[i] = 0;
         if (food[i] >= 0) {
           const fc = world.cellCenter(food[i]);
           foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
+          best[i] = Infinity;
+          stuck[i] = 0;
         }
       }
       if (food[i] >= 0) {
@@ -227,6 +239,34 @@ export class Swarm3D {
         targetWeight = w.feed;
         // nearestMode: no free flying — only separation stays, the unit flies straight to its voxel
         flocking = world.nearestMode ? 0 : c.feedFlocking;
+      }
+
+      // stuck detection: no progress towards the target for a while, while touching a wall
+      // (a corner of a crater or tunnel) → bite through the blocking voxel if it isn't someone
+      // else's, otherwise turn in a random direction to slide out
+      const goalDist = Math.hypot(tx - px, ty - py, tz - pz);
+      if (goalDist < best[i] - c.stuck.progress) { best[i] = goalDist; stuck[i] = 0; } else stuck[i]++;
+      if (blockAge[i] < 255) blockAge[i]++;
+      if (stuck[i] > c.stuck.frames) {
+        const b = lastBlock[i];
+        if (blockAge[i] < c.stuck.recentContact && world.isSolidCell(b)) {
+          if (world.canBite(b, food[i])) {
+            if (b !== food[i]) {
+              world.release(food[i]);
+              world.claim(b);
+              food[i] = b;
+              const fc = world.cellCenter(b);
+              foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
+            }
+            landed[i] = 1;
+          } else {
+            const u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, q = Math.sqrt(1 - u * u);
+            dir[i3] = q * Math.cos(a); dir[i3 + 1] = u; dir[i3 + 2] = q * Math.sin(a);
+          }
+        }
+        stuck[i] = 0;
+        best[i] = Infinity;
+        if (landed[i]) continue;
       }
 
       // planet in the way: aim for a waypoint over the surface instead, so the unit flies around it
@@ -279,10 +319,15 @@ export class Swarm3D {
               foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
             }
             landed[i] = 1;
+            // landed on a bite it flew to (picked near the click): it has arrived, from now on it
+            // eats on from here. (Biting through a wall when stuck does not count — see above.)
+            this.redirect[i] = 0;
             d[0] = foodPos[i3] - p.x; d[1] = foodPos[i3 + 1] - p.y; d[2] = foodPos[i3 + 2] - p.z; // face the bite
             break move;
           }
           d[a] = 0; // slide
+          lastBlock[i] = idx;
+          blockAge[i] = 0;
         }
       }
 

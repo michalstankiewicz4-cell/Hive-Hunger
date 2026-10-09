@@ -87,6 +87,8 @@ export const CONFIG = Object.freeze({
     },
     // flying around the planet instead of into it on long trips
     avoid: { minDistance: 6, dipMargin: 3, altitude: 3, pitDepth: 0.5 },
+    // getting unstuck: frames without progress, minimal progress, and how recent the wall contact must be
+    stuck: { frames: 45, progress: 0.3, recentContact: 10 },
     landSwapDistance: 1.5,   // a unit may land on a free voxel this close to its own bite instead
     nearestMode: true,       // test mechanic: after eating, fly to the nearest uneaten voxel (checkbox)
     feedFlocking: 0.35,      // while feeding: how much alignment and cohesion remain
@@ -107,6 +109,9 @@ export const CONFIG = Object.freeze({
     { id: 'cohesion', label: 'Cohesion', min: 0,   max: 3,   step: 0.1, decimals: 1 },
     { id: 'nearest', type: 'toggle', label: 'Eat nearest block' },
   ],
+
+  // marker shown where the player clicked
+  marker: { color: 0x8fd0ff, radius: 1.6, opacity: 0.9, lift: 0.9, lifeFrames: 240, pulseSpeed: 0.12 },
 
   debris: {
     max: 4000,

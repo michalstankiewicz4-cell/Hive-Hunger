@@ -12,7 +12,7 @@ Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), fli
 
 ## Controls
 
-- **Click / tap** — send the swarm there: every unit drops its current bite, the swarm flies over (around the planet, not through it) and starts eating at the clicked spot
+- **Click / tap** — send the swarm there (a pulsing ring marks the spot): every unit drops its current bite, the swarm flies over (around the planet, not through it) and starts eating at the clicked spot. A unit stuck in a corner of a crater or tunnel bites through the blocking voxel (if it isn't someone else's) and carries on
 - **Right mouse button / two fingers** — rotate the camera
 - **Mouse wheel** — zoom
 - **Panel in the top-right corner** — adjust live:
