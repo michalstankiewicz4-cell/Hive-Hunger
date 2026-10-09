@@ -3,10 +3,69 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Hive Hunger</title>
+  <title>Hive Hunger — 3D swarm game: eat voxel planets in your browser</title>
+  <meta name="description" content="Hive Hunger is a free 3D browser game. Guide a flocking swarm as it devours voxel planets crater by crater. Tune the swarm live: units, speed, power, spacing and cohesion.">
+  <meta name="keywords" content="swarm game, 3D browser game, voxel planet, eat planets game, boids, flocking simulation, swarm simulation, three.js game, free online game, planet destruction game">
+  <meta name="author" content="michalstankiewicz4-cell">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0b0c14">
+  <link rel="canonical" href="https://michalstankiewicz4-cell.github.io/Hive-Hunger/">
+
+  <!-- Icons -->
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <!-- Link previews (Open Graph / social) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hive Hunger">
+  <meta property="og:title" content="Hive Hunger — 3D swarm game: eat voxel planets">
+  <meta property="og:description" content="Guide a flocking swarm as it devours voxel planets crater by crater. Free, in your browser.">
+  <meta property="og:url" content="https://michalstankiewicz4-cell.github.io/Hive-Hunger/">
+  <meta property="og:image" content="https://michalstankiewicz4-cell.github.io/Hive-Hunger/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A blue swarm eating a crater into a voxel planet in space">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hive Hunger — 3D swarm game: eat voxel planets">
+  <meta name="twitter:description" content="Guide a flocking swarm as it devours voxel planets crater by crater. Free, in your browser.">
+  <meta name="twitter:image" content="https://michalstankiewicz4-cell.github.io/Hive-Hunger/og-image.png">
+
+  <!-- Structured data for search engines -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "Hive Hunger",
+    "url": "https://michalstankiewicz4-cell.github.io/Hive-Hunger/",
+    "image": "https://michalstankiewicz4-cell.github.io/Hive-Hunger/og-image.png",
+    "description": "A free 3D browser game where a flocking swarm devours voxel planets crater by crater.",
+    "genre": ["Simulation", "Casual"],
+    "keywords": "swarm game, voxel planet, boids, flocking simulation, 3D browser game",
+    "gamePlatform": "Web browser",
+    "applicationCategory": "Game",
+    "operatingSystem": "Any",
+    "inLanguage": "en",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "michalstankiewicz4-cell", "url": "https://github.com/michalstankiewicz4-cell" }
+  }
+  </script>
+
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- Text for search engines and screen readers; the game itself is a 3D canvas. -->
+  <main class="sr-only">
+    <h1>Hive Hunger — a 3D swarm game</h1>
+    <p>Hive Hunger is a free 3D browser game about a hungry swarm. The swarm flies like a flock of birds, finds the nearest matter on its own and eats a voxel planet crater by crater. Click or tap to steer it to a new spot.</p>
+    <p>Adjust the swarm live with sliders: number of units, speed, bite power, spacing and cohesion. When a planet is eaten, it shatters and a new one appears.</p>
+  </main>
+  <noscript>
+    <p class="noscript">Hive Hunger is a 3D game and needs JavaScript. Please enable JavaScript to play.</p>
+  </noscript>
+
   <div id="hud" class="hud"></div>
   <div id="controls" class="controls" aria-label="Swarm settings"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

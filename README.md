@@ -37,7 +37,11 @@ Three.js r128 is loaded from a CDN (cdnjs).
 ## Project structure
 
 ```
-index.html
+index.html            page, search metadata (title, description, keywords, link previews, structured data)
+og-image.png          1200×630 thumbnail for link previews
+favicon.svg, favicon-48.png, apple-touch-icon.png
+sitemap.xml           sitemap for Google Search Console
+.github/workflows/    GitHub Pages deployment
 css/style.css
 js/
   main.js               entry point
@@ -56,3 +60,9 @@ js/
 ```
 
 All tunable values (planet size, voxel size, flock weights, eating speed, slider ranges) live in `js/config.js`.
+
+## Search & sharing
+
+The page has a search title and description, keywords, a canonical URL, Open Graph / Twitter link previews with `og-image.png`, and `VideoGame` structured data (JSON-LD). Because the game is a 3D canvas, a short visually hidden description gives search engines text to index.
+
+To get indexed faster, add the site in [Google Search Console](https://search.google.com/search-console) and submit `https://michalstankiewicz4-cell.github.io/Hive-Hunger/sitemap.xml`.
