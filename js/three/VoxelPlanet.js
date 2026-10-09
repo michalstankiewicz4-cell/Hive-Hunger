@@ -261,6 +261,39 @@ export class VoxelPlanet {
     return out.length;
   }
 
+  /**
+   * Nearest free (unclaimed) exposed voxel to point `p`, searched in growing spheres
+   * so the usual case (a free voxel right next to the unit) stays cheap.
+   * With `allowShared`, a claimed voxel is accepted when no free one is found.
+   * Returns an index or -1.
+   */
+  nearestFree(p, allowShared, out) {
+    if (!this.alive || this.count === 0) return -1;
+    const v = this._v;
+    const pick = (list, freeOnly) => {
+      let best = -1, bestD = Infinity;
+      for (const idx of list) {
+        if (this.hp[idx] <= 0 || (freeOnly && this.claims[idx] > 0)) continue;
+        this.cellCenter(idx, v);
+        const d = (v.x - p.x) ** 2 + (v.y - p.y) ** 2 + (v.z - p.z) ** 2;
+        if (d < bestD) { bestD = d; best = idx; }
+      }
+      return best;
+    };
+    for (const r of [1, 2, 4, 8]) {
+      this.exposedNear(p, r, out);
+      const idx = pick(out, true);
+      if (idx >= 0) return idx;
+    }
+    // far away: nearest free voxel from a large random sample of exposed voxels
+    out.length = 0;
+    const n = Math.min(3000, this.count);
+    for (let k = 0; k < n; k++) out.push(this.idxOfSlot[(Math.random() * this.count) | 0]);
+    const idx = pick(out, true);
+    if (idx >= 0) return idx;
+    return allowShared ? pick(out, false) : -1;
+  }
+
   /** Nearest free (unclaimed) voxel from a random sample of exposed ones; if none is free — the nearest of any. */
   findMatter(p, samples) {
     if (!this.alive || this.count === 0) return null;

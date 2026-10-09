@@ -21,6 +21,7 @@ Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), fli
   - **Power** — radius of the crater a unit eats out of its bite
   - **Spacing** — distance units keep from each other
   - **Cohesion** — how strongly units stay with the group
+  - **Eat nearest block** (test mechanic) — when on, every unit flies straight from the voxel it just ate to the nearest uneaten, unclaimed voxel; no free flying, only spacing between units is kept
 
 ## Running locally
 

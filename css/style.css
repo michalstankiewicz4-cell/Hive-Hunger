@@ -95,7 +95,7 @@ body {
   }
 
   .hud {
-    top: calc(176px + var(--safe-top));
+    top: calc(206px + var(--safe-top));
     max-width: calc(100% - 32px);
   }
 }
@@ -123,4 +123,24 @@ body {
   color: var(--hud-text);
   font: 16px/1.5 monospace;
   text-align: center;
+}
+
+.control-toggle {
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--panel-border);
+  margin-top: 2px;
+}
+
+.control-toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.control-toggle label {
+  cursor: pointer;
 }

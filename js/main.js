@@ -16,6 +16,7 @@ if (!window.THREE) {
     power: { get: () => game.biteRadius, set: (v) => (game.biteRadius = v) },
     spacing: { get: () => game.swarm.separationDistance, set: (v) => (game.swarm.separationDistance = v) },
     cohesion: { get: () => game.swarm.cohesion, set: (v) => (game.swarm.cohesion = v) },
+    nearest: { get: () => game.swarmWorld.nearestMode, set: (v) => game.setNearestMode(v) },
   });
 
   game.start();

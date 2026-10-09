@@ -85,6 +85,7 @@ export const CONFIG = Object.freeze({
       target: 1.1,           // head for the swarm target
       feed: 3.0,             // head for your own bite (when the swarm is at matter)
     },
+    nearestMode: false,      // test mechanic: after eating, fly to the nearest uneaten voxel (checkbox)
     feedFlocking: 0.35,      // while feeding: how much alignment and cohesion remain
     eatFrames: 25,           // frames a unit sits on its bite before it is eaten
     biteRadius: 1.3,         // power: radius of the crater eaten out of a bite
@@ -100,6 +101,7 @@ export const CONFIG = Object.freeze({
     { id: 'power',  label: 'Power',    min: 0.5,  max: 3,    step: 0.1,  decimals: 1 },
     { id: 'spacing',  label: 'Spacing',  min: 0.3, max: 3,   step: 0.1, decimals: 1 },
     { id: 'cohesion', label: 'Cohesion', min: 0,   max: 3,   step: 0.1, decimals: 1 },
+    { id: 'nearest', type: 'toggle', label: 'Eat nearest block' },
   ],
 
   debris: {

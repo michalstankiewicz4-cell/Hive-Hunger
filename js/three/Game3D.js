@@ -58,13 +58,21 @@ export class Game3D {
       findMatter: (p) => this.planet.findMatter(p, L.searchSamples),
     };
     const feedCenter = new THREE.Vector3();
+    const nearestScratch = [];
     this.swarmWorld = {
       feeding: false,
       // a free (unclaimed) voxel near the swarm target. Shared only when the planet has
       // fewer exposed voxels left than there are units (there are no more).
-      pickFood: () => {
-        const list = this.candidates;
+      // test mechanic (checkbox): every unit goes to the nearest free voxel from its own position
+      nearestMode: CONFIG.swarm.nearestMode,
+      pickFood: (p) => {
         const pl = this.planet;
+        if (this.swarmWorld.nearestMode) {
+          const idx = pl.nearestFree(p, pl.count < this.swarm.count, nearestScratch);
+          pl.claim(idx);
+          return idx;
+        }
+        const list = this.candidates;
         const n = list.length;
         if (n === 0) return -1;
         const start = (Math.random() * n) | 0;
@@ -92,6 +100,17 @@ export class Game3D {
 
     this.bindInput();
     window.addEventListener('resize', () => this.resize());
+  }
+
+  /** Switches the nearest-block test mechanic; units drop their current bites and pick again by the new rule. */
+  setNearestMode(on) {
+    this.swarmWorld.nearestMode = on;
+    const s = this.swarm;
+    for (let i = 0; i < s.count; i++) {
+      if (s.food[i] >= 0) this.planet.release(s.food[i]);
+      s.food[i] = -1;
+      s.landed[i] = 0;
+    }
   }
 
   spawnPlanet() {

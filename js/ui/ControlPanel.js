@@ -1,7 +1,7 @@
 /**
- * Slider panel. Every slider changes the game live, while it is being dragged.
+ * Control panel with sliders and toggles. Every control changes the game live.
  * @param {HTMLElement} root panel container
- * @param {Array<{id,label,min,max,step,decimals}>} defs definitions from CONFIG.controls
+ * @param {Array<{id,label,type?,min?,max?,step?,decimals?}>} defs definitions from CONFIG.controls (type 'toggle' = checkbox)
  * @param {Record<string,{get:()=>number,set:(v:number)=>void}>} bindings what each slider changes
  */
 export class ControlPanel {
@@ -12,6 +12,21 @@ export class ControlPanel {
 
       const row = document.createElement('div');
       row.className = 'control';
+
+      if (def.type === 'toggle') {
+        row.classList.add('control-toggle');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.id = `ctl-${def.id}`;
+        box.checked = Boolean(bind.get());
+        box.addEventListener('change', () => bind.set(box.checked));
+        const label = document.createElement('label');
+        label.htmlFor = box.id;
+        label.textContent = def.label;
+        row.append(box, label);
+        root.appendChild(row);
+        continue;
+      }
 
       const label = document.createElement('label');
       label.htmlFor = `ctl-${def.id}`;

@@ -112,7 +112,8 @@ export class Swarm3D {
    * @param {{x:number,y:number,z:number}} target the swarm target
    * @param {object} world
    *   feeding: whether the swarm target is at matter (units then eat deliberately),
-   *   pickFood(): index of a voxel to eat near the target, or -1,
+   *   nearestMode: test mechanic — each unit picks the nearest free voxel to itself and never idles,
+   *   pickFood(p): index of a voxel to eat (near the target, or nearest to p in nearestMode), or -1,
    *   cellCenter(idx): voxel centre, cellAt(p), isSolidCell(idx), bite(idx)
    */
   update(target, world) {
@@ -169,8 +170,9 @@ export class Swarm3D {
         world.release(food[i]);
         food[i] = -1;
       }
-      if (food[i] < 0 && world.feeding) {
-        food[i] = world.pickFood();
+      if (food[i] < 0 && (world.feeding || world.nearestMode)) {
+        p.x = px; p.y = py; p.z = pz;
+        food[i] = world.pickFood(p);
         if (food[i] >= 0) {
           const fc = world.cellCenter(food[i]);
           foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
@@ -179,7 +181,8 @@ export class Swarm3D {
       if (food[i] >= 0) {
         tx = foodPos[i3]; ty = foodPos[i3 + 1]; tz = foodPos[i3 + 2];
         targetWeight = w.feed;
-        flocking = c.feedFlocking;
+        // nearestMode: no free flying — only separation stays, the unit flies straight to its voxel
+        flocking = world.nearestMode ? 0 : c.feedFlocking;
       }
 
       // sum of steering forces (each a weighted unit vector)
