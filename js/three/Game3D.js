@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 import { VoxelPlanet } from './VoxelPlanet.js';
-import { Swarm3D } from './Swarm3D.js';
+import { Swarm3D, aroundPlanet } from './Swarm3D.js';
 import { Debris3D } from './Debris3D.js';
 import { Space3D } from './Space3D.js';
 import { Leader } from '../core/Leader.js';
@@ -65,6 +65,8 @@ export class Game3D {
       // fewer exposed voxels left than there are units (there are no more).
       // test mechanic (checkbox): every unit goes to the nearest free voxel from its own position
       nearestMode: CONFIG.swarm.nearestMode,
+      clickPoint: null,
+      planetRadius: 0,
       pickFood: (p) => {
         const pl = this.planet;
         if (this.swarmWorld.nearestMode) {
@@ -102,6 +104,42 @@ export class Game3D {
     window.addEventListener('resize', () => this.resize());
   }
 
+  /** While travelling to a click, the swarm target flies around the planet, not through it. */
+  keepLeaderOverSurface() {
+    const L = this.leader;
+    if (!L.commanded || !this.planet.alive) return;
+    const a = this.cfg.swarm.avoid;
+    const way = aroundPlanet(L.pos.x, L.pos.y, L.pos.z, L.goal.x, L.goal.y, L.goal.z, this.planet.R, a);
+    const r = Math.hypot(L.pos.x, L.pos.y, L.pos.z) || 1;
+    if (way || (L.distanceTo(L.goal) > a.minDistance && r < this.planet.R + a.altitude)) {
+      const k = (this.planet.R + a.altitude) / r;
+      if (k > 1) { L.pos.x *= k; L.pos.y *= k; L.pos.z *= k; }
+    }
+    // steer the target's velocity towards the waypoint, so it arcs over the surface
+    if (way) {
+      const dx = way[0] - L.pos.x, dy = way[1] - L.pos.y, dz = way[2] - L.pos.z;
+      const d = Math.hypot(dx, dy, dz) || 1, v = this.cfg.leader.maxSpeed;
+      L.vel.x = (dx / d) * v; L.vel.y = (dy / d) * v; L.vel.z = (dz / d) * v;
+    }
+  }
+
+  /**
+   * A click / tap: the swarm target heads for the point and every unit drops its current
+   * bite, so the whole swarm goes there. In nearest-block mode each unit's next bite is
+   * the nearest free voxel to the clicked point.
+   */
+  command(point) {
+    this.leader.command(point);
+    this.swarmWorld.clickPoint = point;
+    const s = this.swarm;
+    for (let i = 0; i < s.count; i++) {
+      if (s.food[i] >= 0) this.planet.release(s.food[i]);
+      s.food[i] = -1;
+      s.landed[i] = 0;
+      s.redirect[i] = 1;
+    }
+  }
+
   /** Switches the nearest-block test mechanic; units drop their current bites and pick again by the new rule. */
   setNearestMode(on) {
     this.swarmWorld.nearestMode = on;
@@ -110,6 +148,7 @@ export class Game3D {
       if (s.food[i] >= 0) this.planet.release(s.food[i]);
       s.food[i] = -1;
       s.landed[i] = 0;
+      s.redirect[i] = 0;
     }
   }
 
@@ -165,7 +204,7 @@ export class Game3D {
       // a tap: left button / one finger, with no rotation and no drag
       if (e.type === 'pointerup' && tap && !rotated && pointers.size === 0 &&
           Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 8) {
-        this.leader.command(this.pointFromScreen(this.toNdc(e)));
+        this.command(this.pointFromScreen(this.toNdc(e)));
       }
       if (pointers.size === 0) { rotating = false; tap = null; } else last = center();
     };
@@ -220,7 +259,12 @@ export class Game3D {
     this.freeCandidates = 0;
     for (const idx of this.candidates) if (pl0.claims[idx] === 0) this.freeCandidates++;
     this.leader.update(this.world);
-    this.swarmWorld.feeding = this.candidates.length > 0;
+    this.keepLeaderOverSurface();
+    // while the swarm target is travelling to a clicked point, units follow it instead of eating
+    const L = this.leader;
+    const travelling = L.commanded && L.distanceTo(L.goal) > this.cfg.leader.arriveRadius;
+    this.swarmWorld.planetRadius = this.planet.alive ? this.planet.R : 0;
+    this.swarmWorld.feeding = this.candidates.length > 0 && !travelling;
     this.swarm.update(this.leader.pos, this.swarmWorld);
 
     const pl = this.planet;

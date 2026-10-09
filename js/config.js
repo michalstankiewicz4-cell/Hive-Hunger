@@ -85,6 +85,9 @@ export const CONFIG = Object.freeze({
       target: 1.1,           // head for the swarm target
       feed: 3.0,             // head for your own bite (when the swarm is at matter)
     },
+    // flying around the planet instead of into it on long trips
+    avoid: { minDistance: 6, dipMargin: 3, altitude: 3, pitDepth: 0.5 },
+    landSwapDistance: 1.5,   // a unit may land on a free voxel this close to its own bite instead
     nearestMode: false,      // test mechanic: after eating, fly to the nearest uneaten voxel (checkbox)
     feedFlocking: 0.35,      // while feeding: how much alignment and cohesion remain
     eatFrames: 25,           // frames a unit sits on its bite before it is eaten

@@ -12,7 +12,7 @@ Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), fli
 
 ## Controls
 
-- **Click / tap** — give the swarm a target
+- **Click / tap** — send the swarm there: every unit drops its current bite, the swarm flies over (around the planet, not through it) and starts eating at the clicked spot
 - **Right mouse button / two fingers** — rotate the camera
 - **Mouse wheel** — zoom
 - **Panel in the top-right corner** — adjust live:

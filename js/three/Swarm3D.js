@@ -4,6 +4,42 @@ const HASH_SIZE = 4096; // power of two
 const AXES = ['x', 'y', 'z'];
 const MAX_STEP = 0.2;   // max movement step length (less than half a voxel)
 
+function nearOwnBite(cell, foodPos, i3, maxDist) {
+  const dx = cell.x - foodPos[i3], dy = cell.y - foodPos[i3 + 1], dz = cell.z - foodPos[i3 + 2];
+  return dx * dx + dy * dy + dz * dz <= maxDist * maxDist;
+}
+
+/**
+ * If the straight path from p to t passes through the planet (centre at the origin),
+ * returns a waypoint over the surface, partway along the great circle towards t (or straight up
+ * when the unit is down in a pit); otherwise null.
+ */
+export function aroundPlanet(px, py, pz, tx, ty, tz, R, cfg) {
+  if (!(R > 0)) return null;
+  const dx = tx - px, dy = ty - py, dz = tz - pz;
+  const len2 = dx * dx + dy * dy + dz * dz;
+  if (len2 < cfg.minDistance * cfg.minDistance) return null;
+  const s = Math.max(0, Math.min(1, -(px * dx + py * dy + pz * dz) / len2));
+  const cx = px + dx * s, cy = py + dy * s, cz = pz + dz * s;
+  const pl = Math.hypot(px, py, pz) || 1, tl = Math.hypot(tx, ty, tz) || 1;
+  // blocked only when the path dips clearly deeper than both of its ends — i.e. it really
+  // goes through the planet (a dive to the bottom of a crater is fine)
+  if (Math.hypot(cx, cy, cz) > Math.min(pl, tl, R) - cfg.dipMargin) return null;
+
+  let ux = px / pl, uy = py / pl, uz = pz / pl;
+  // below the surface (in a pit it has dug): climb straight out first, the way it came in
+  if (pl < R - cfg.pitDepth) return [ux * (R + cfg.altitude), uy * (R + cfg.altitude), uz * (R + cfg.altitude)];
+  let mx = ux + tx / tl, my = uy + ty / tl, mz = uz + tz / tl;
+  let ml = Math.hypot(mx, my, mz);
+  if (ml < 1e-3) { mx = -uy; my = ux; mz = 0; ml = Math.hypot(mx, my, mz) || 1; } // opposite sides: any perpendicular
+  mx /= ml; my /= ml; mz /= ml;
+  // halfway between "above me" and the great-circle midpoint, at a safe altitude
+  let wx = ux + mx, wy = uy + my, wz = uz + mz;
+  const wl = Math.hypot(wx, wy, wz) || 1;
+  const alt = Math.max(pl, R + cfg.altitude);
+  return [(wx / wl) * alt, (wy / wl) * alt, (wz / wl) * alt];
+}
+
 /**
  * The swarm as a flock (boids). Every unit:
  *  - keeps its distance from neighbours (separation),
@@ -27,6 +63,8 @@ export class Swarm3D {
     this.foodPos = new Float32Array(this.max * 3);
     // 1 = the unit has landed on its bite and is eating it
     this.landed = new Uint8Array(this.max);
+    // 1 = the swarm was just sent somewhere by a click; the next bite is picked near the clicked point
+    this.redirect = new Uint8Array(this.max);
 
     // parameters changed by sliders
     this.separationDistance = cfg.separationDistance;
@@ -68,6 +106,7 @@ export class Swarm3D {
         this.dir[i3 + 2] = q * Math.sin(a);
         this.food[i] = -1;
         this.landed[i] = 0;
+        this.redirect[i] = 0;
       }
     }
     // removed units release their claims
@@ -172,7 +211,12 @@ export class Swarm3D {
       }
       if (food[i] < 0 && (world.feeding || world.nearestMode)) {
         p.x = px; p.y = py; p.z = pz;
-        food[i] = world.pickFood(p);
+        if (world.nearestMode && this.redirect[i] && world.clickPoint) {
+          food[i] = world.pickFood(world.clickPoint);
+        } else {
+          food[i] = world.pickFood(p);
+        }
+        if (food[i] >= 0) this.redirect[i] = 0;
         if (food[i] >= 0) {
           const fc = world.cellCenter(food[i]);
           foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
@@ -184,6 +228,10 @@ export class Swarm3D {
         // nearestMode: no free flying — only separation stays, the unit flies straight to its voxel
         flocking = world.nearestMode ? 0 : c.feedFlocking;
       }
+
+      // planet in the way: aim for a waypoint over the surface instead, so the unit flies around it
+      const way = aroundPlanet(px, py, pz, tx, ty, tz, world.planetRadius, c.avoid);
+      if (way) { tx = way[0]; ty = way[1]; tz = way[2]; }
 
       // sum of steering forces (each a weighted unit vector)
       let fx = 0, fy = 0, fz = 0;
@@ -219,7 +267,10 @@ export class Swarm3D {
           const idx = world.cellAt(p);
           if (!world.isSolidCell(idx)) continue;
           p[ax2] = old;
-          if (food[i] >= 0 && world.canBite(idx, food[i])) {
+          // land on its own bite or a free voxel. In nearest-block mode only next to its own bite —
+          // touching the planet on the way somewhere else is not a reason to stop there
+          if (food[i] >= 0 && world.canBite(idx, food[i]) &&
+              (idx === food[i] || !world.nearestMode || nearOwnBite(world.cellCenter(idx), foodPos, i3, c.landSwapDistance))) {
             if (idx !== food[i]) {
               world.release(food[i]);
               world.claim(idx);
