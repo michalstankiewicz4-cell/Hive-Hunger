@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.11.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.11.1 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -33,6 +33,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Spacing** — distance units keep from each other
   - **Cohesion** — how strongly units stay with the group
   - **Eat nearest block** (test mechanic) — when on, every unit flies straight from the voxel it just ate to the nearest uneaten, unclaimed voxel; no free flying, only spacing between units is kept
+  - **Atmosphere** — the glow around the planet on or off (only on your screen)
   - **Reset to default** — restore all settings to their starting values
 
 ## Multiplayer

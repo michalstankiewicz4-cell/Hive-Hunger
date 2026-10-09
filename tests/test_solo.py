@@ -49,6 +49,15 @@ async def main():
         t.ok(s['started'] and await page.locator('#menu').is_hidden(), 'Single player starts the game')
         t.ok(await page.locator('#menu-button').is_visible(), 'Menu button is shown')
 
+        # the atmosphere switch in the settings panel
+        atm = "() => window.__dbg.planet.atmosphere.visible"
+        t.ok(await page.evaluate(atm), 'atmosphere on by default')
+        await page.click('#ctl-atmosphere')
+        t.ok(not await page.evaluate(atm), 'the Atmosphere switch turns the glow off')
+        await page.click('.control-reset')
+        t.ok(await page.evaluate(atm) and await page.locator('#ctl-atmosphere').is_checked(), 'Reset to default turns it back on')
+        await page.click('#ctl-atmosphere')
+
         # Menu pauses, Single player carries on
         await page.click('#menu-button')
         a = await page.evaluate(STATE)
@@ -84,6 +93,7 @@ async def main():
         t.ok(s['level'] == 2 and s['alive'] and s['left'] > 0.9 * s['total'], 'next planet appears after the swarm is home',
              f"level {s['level']}, {s['left']} of {s['total']} left")
         t.ok(s['home'] is None, 'the swarm is back to work on the new planet')
+        t.ok(not await page.evaluate(atm), 'the next planet keeps the atmosphere off')
 
         await browser.close()
     return t.done(errors)

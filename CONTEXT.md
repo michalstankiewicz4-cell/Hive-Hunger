@@ -92,6 +92,7 @@ Lessons from writing them:
 | 0.9.0 | tag `v0.9.0` | planet levels: smaller planet, smooth surface, wedges |
 | 0.10.0 | tag `v0.10.0` | levels 5 (cube) and 6 (TEST LVL text), `shapes.js` |
 | 0.11.0 | tag `v0.11.0` | points, upgrade tree (Tab, pixel art), chain lightning, destruction animation |
+| 0.11.1 | tag `v0.11.1` | Atmosphere on/off switch in the settings panel |
 
 ## Known limitations
 

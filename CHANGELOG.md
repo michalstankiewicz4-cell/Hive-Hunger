@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.11.1] — 2026-10-09
+
+### Added
+- **Atmosphere** switch in the settings panel (top right): turns the glow around the planet off or on. Graphics only, on your screen; stays as set for the next planets; "Reset to default" turns it back on.
+
 ## [0.11.0] — 2026-10-09
 
 ### Added
@@ -113,6 +118,7 @@ All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https:
 ### Added
 - First release on GitHub Pages: a 3D swarm (boids, constant speed) that eats a voxel planet; deliberate feeding with one claimed voxel per unit; live sliders for units, speed, power, spacing and cohesion; space background with nebulae and stars; GitHub Pages deployment workflow.
 
+[0.11.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.8.0...v0.9.0

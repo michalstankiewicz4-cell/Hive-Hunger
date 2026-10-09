@@ -84,7 +84,7 @@ Default: sphere 0.7 cubes, sphere 1 cubes, sphere 1 smooth, sphere 1 wedges, cub
 
 ## Settings panel (`controls`)
 
-Slider ranges and steps (`min`, `max`, `step`, `decimals`) and the toggle. Defaults come from `swarm` above; "Reset to default" restores them.
+Slider ranges and steps (`min`, `max`, `step`, `decimals`) and the toggles (`Eat nearest block`; `Atmosphere` — the glow, graphics only, not sent to the host). Defaults come from `swarm` above; "Reset to default" restores them.
 
 ## Beacon (`beacon`)
 

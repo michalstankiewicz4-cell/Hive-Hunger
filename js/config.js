@@ -129,6 +129,7 @@ export const CONFIG = Object.freeze({
     { id: 'spacing',  label: 'Spacing',  min: 0.3, max: 3,   step: 0.1, decimals: 1 },
     { id: 'cohesion', label: 'Cohesion', min: 0,   max: 3,   step: 0.1, decimals: 1 },
     { id: 'nearest', type: 'toggle', label: 'Eat nearest block' },
+    { id: 'atmosphere', type: 'toggle', label: 'Atmosphere' }, // the glow around the planet (only on this screen)
   ],
 
   // beacon at the spawn point: click it to call the swarm back; after a planet is eaten

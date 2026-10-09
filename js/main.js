@@ -38,7 +38,11 @@ if (!window.THREE) {
     },
   });
   new ControlPanel(document.getElementById('controls'), CONFIG.controls,
-    Object.fromEntries(['count', 'speed', 'power', 'spacing', 'cohesion', 'nearest'].map((k) => [k, bind(k)])));
+    {
+      ...Object.fromEntries(['count', 'speed', 'power', 'spacing', 'cohesion', 'nearest'].map((k) => [k, bind(k)])),
+      // graphics only, on this screen (not sent to the host)
+      atmosphere: { get: () => game.showAtmosphere, set: (v) => game.setAtmosphere(v) },
+    });
 
   // start screen → (multiplayer) waiting room → match; the room panel stays during the match
   const lobby = new Lobby(lobbyEl);
