@@ -71,27 +71,27 @@ export const CONFIG = Object.freeze({
 
   // Flock (boids). Every unit flies at the same constant speed — only its direction changes.
   swarm: {
-    count: 350,
+    count: 20,
     minCount: 10,
     maxCount: 1500,
-    speed: 0.22,             // units per frame, identical for all
+    speed: 0.05,             // units per frame, identical for all
     perception: 3,           // how far a unit sees its neighbours
-    separationDistance: 1.1, // distance below which units push each other away
+    separationDistance: 1.5, // distance below which units push each other away
     turnRate: 0.07,          // how fast a unit can turn
     weights: {
       separation: 1.8,       // keep your distance
       alignment: 1.0,        // fly the same way as your neighbours
-      cohesion: 0.6,         // stay with the group
+      cohesion: 1,           // stay with the group
       target: 1.1,           // head for the swarm target
       feed: 3.0,             // head for your own bite (when the swarm is at matter)
     },
     // flying around the planet instead of into it on long trips
     avoid: { minDistance: 6, dipMargin: 3, altitude: 3, pitDepth: 0.5 },
     landSwapDistance: 1.5,   // a unit may land on a free voxel this close to its own bite instead
-    nearestMode: false,      // test mechanic: after eating, fly to the nearest uneaten voxel (checkbox)
+    nearestMode: true,       // test mechanic: after eating, fly to the nearest uneaten voxel (checkbox)
     feedFlocking: 0.35,      // while feeding: how much alignment and cohesion remain
     eatFrames: 25,           // frames a unit sits on its bite before it is eaten
-    biteRadius: 1.3,         // power: radius of the crater eaten out of a bite
+    biteRadius: 0.5,         // power: radius of the crater eaten out of a bite
     spawnSpread: 4,
     color: 0x8fd0ff,
     size: [0.14, 0.14, 0.7],
