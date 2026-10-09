@@ -38,6 +38,15 @@ export function linkRow(link) {
   return row;
 }
 
+/** Ping shown next to a player: 'host', '… ms' before the first measurement, or '42 ms'. */
+export function pingText(stat) {
+  if (stat && stat.host) return 'host';
+  return stat && stat.rtt != null ? `${stat.rtt} ms` : '… ms';
+}
+
+/** Data rate in kB/s. */
+export const rateText = (bytesPerSecond) => `${(bytesPerSecond / 1024).toFixed(1)} kB/s`;
+
 export const MODE_NAME = { coop: 'Co-op', pvp: 'PvP' };
 
 export function roomLink(code) {

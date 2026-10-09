@@ -1,4 +1,4 @@
-import { el, button, linkRow, hex, MODE_NAME, roomLink, backToMenu } from './dom.js';
+import { el, button, linkRow, hex, pingText, MODE_NAME, roomLink, backToMenu } from './dom.js';
 
 /**
  * Start screen over the game: choose Single player, Multiplayer Co-op or Multiplayer PvP.
@@ -56,7 +56,7 @@ export class StartScreen {
 
   /**
    * The waiting room.
-   * @param {{code:string, mode:string, players:Array<{name,color,ready,local}>}} room
+   * @param {{code:string, mode:string, players:Array<{index,name,color,ready,local,net}>}} room
    */
   showRoom(room) {
     this.open(`Room ${room.code} · ${MODE_NAME[room.mode] || ''}`);
@@ -69,7 +69,9 @@ export class StartScreen {
       const li = el('li', 'menu-player' + (p.local ? ' is-local' : ''));
       const dot = el('span', 'hud-dot');
       dot.style.background = hex(p.color);
-      li.append(dot, el('span', '', p.local ? `${p.name} (you)` : p.name),
+      const ping = el('span', 'menu-ping', pingText(p.net));
+      ping.dataset.index = p.index;
+      li.append(dot, el('span', '', p.local ? `${p.name} (you)` : p.name), ping,
         el('span', p.ready ? 'menu-ready' : 'menu-waiting', p.ready ? 'ready' : 'not ready'));
       list.appendChild(li);
     }
@@ -87,6 +89,11 @@ export class StartScreen {
       button('Leave room', backToMenu),
     );
     if (!start.disabled) start.focus();
+  }
+
+  /** New connection stats: update the pings in the waiting room in place (keeps focus and the Copy button). */
+  updatePings(statsOf) {
+    for (const span of this.card.querySelectorAll('.menu-ping')) span.textContent = pingText(statsOf(Number(span.dataset.index)));
   }
 
   /** An error or a closed room, with the way back to the start screen. */

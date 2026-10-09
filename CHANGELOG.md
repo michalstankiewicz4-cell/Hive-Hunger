@@ -2,6 +2,18 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.8.0] — 2026-10-09
+
+### Added
+- Multiplayer **summary** after each planet: voxels each player ate of it, their share, totals, planets won and the PvP winner. It closes with **Next planet**; the next planet appears once every player has pressed it and the swarms are home.
+- Multiplayer connection stats: every player's **ping** next to their name in the scoreboard and in the waiting room; the room panel shows your connection (a guest's ping and data from the host, the host's upload).
+- Notices in the HUD: "… joined", "… left the room" (they said goodbye) and "…: connection lost" (dropped or silent for 10 s). Guests see "The host left the room" or "Lost the connection to the host".
+- Browser tests in `tests/` (single player and multiplayer with a local PeerJS server).
+- MIT licence; `docs/CONFIG.md` (what every setting does); troubleshooting in the README; game-state diagram in `docs/ARCHITECTURE.md`; publishing steps and known pitfalls in `CONTEXT.md`.
+
+### Changed
+- The single-player hint in the HUD mentions the **Menu** button.
+
 ## [0.7.1] — 2026-10-09
 
 ### Added
@@ -74,6 +86,7 @@ All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https:
 ### Added
 - First release on GitHub Pages: a 3D swarm (boids, constant speed) that eats a voxel planet; deliberate feeding with one claimed voxel per unit; live sliders for units, speed, power, spacing and cohesion; space background with nebulae and stars; GitHub Pages deployment workflow.
 
+[0.8.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.5.1...v0.6.0

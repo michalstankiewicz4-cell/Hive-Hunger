@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.7.1 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.8.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -35,7 +35,16 @@ The start screen offers **Single player**, **Multiplayer · Co-op** and **Multip
 - **Co-op** — everyone eats the same planet together; the scoreboard shows each player's share.
 - **PvP** — a race on the same planet: whoever eats more of it wins the planet.
 
-Every player has their own swarm (Blue, Pink, Green, Violet), beacon and settings. Spawn points are spread evenly around the planet (2 players opposite each other, 3 a third of a turn apart, 4 a quarter). It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
+Every player has their own swarm (Blue, Pink, Green, Violet), beacon and settings. After each planet a summary shows who ate how much of it (and in PvP who won it); the next planet comes once everyone has pressed **Next planet**. The scoreboard shows each player's ping (the host is marked "host"), the room panel shows your connection, and a short notice appears when someone joins, leaves or loses the connection. Spawn points are spread evenly around the planet (2 players opposite each other, 3 a third of a turn apart, 4 a quarter). It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
+
+## Troubleshooting
+
+- **"Room not found"** — the link is wrong or the room is closed (the host left or closed the tab). Ask the host for a new link.
+- **"This room is full"** — the room already has 4 players.
+- **Stuck on "Joining…" or "Could not reach the connection server"** — the PeerJS server that introduces the browsers could not be reached, or a strict network (some company, school or mobile networks) blocks direct connections between browsers. The game has no relay (TURN) server, so try another network.
+- **The game stopped for everyone** — the host switched to another tab or minimised the browser; browsers pause games in background tabs. It continues when the host comes back.
+- **"Lost the connection to the host"** / **"…: connection lost"** — no messages for 10 seconds or the connection broke without a goodbye (network drop, sleeping laptop). Rejoin with the same link while the room is open.
+- **A high ping** next to a player means slow updates for that player; it doesn't slow down the others.
 
 ## Running locally
 
@@ -49,11 +58,15 @@ python -m http.server
 
 Three.js r128 (cdnjs) and PeerJS 1.5.4 (unpkg) are loaded from CDNs.
 
+Browser tests (single player and multiplayer with a local PeerJS server) are in `tests/` — see [tests/README.md](tests/README.md).
+
 ## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — versions and what changed
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — modules, the frame loop, the swarm and the planet
 - [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) — rooms, roles and the network protocol
+- [docs/CONFIG.md](docs/CONFIG.md) — what the values in `js/config.js` do and what changing them does
+- [tests/README.md](tests/README.md) — running the browser tests
 - [CONTEXT.md](CONTEXT.md) — project context: decisions, publishing and testing, to pick the project up again
 
 ## Project structure
@@ -84,11 +97,14 @@ js/
   ui/ControlPanel.js    sliders, toggle and reset button
   ui/StartScreen.js     start screen and multiplayer waiting room
   ui/Lobby.js           room panel during a multiplayer match
+  ui/Summary.js         multiplayer summary after each planet
   ui/dom.js             small DOM helpers for the menus
   utils/noise.js        3D noise / fBm
   utils/terrain.js      terrain colours
   utils/space.js        nebula and star colours
-docs/                 architecture and multiplayer docs
+docs/                 architecture, multiplayer and configuration docs
+tests/                browser tests (Playwright) and a local PeerJS server
+LICENSE               MIT
 ```
 
 All tunable values (planet size, voxel size, flock weights, eating speed, network timing, slider ranges) live in `js/config.js`.
@@ -98,3 +114,7 @@ All tunable values (planet size, voxel size, flock weights, eating speed, networ
 The page has a search title and description, keywords, a canonical URL, Open Graph / Twitter link previews with `og-image.png`, and `VideoGame` structured data (JSON-LD). Because the game is a 3D canvas, a short visually hidden description gives search engines text to index.
 
 To get indexed faster, add the site in [Google Search Console](https://search.google.com/search-console) and submit `https://michalstankiewicz4-cell.github.io/Hive-Hunger/sitemap.xml`.
+
+## License
+
+[MIT](LICENSE) © 2026 Michał Stankiewicz

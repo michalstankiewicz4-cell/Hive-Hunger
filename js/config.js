@@ -123,7 +123,8 @@ export const CONFIG = Object.freeze({
     maxBuffered: 1 << 20,     // skip an update while more than this many bytes wait to be sent
     follow: 0.35,             // guests: how quickly units move towards the positions from the host
     pingMs: 2000,             // "still here" message interval
-    timeoutMs: 10000,         // a player silent for this long has left
+    timeoutMs: 10000,         // a player silent for this long has lost the connection
+    noticeMs: 6000,           // how long notices (joined / left / connection lost) stay in the HUD
   },
 
   // marker shown where the player clicked

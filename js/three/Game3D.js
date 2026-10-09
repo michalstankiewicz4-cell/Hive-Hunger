@@ -47,6 +47,10 @@ export class Game3D {
     this.localIndex = 0;
     this.banner = '';        // message shown in the HUD (e.g. who won the planet)
     this.remote = { left: 0, total: 1 }; // guest: planet progress from the host
+    this.netStats = [];      // multiplayer: [{index, host} | {index, rtt, rate}] from the host
+    this.notices = [];       // short HUD messages: [{text, until}]
+    this.summary = null;     // multiplayer: results of the planet just eaten (see buildSummary)
+    this.onSummaryChange = null; // (summary | null) => void — the UI shows / updates / hides it
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -347,18 +351,56 @@ export class Game3D {
       for (const p of players) p.returnHome();
       this.returnFrames = 0;
       this.banner = this.planetResult();
+      // multiplayer: a summary for everyone; the next planet waits until every player pressed Next planet
+      if (this.multiplayer) {
+        for (const p of players) p.nextReady = false;
+        this.setSummary(this.buildSummary());
+      }
     }
     // back home: the next planet appears once every swarm has gathered at its beacon
+    // (and, in multiplayer, everyone has closed the summary with Next planet)
     if (this.started && !pl.alive) {
       this.returnFrames++;
-      if (players.every((p) => p.gatheredAtHome()) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames) {
+      const home = players.every((p) => p.gatheredAtHome()) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames;
+      if (home && (!this.multiplayer || players.every((p) => p.nextReady))) {
         pl.dispose();
         this.spawnPlanet();
+        this.setSummary(null);
         this.net?.broadcastPlanet(this);
       }
     }
     this.planet.sync();
     if (this.role === 'host' && this.frameNo % this.cfg.net.snapshotEvery === 0) this.net?.broadcastSnapshot(this);
+  }
+
+  /**
+   * Results of the planet just eaten, for the summary screen: per player the voxels eaten of
+   * this planet, their share, the total and planets won; the PvP winner; who pressed Next planet.
+   */
+  buildSummary() {
+    const players = this.activePlayers();
+    const total = this.planet.total || 1;
+    const rows = players.map((p) => ({
+      index: p.index, name: p.name, color: p.color, planet: p.planetScore,
+      share: Math.round((p.planetScore / total) * 1000) / 10, score: p.score, wins: p.wins, next: Boolean(p.nextReady),
+    })).sort((a, b) => b.planet - a.planet);
+    const winner = this.mode === 'pvp' && rows.length ? rows[0].index : null;
+    return { level: this.level, mode: this.mode, winner, rows };
+  }
+
+  /** Shows (or with null hides) the summary here and on the guests' screens. */
+  setSummary(summary) {
+    this.summary = summary;
+    if (this.role === 'host' && summary) this.net?.broadcastSummary(summary);
+    this.onSummaryChange?.(summary);
+  }
+
+  /** Player `index` pressed Next planet on the summary (host / via a guest's message). */
+  nextPlanetReady(index) {
+    const p = this.players[index];
+    if (!p || !this.summary || p.nextReady) return;
+    p.nextReady = true;
+    this.setSummary({ ...this.summary, rows: this.summary.rows.map((r) => ({ ...r, next: Boolean(this.players[r.index]?.nextReady) })) });
   }
 
   /** Who won the planet (PvP) or a summary (co-op / single player). */
@@ -407,6 +449,7 @@ export class Game3D {
     if (msg.t === 'cmd' && msg.kind === 'click' && msg.p) p.command(msg.p);
     else if (msg.t === 'cmd' && msg.kind === 'recall') p.recall();
     else if (msg.t === 'set') p.setSetting(msg.key, msg.value);
+    else if (msg.t === 'next') this.nextPlanetReady(index);
   }
 
   // --- multiplayer: guest side ---
@@ -447,6 +490,7 @@ export class Game3D {
     this.spawnPlanet(seed);
     if (bits) this.planet.applySolidBits(bits);
     this.planet.sync();
+    if (this.summary) this.setSummary(null);
   }
 
   /** A state update from the host. */
@@ -477,6 +521,17 @@ export class Game3D {
 
   // --- HUD ---
 
+  /** A short message in the HUD (someone joined, left, lost the connection). */
+  notify(text) {
+    this.notices.push({ text, until: performance.now() + this.cfg.net.noticeMs });
+    if (this.notices.length > 4) this.notices.shift();
+  }
+
+  /** Connection stats of player `index` from the host (undefined until the first update). */
+  statsOf(index) {
+    return this.netStats.find((s) => s.index === index);
+  }
+
   updateHud() {
     const me = this.localPlayer;
     const pl = this.planet;
@@ -487,7 +542,8 @@ export class Game3D {
         ? 'planet eaten — returning to the beacon'
         : me.homeMode === 'recall'
           ? 'called back · click the planet to send the swarm out again'
-          : 'click: steer the swarm · click the beacon: call it back · right button / two fingers: rotate · wheel: zoom';
+          : 'click: steer the swarm · click the beacon: call it back · right button / two fingers: rotate · wheel: zoom'
+            + (this.multiplayer ? '' : ' · Menu (bottom left): pause');
 
     const scores = this.multiplayer
       ? this.activePlayers().map((p) => ({
@@ -497,9 +553,13 @@ export class Game3D {
         planetScore: p.planetScore,
         wins: p.wins,
         local: p.index === this.localIndex,
+        net: this.statsOf(p.index),
       }))
       : null;
-    this.hud.update({ level: this.level, eaten, hint, mode: this.mode, scores, banner: this.banner });
+    const now = performance.now();
+    this.notices = this.notices.filter((n) => n.until > now);
+    this.hud.update({ level: this.level, eaten, hint, mode: this.mode, scores, banner: this.banner,
+      notices: this.notices.map((n) => n.text) });
   }
 
   resize() {

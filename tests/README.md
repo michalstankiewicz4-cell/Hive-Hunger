@@ -1,0 +1,35 @@
+# Browser tests
+
+Two end-to-end tests drive the real game in headless Chromium (Playwright, WebGL in software via SwiftShader):
+
+- `test_solo.py` — start screen; nothing moves before a mode is chosen; Single player; **Menu** pauses and resumes; a big, fast swarm eats the whole planet to the last voxel with no unit inside solid voxels and no shared bites; the swarm returns home and the next planet appears.
+- `test_multi.py` — with a local PeerJS server: PvP room, two guests; spawns 120° apart and the same on every page; **Start / Not ready**; the match starts only when everyone is ready; host and guests have the same planet and eaten voxels; pings measured and shown; "Pink left the room" after a goodbye; "Green: connection lost" after a dropped connection; spawns spread again (180°); joining a running match; "The host left the room".
+
+## Setup (once)
+
+```bash
+pip install playwright
+python -m playwright install chromium
+cd tests && npm install && cd ..
+```
+
+`npm install` brings local copies of Three.js r128 and PeerJS 1.5.4 (the tests don't depend on the CDNs) and the `peer` server package.
+
+## Running
+
+From the repository root:
+
+```bash
+python tests/test_solo.py     # ~2–4 min
+python tests/test_multi.py    # ~2–3 min
+```
+
+Each prints PASS / FAIL lines and exits with 1 if anything failed.
+
+## How it works
+
+- `harness.py` serves the repository on a free local port, loads Three.js / PeerJS from `tests/node_modules`, and rewrites `js/main.js` on the fly to add `window.__dbg = game` (the game itself exposes nothing global).
+- `peer-server.js` is a PeerJS signalling server on `127.0.0.1:9000` (`PEER_PORT` to change); pages get `window.HIVE_PEER_OPTIONS` pointing to it.
+- Time is fast-forwarded with `game.update()` in chunks of 50 frames, so timers and network messages still run in between.
+- Guest pages are paused after joining (`__dbg.stop()`): several pages rendering WebGL in software can starve a small machine. Paused pages still receive messages.
+- Buttons are selected by class (`.menu-choice`, `.menu-start`, `#menu-button`), not by text — the page has hidden text for search engines with the same words.

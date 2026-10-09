@@ -25,7 +25,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **100% means every voxel is gone.** Then the swarm returns home and only then does the next planet appear.
 - **Defaults:** units 20, speed 0.05, power 0.5, spacing 1.5, cohesion 1.0, "Eat nearest block" on. "Reset to default" restores them.
 - **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player a **Menu** button pauses and returns to it (no reload).
-- **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
+- **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (points per player, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
 - **SEO:** title, description, keywords (including "incremental free"), Open Graph/Twitter thumbnail (`og-image.png`, rendered from the game — not the owner's early screenshot), `VideoGame` JSON-LD, sitemap.
 
 ## Working with the owner
@@ -35,20 +35,43 @@ These came from the owner's requests; keep them unless he asks otherwise.
 
 ## Code map
 
-See `docs/ARCHITECTURE.md` (modules, frame loop, swarm, planet) and `docs/MULTIPLAYER.md` (rooms, protocol). Everything tunable is in `js/config.js`.
+See `docs/ARCHITECTURE.md` (modules, game states, frame loop, swarm, planet), `docs/MULTIPLAYER.md` (rooms, protocol) and `docs/CONFIG.md` (what the values in `js/config.js` do).
+
+Licence: MIT (`LICENSE`), chosen by the owner.
 
 ## Publishing
 
 - GitHub Pages deploys automatically from `main` via `.github/workflows/static.yml` (whole repository is the site).
-- History so far was pushed from the owner's Windows machine (`C:\Users\micha\vsrepos\Hive-Hunger`) with his own git credentials, because the Claude GitHub app had no write access to the repository. Commits were prepared in a cloud workspace, transferred as `git bundle` files, fast-forwarded and pushed there.
 - Versioning: bump `js/version.js`, add a `CHANGELOG.md` entry, tag the commit `vX.Y.Z`.
+- The owner's clone is `C:\Users\micha\vsrepos\Hive-Hunger` (Windows). The Claude GitHub app has no write access to the repository, so pushes go out from his machine with his own git credentials.
 
-## Testing (how it was done)
+How an assistant working in a cloud workspace publishes (as done for 0.6.0–0.8.0):
 
-- Headless Chromium (Playwright) with SwiftShader WebGL; Three.js and PeerJS served from local npm copies (the sandbox could not reach CDNs).
-- The game exposes nothing global; test copies add `window.__dbg = game` in `main.js` to drive and inspect it (fast-forward `game.update()` in chunks, read `planet.left`, swarm arrays, scores).
-- Multiplayer: a local PeerJS server (`peer` package, `ExpressPeerServer` on `127.0.0.1:9000`, path `/peerjs`) plus `window.HIVE_PEER_OPTIONS` injected before load; two pages = host + guest. On a small test machine, pause rendering on guest pages after they join (`__dbg.stop()`), otherwise 4–5 WebGL pages starve the CPU and the last one can't join.
-- Checked: full planet eaten to 0 and new planet; return home; recall; reset; no unit inside solid voxels; no shared bites; host/guest planet and scores identical; late join; guest leaving detected; single player unchanged; start screen; match starts only after every player pressed Start; spawns at 180° / 120° / 90° and re-spread on leave.
+1. Commit and tag in the cloud workspace, then `git bundle create hh.bundle vPREV..main vNEW`.
+2. Move the bundle to the owner's machine (e.g. base64 through the Linux shell that is linked to his computer, where the clone is mounted at `~/mnt/Hive-Hunger`), then `git fetch ../hh.bundle main:refs/remotes/bundle/main 'refs/tags/vNEW:refs/tags/vNEW'` and fast-forward `main`.
+3. That Linux shell **cannot delete files** in the folder until the owner allows it (a permission prompt). Without it git leaves `.lock` files behind (`.git/index.lock`, `.git/objects/maintenance.lock`, `tmp_pack_*`) and can't replace changed files. Ask for delete permission first; remove leftover locks only if no git is running.
+4. The Windows clone has CRLF line endings. Run git in the Linux shell as `git -c core.autocrlf=true -c core.fileMode=false …`, otherwise every file looks modified (only line endings and file modes differ — not real changes).
+5. The Linux shell has **no GitHub credentials**. Push from Windows PowerShell on his machine: `git push origin main vNEW` (PowerShell prints git's progress on stderr as a red "NativeCommandError" — that is not a failure; check for `main -> main`).
+
+## Testing
+
+Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` instead of the CDNs, a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. Run both after every change to the game.
+
+Lessons from writing them:
+
+- Fast-forward `game.update()` in chunks (e.g. 50 frames, then yield) — one long synchronous loop starves timers and network messages, so pings time out and players get dropped.
+- On a small machine, pause guest pages after they join (`__dbg.stop()`); 4–5 pages rendering WebGL in software starve the CPU and the last one can't join. Paused pages still receive messages.
+- Don't select buttons by text (`text=Single player`): the page has a visually hidden description for search engines with the same words. Use classes (`.menu-choice`, `.menu-start`, `#menu-button`).
+- Pass/fail conditions about a new planet must allow for the swarm having started eating it already.
+
+## Pitfalls (bugs that already happened)
+
+- **`started` vs `running`** in `Game3D`: `running` = the render loop is on (`start()` / `stop()`); `started` = the match has begun (start screen / waiting room / Menu pause before or between). A text replacement once put `started = false` into `stop()`, which froze single player in tests.
+- **Planet frame:** the simulation (swarms, voxels) never rotates; the camera, sky, sun and beacons turn around the planet by `spin`. Beacon positions are in the space frame (`spawnSpace`), compare them with swarm positions only through `spawnWorld()`.
+- **No `hp <= 0` guard in `VoxelPlanet.remove()`**: an early return there once stopped every voxel from being removed (scores went up, the planet never shrank).
+- **Ending at 100%:** never shatter the planet early (it used to shatter at 97%); units must be able to land on isolated scraps (`reachDistance`), or the last voxels are circled forever.
+- **Claims:** a voxel claimed by a unit must be released whenever the unit drops it (`dropAllBites`, new planet, player leaving), or other units will never eat it.
+- **Guests don't simulate.** Anything that changes the game must happen on the host and reach guests through `players` / `stats` / `notice` messages or snapshots.
 
 ## Version history (short)
 
@@ -63,12 +86,14 @@ See `docs/ARCHITECTURE.md` (modules, frame loop, swarm, planet) and `docs/MULTIP
 | 0.6.0 | tag `v0.6.0` | multiplayer (WebRTC, Co-op/PvP, up to 4), docs, versioning |
 | 0.7.0 | tag `v0.7.0` | start screen, waiting room with Start, symmetric spawns |
 | 0.7.1 | tag `v0.7.1` | Menu button in single player, Not ready in the waiting room |
+| 0.8.0 | tag `v0.8.0` | planet summary with Next planet, ping and connection stats, joined / left / connection lost notices, tests in `tests/`, MIT licence, more docs |
 
 ## Known limitations
 
 - The host's tab must stay in the foreground (browsers pause animation in background tabs → the game pauses for everyone).
 - Multiplayer depends on the PeerJS public server for joining; strict NATs without TURN may fail to connect (no TURN server is configured).
 - With slow defaults (20 units, speed 0.05) a planet takes a long time; sliders change that live.
+- **Fast swarms can't finish a planet.** At high Speed a unit turns in a wide arc (radius ≈ `speed / turnRate`, e.g. 0.5 / 0.07 ≈ 7) and can circle an isolated last voxel forever without coming within `reachDistance`; the planet stays at a few dozen voxels. Found while testing 0.8.0 (3 swarms at speed 0.5); lowering Speed finishes it. Not fixed yet — waiting for the owner's decision.
 
 ## Ideas proposed earlier but not done
 

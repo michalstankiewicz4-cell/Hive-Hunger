@@ -23,9 +23,35 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/ui/Hud.js` | Planet counter, hints, multiplayer scoreboard and banner |
 | `js/ui/ControlPanel.js` | Sliders, the "Eat nearest block" toggle, "Reset to default" |
 | `js/ui/StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
+| `js/ui/Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
 | `js/ui/Lobby.js` | Room panel during a multiplayer match: room, link, leave |
 | `js/ui/dom.js` | Small DOM helpers for the menus |
 | `js/utils/*` | Noise (fBm), terrain colours, nebula/star colours |
+
+## Game states
+
+```mermaid
+stateDiagram-v2
+    [*] --> StartScreen
+    StartScreen --> Playing: Single player
+    Playing --> StartScreen: Menu (pause)
+    StartScreen --> WaitingRoom: Multiplayer · Co-op / PvP
+    [*] --> WaitingRoom: open a room link
+    WaitingRoom --> WaitingRoom: Start / Not ready, players join or leave
+    WaitingRoom --> Playing: everyone pressed Start
+    WaitingRoom --> StartScreen: Leave room
+    Playing --> StartScreen: Leave room / host left / connection lost
+    state Playing {
+        [*] --> Eating
+        Eating --> ReturningHome: last voxel eaten (multiplayer: summary)
+        ReturningHome --> Eating: every swarm at its beacon (multiplayer: + everyone pressed Next planet) → next planet
+    }
+```
+
+- **Start screen** and **waiting room** are the overlay (`StartScreen`); `game.started` is `false`, so swarms wait at their beacons and the planet doesn't turn. The single-player **Menu** button sets `started` back to `false` (pause) and shows the start screen; **Single player** carries on.
+- **Playing:** `game.started` is `true`. In multiplayer the room panel (`Lobby`, bottom left) has the link and **Leave room**; leaving reloads the page without `?room=`, i.e. back to the start screen.
+- Someone who opens a room link while the match is running skips the waiting room.
+- **Returning home:** after the last voxel, every swarm flies to its beacon; the next planet appears when all have gathered (or after `beacon.returnTimeoutFrames`). In multiplayer the summary (`Summary`) is open meanwhile and the next planet also waits until every player has pressed **Next planet** (`Player.nextReady`).
 
 ## Frames of reference and the planet spin
 

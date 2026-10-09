@@ -1,0 +1,12 @@
+{
+  "name": "hive-hunger-tests",
+  "private": true,
+  "description": "Local copies of the CDN libraries and a local PeerJS server for the browser tests (see tests/README.md).",
+  "license": "MIT",
+  "devDependencies": {
+    "express": "^4.21.2",
+    "peer": "^1.0.2",
+    "peerjs": "1.5.4",
+    "three": "0.128.0"
+  }
+}

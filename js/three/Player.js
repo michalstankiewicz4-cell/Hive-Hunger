@@ -30,6 +30,7 @@ export class Player {
     this.planetScore = 0;   // voxels eaten of the current planet
     this.wins = 0;          // planets won (PvP)
     this.ready = false;     // multiplayer: pressed Start in the waiting room
+    this.nextReady = true;  // multiplayer: pressed Next planet on the summary (true while there is none)
 
     this.beacon = new SpawnBeacon(game.space.group, this.spawnSpace.clone(), { ...CONFIG.beacon, color: info.beaconColor });
     const start = this.spawnWorld();

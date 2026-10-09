@@ -1,6 +1,6 @@
 const MODE_LABEL = { coop: 'Co-op', pvp: 'PvP' };
 
-const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
+import { hex, pingText } from './dom.js';
 
 /** Planet counter, control hints and — in multiplayer — the scoreboard (top left). */
 export class Hud {
@@ -15,12 +15,13 @@ export class Hud {
    * @param {number} s.eaten 0..1
    * @param {string} [s.hint]
    * @param {'coop'|'pvp'|null} [s.mode]
-   * @param {Array<{name,color,score,planetScore,wins,local}>|null} [s.scores] multiplayer only
+   * @param {Array<{name,color,score,planetScore,wins,local,net}>|null} [s.scores] multiplayer only
    * @param {string} [s.banner] e.g. who won the planet
+   * @param {string[]} [s.notices] e.g. who left or lost the connection
    */
-  update({ level, eaten, hint = '', mode = null, scores = null, banner = '' }) {
+  update({ level, eaten, hint = '', mode = null, scores = null, banner = '', notices = [] }) {
     const title = `Planet ${level} · ${Math.floor(eaten * 100)}% eaten${mode ? ` · ${MODE_LABEL[mode]}` : ''}`;
-    const key = JSON.stringify([title, hint, scores, banner]);
+    const key = JSON.stringify([title, hint, scores, banner, notices]);
     if (key === this.last) return;
     this.last = key;
 
@@ -53,10 +54,20 @@ export class Hud {
         value.textContent = mode === 'pvp'
           ? `${s.planetScore.toLocaleString('en')} · ${s.wins} won`
           : s.score.toLocaleString('en');
-        row.append(dot, name, value);
+        const ping = document.createElement('span');
+        ping.className = 'hud-ping';
+        ping.textContent = pingText(s.net);
+        row.append(dot, name, value, ping);
         list.appendChild(row);
       }
       this.el.appendChild(list);
+    }
+
+    for (const text of notices) {
+      const n = document.createElement('div');
+      n.className = 'hud-notice';
+      n.textContent = text;
+      this.el.appendChild(n);
     }
 
     if (hint) {

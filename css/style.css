@@ -182,7 +182,7 @@ body {
 
 .hud-score {
   display: grid;
-  grid-template-columns: 10px 12ch auto;
+  grid-template-columns: 10px 12ch auto 7ch;
   justify-content: start;
   align-items: center;
   gap: 8px;
@@ -384,7 +384,7 @@ body {
 
 .menu-player {
   display: grid;
-  grid-template-columns: 10px 1fr auto;
+  grid-template-columns: 10px 1fr 7ch 9ch;
   align-items: center;
   gap: 8px;
 }
@@ -439,4 +439,86 @@ body {
 
 .menu-button[hidden] {
   display: none;
+}
+
+/* multiplayer: ping next to each player, notices (joined / left / connection lost) */
+.hud-ping,
+.menu-ping {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--hud-dim);
+}
+
+.menu-ready,
+.menu-waiting {
+  text-align: right;
+}
+
+.hud-notice {
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+/* multiplayer summary after a planet */
+.summary {
+  background: rgba(5, 6, 12, 0.35);
+}
+
+.summary-card {
+  width: min(460px, 100%);
+}
+
+.summary-result {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-table th {
+  padding: 4px 6px;
+  color: var(--hud-dim);
+  font-weight: 400;
+  text-align: right;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.summary-table th:first-child,
+.summary-name {
+  text-align: left;
+}
+
+.summary-table td {
+  padding: 4px 6px;
+}
+
+.summary-table tr.is-local {
+  font-weight: 700;
+}
+
+.summary-num,
+.summary-next,
+.summary-wait {
+  text-align: right;
+}
+
+.summary-next {
+  color: var(--accent);
+}
+
+.summary-wait {
+  color: var(--hud-dim);
+}
+
+@media (max-width: 480px) {
+  .summary-table th,
+  .summary-table td {
+    padding: 4px 3px;
+    font-size: 12px;
+  }
 }

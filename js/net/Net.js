@@ -36,7 +36,7 @@ export class NetHost {
   /**
    * @param {Game3D} game
    * @param {'coop'|'pvp'} mode
-   * @param {(status:string, info?:object)=>void} onStatus 'open' {code} | 'players' {count} | 'error' {message}
+   * @param {(status:string, info?:object)=>void} onStatus 'open' {code} | 'players' | 'stats' | 'error' {message}
    */
   constructor(game, mode, onStatus) {
     this.game = game;
@@ -44,14 +44,48 @@ export class NetHost {
     this.onStatus = onStatus;
     this.guests = new Map(); // conn → player index
     this.lastSeen = new Map(); // conn → time of the last message
+    this.links = new Map(); // conn → { rtt, bytes } — round-trip time and bytes sent since the last stats
+    this.statsAt = performance.now();
     this.open(randomCode(), 0);
-    // a guest that closed the tab without saying goodbye is dropped after a short silence
+    // every pingMs: drop guests that went silent (connection lost), measure the ping
+    // (ping → pong round trip) and share everyone's connection stats
     this.watchdog = setInterval(() => {
       const now = performance.now();
-      for (const [conn, t] of this.lastSeen) if (now - t > CONFIG.net.timeoutMs) this.drop(conn);
-      const ping = JSON.stringify({ t: 'ping' });
-      for (const conn of this.guests.keys()) conn.send(ping);
+      for (const [conn, t] of this.lastSeen) if (now - t > CONFIG.net.timeoutMs) this.drop(conn, 'lost');
+      this.shareStats(now);
+      const ping = JSON.stringify({ t: 'ping', ts: now });
+      for (const conn of this.guests.keys()) this.send(conn, ping);
     }, CONFIG.net.pingMs);
+  }
+
+  /** Sends to one guest and counts the bytes for the connection stats. */
+  send(conn, data) {
+    conn.send(data);
+    const link = this.links.get(conn);
+    if (link) link.bytes += typeof data === 'string' ? data.length : data.byteLength;
+  }
+
+  /** Connection stats of every player: ping (ms) and data the host sends them (bytes/s). */
+  shareStats(now) {
+    const seconds = Math.max(0.001, (now - this.statsAt) / 1000);
+    this.statsAt = now;
+    const list = [{ index: 0, host: true }];
+    for (const [conn, index] of this.guests) {
+      const link = this.links.get(conn);
+      list.push({ index, rtt: link.rtt, rate: Math.round(link.bytes / seconds) });
+      link.bytes = 0;
+    }
+    this.game.netStats = list;
+    const msg = JSON.stringify({ t: 'stats', list });
+    for (const conn of this.guests.keys()) conn.send(msg);
+    this.onStatus('stats');
+  }
+
+  /** A short message for everyone (e.g. who left), shown in the HUD for a few seconds. */
+  notice(text) {
+    this.game.notify(text);
+    const msg = JSON.stringify({ t: 'notice', text });
+    for (const conn of this.guests.keys()) this.send(conn, msg);
   }
 
   open(code, attempt) {
@@ -84,34 +118,45 @@ export class NetHost {
       }
       this.guests.set(conn, index);
       this.lastSeen.set(conn, performance.now());
+      this.links.set(conn, { rtt: null, bytes: 0 });
       // someone joining a match that has already begun plays straight away
       this.game.addPlayer(index).ready = this.game.started;
       this.game.layoutSpawns();
-      conn.send(JSON.stringify({ t: 'welcome', index, mode: this.mode, code: this.code }));
-      conn.send(encodePlanet(this.game.planet, this.game.level, true));
+      this.send(conn, JSON.stringify({ t: 'welcome', index, mode: this.mode, code: this.code }));
+      this.send(conn, encodePlanet(this.game.planet, this.game.level, true));
       this.broadcastPlayers();
+      this.notice(`${this.game.players[index].name} joined`);
     });
     conn.on('data', async (data) => {
       const index = this.guests.get(conn);
       if (index === undefined) return;
       this.lastSeen.set(conn, performance.now());
       const { json } = await readData(data);
-      if (json && json.t === 'bye') this.drop(conn);
-      else if (json && json.t === 'ready') this.setReady(index, json.ready !== false);
-      else if (json) this.game.onGuestMessage(index, json);
+      if (!json) return;
+      if (json.t === 'bye') this.drop(conn, 'left');
+      else if (json.t === 'pong') this.links.get(conn).rtt = Math.round(performance.now() - json.ts);
+      else if (json.t === 'ready') this.setReady(index, json.ready !== false);
+      else this.game.onGuestMessage(index, json);
     });
-    conn.on('close', () => this.drop(conn));
-    conn.on('error', () => this.drop(conn));
+    // a guest who leaves says goodbye first; a connection that closes or fails without it was lost
+    conn.on('close', () => this.drop(conn, 'lost'));
+    conn.on('error', () => this.drop(conn, 'lost'));
   }
 
-  /** A guest left (said goodbye, closed the connection or went silent). */
-  drop(conn) {
+  /**
+   * A guest is gone: 'left' (said goodbye) or 'lost' (the connection closed, failed or went
+   * silent for net.timeoutMs). Everyone sees a notice.
+   */
+  drop(conn, reason) {
     const index = this.guests.get(conn);
     this.lastSeen.delete(conn);
+    this.links.delete(conn);
     if (index === undefined) return;
     this.guests.delete(conn);
     try { conn.close(); } catch { /* already closed */ }
+    const name = this.game.players[index]?.name || 'A player';
     this.game.removePlayer(index);
+    this.notice(reason === 'left' ? `${name} left the room` : `${name}: connection lost`);
     this.game.layoutSpawns();
     this.checkStart();
     this.broadcastPlayers();
@@ -145,14 +190,20 @@ export class NetHost {
 
   broadcastPlayers() {
     const msg = JSON.stringify({ t: 'players', list: this.playerList(), started: this.game.started });
-    for (const conn of this.guests.keys()) conn.send(msg);
+    for (const conn of this.guests.keys()) this.send(conn, msg);
     this.onStatus('players');
   }
 
   /** A new planet appeared: guests build it from the same seed. */
   broadcastPlanet(game) {
     const buf = encodePlanet(game.planet, game.level, false);
-    for (const conn of this.guests.keys()) conn.send(buf);
+    for (const conn of this.guests.keys()) this.send(conn, buf);
+  }
+
+  /** Results of the eaten planet (and who pressed Next planet) for the guests' summary screens. */
+  broadcastSummary(summary) {
+    const msg = JSON.stringify({ t: 'summary', summary });
+    for (const conn of this.guests.keys()) this.send(conn, msg);
   }
 
   /** Swarm positions, scores and the voxels eaten since the last update. */
@@ -166,11 +217,16 @@ export class NetHost {
     }
     const buf = encodeSnapshot(game, log);
     log.length = 0;
-    for (const conn of this.guests.keys()) conn.send(buf);
+    for (const conn of this.guests.keys()) this.send(conn, buf);
   }
 
+  /** The host leaves: say goodbye, so guests know the room was closed (not lost). */
   close() {
     clearInterval(this.watchdog);
+    const bye = JSON.stringify({ t: 'bye' });
+    for (const conn of this.guests.keys()) {
+      try { conn.send(bye); } catch { /* closing anyway */ }
+    }
     this.peer?.destroy();
   }
 }
@@ -180,7 +236,8 @@ export class NetGuest {
   /**
    * @param {Game3D} game
    * @param {string} code room code
-   * @param {(status:string, info?:object)=>void} onStatus 'joined' {code, index, mode} | 'error' {message} | 'closed'
+   * @param {(status:string, info?:object)=>void} onStatus 'joined' {code, index, mode} | 'players' | 'stats'
+   *   | 'error' {message} | 'closed' {reason: 'left' (the host closed the room) | 'lost' (connection lost)}
    */
   constructor(game, code, onStatus) {
     this.game = game;
@@ -206,12 +263,12 @@ export class NetGuest {
     this.peer.on('error', (err) => this.onStatus('error', { message: describeError(err) }));
   }
 
-  /** The host left or the connection dropped. */
+  /** The host closed the room (it said goodbye first) or the connection dropped. */
   lost() {
     if (this.ended) return;
     this.ended = true;
     clearInterval(this.watchdog);
-    this.onStatus('closed');
+    this.onStatus('closed', { reason: this.hostLeft ? 'left' : 'lost' });
   }
 
   async receive(data) {
@@ -226,7 +283,16 @@ export class NetGuest {
         g.onPlayers(json.list, json.started);
         this.onStatus('players');
       }
-      else if (json.t === 'full') this.onStatus('error', { message: 'This room is full (4 players).' });
+      else if (json.t === 'ping' && json.ts !== undefined) this.conn.send(JSON.stringify({ t: 'pong', ts: json.ts }));
+      else if (json.t === 'stats') {
+        g.netStats = json.list;
+        this.onStatus('stats');
+      } else if (json.t === 'notice') g.notify(json.text);
+      else if (json.t === 'summary') g.setSummary(json.summary);
+      else if (json.t === 'bye') {
+        this.hostLeft = true;
+        this.lost();
+      } else if (json.t === 'full') this.onStatus('error', { message: 'This room is full (4 players).' });
       return;
     }
     if (!bin) return;
@@ -242,6 +308,11 @@ export class NetGuest {
   /** We pressed Start (ready) or Not ready in the waiting room. */
   sendReady(ready = true) {
     this.conn?.open && this.conn.send(JSON.stringify({ t: 'ready', ready }));
+  }
+
+  /** We pressed Next planet on the summary. */
+  sendNext() {
+    this.conn?.open && this.conn.send(JSON.stringify({ t: 'next' }));
   }
 
   sendSetting(key, value) {

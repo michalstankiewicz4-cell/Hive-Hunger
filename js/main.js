@@ -4,6 +4,8 @@ import { Hud } from './ui/Hud.js';
 import { ControlPanel } from './ui/ControlPanel.js';
 import { Lobby } from './ui/Lobby.js';
 import { StartScreen } from './ui/StartScreen.js';
+import { Summary } from './ui/Summary.js';
+import { pingText, rateText } from './ui/dom.js';
 
 const hudEl = document.getElementById('hud');
 const lobbyEl = document.getElementById('lobby');
@@ -50,6 +52,7 @@ if (!window.THREE) {
       menu.showBusy('Multiplayer', 'Creating room…');
       new NetHost(game, mode, (status, info) => {
         if (status === 'error') menu.showMessage(info.message);
+        else if (status === 'stats') showStats();
         else showRoom();
       });
     },
@@ -64,6 +67,19 @@ if (!window.THREE) {
     },
   });
 
+  // multiplayer: summary after each planet; Next planet closes it on everyone's screen once all pressed it
+  const summary = new Summary(document.getElementById('summary'), {
+    onNext: () => {
+      if (game.role === 'host') game.nextPlanetReady(game.localIndex);
+      else if (game.summary) {
+        game.net.sendNext();
+        // show our own press right away; the host's update confirms it
+        game.setSummary({ ...game.summary, rows: game.summary.rows.map((r) => (r.index === game.localIndex ? { ...r, next: true } : r)) });
+      }
+    },
+  });
+  game.onSummaryChange = (s) => (s ? summary.show(s, game.localIndex) : summary.hide());
+
   // single player: "Menu" pauses the game and goes back to the start screen
   menuButton.addEventListener('click', () => {
     game.started = false;
@@ -75,14 +91,34 @@ if (!window.THREE) {
   const roomState = () => ({
     code: game.net.code,
     mode: game.mode,
-    players: game.activePlayers().map((p) => ({ name: p.name, color: p.color, ready: p.ready, local: p.index === game.localIndex })),
+    players: game.activePlayers().map((p) => ({
+      index: p.index, name: p.name, color: p.color, ready: p.ready, local: p.index === game.localIndex, net: game.statsOf(p.index),
+    })),
   });
   const showRoom = () => {
     if (!game.net || !game.localPlayer) return;
     if (game.started) {
       menu.hide();
       lobby.showRoom(roomState());
+      showStats();
     } else menu.showRoom(roomState());
+  };
+
+  /** Connection stats arrived (every net.pingMs): pings in the waiting room, your link in the room panel. */
+  const showStats = () => {
+    if (!game.net || !game.localPlayer) return;
+    if (!game.started) {
+      menu.updatePings((i) => game.statsOf(i));
+      return;
+    }
+    if (game.role === 'host') {
+      const guests = game.netStats.filter((s) => !s.host);
+      const rate = guests.reduce((sum, s) => sum + (s.rate || 0), 0);
+      lobby.updateStats(guests.length ? `Hosting · sending ${rateText(rate)} to ${guests.length} player${guests.length > 1 ? 's' : ''}` : 'Hosting · waiting for players');
+    } else {
+      const me = game.statsOf(game.localIndex);
+      lobby.updateStats(`Ping ${pingText(me)} · ${rateText(me?.rate || 0)} from the host`);
+    }
   };
 
   if (role === 'guest') {
@@ -91,8 +127,10 @@ if (!window.THREE) {
       if (status === 'error') menu.showMessage(info.message);
       else if (status === 'closed') {
         lobby.hide();
-        menu.showMessage('The host left the room.');
-      } else showRoom();
+        summary.hide();
+        menu.showMessage(info.reason === 'left' ? 'The host left the room.' : 'Lost the connection to the host.');
+      } else if (status === 'stats') showStats();
+      else showRoom();
     });
   } else if (roomCode && !canNet) {
     menu.showMessage('Could not join the room: the connection library did not load. Check your connection and reload.');

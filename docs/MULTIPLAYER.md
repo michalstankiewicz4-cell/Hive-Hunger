@@ -13,6 +13,8 @@ Up to 4 players over WebRTC, peer to peer, with [PeerJS](https://peerjs.com/) 1.
 - **Co-op** — everyone eats the same planet; the scoreboard shows how many voxels each player ate.
 - **PvP** — the same planet, a race: when it is eaten, the player who ate most of it wins the planet ("Blue wins planet 2"); the scoreboard shows voxels eaten of the current planet and planets won.
 
+**Summary.** When the last voxel is eaten, everyone sees a summary: per player the voxels eaten of this planet, the share, the total, planets won (PvP) and who has pressed **Next planet**; in PvP the winner is named in their colour. The swarms fly home meanwhile. The next planet appears when every player has pressed Next planet and the swarms are home (or `beacon.returnTimeoutFrames` passed); it closes the summary on every screen. Players who join during the summary don't hold it up.
+
 Players: 1 Blue (host), 2 Pink, 3 Green, 4 Violet. Each has their own beacon (in their colour) and their own settings panel. Spawn points are spread evenly around the planet: 2 players opposite each other, 3 a third of a turn apart, 4 a quarter; the host keeps its spawn and the others are spread again whenever someone joins or leaves. Every player's camera starts facing their own spawn.
 
 ## How it works
@@ -25,6 +27,10 @@ Players: 1 Blue (host), 2 Pink, 3 Green, 4 Violet. Each has their own beacon (in
 - they send their **clicks**, **recall** and **settings** to the host, which applies them to that player's swarm.
 
 All swarms share the planet's voxel claims on the host, so one voxel is eaten by one unit of one swarm.
+
+**Left or lost.** A player who leaves (Leave room, closing the tab) sends `bye` first: everyone sees "… left the room". A connection that closes or fails without `bye`, or stays silent for `net.timeoutMs` (10 s), is reported as "…: connection lost". The same goes for the host: guests see "The host left the room" after the host's `bye`, otherwise "Lost the connection to the host".
+
+**Connection stats.** The scoreboard shows every player's ping (the host is marked "host", `… ms` before the first measurement); during a match the room panel shows a guest "Ping 42 ms · 37.3 kB/s from the host" and the host "Hosting · sending … kB/s to N players"; the waiting room shows the pings too.
 
 Note: browsers pause animation in background tabs, so if the host switches to another tab, the game pauses for everyone until they come back.
 
@@ -42,8 +48,14 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'cmd', kind:'click', p:{x,y,z}}` | send my swarm to this point (planet frame) |
 | guest → host | `{t:'cmd', kind:'recall'}` | call my swarm back to its beacon |
 | guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `spacing`, `cohesion`, `nearest` |
-| both | `{t:'ping'}` | "still here", every `net.pingMs` (2 s); silence for `net.timeoutMs` (10 s) = left |
-| guest → host | `{t:'bye'}` | leaving |
+| host → guest | `{t:'ping', ts}` | every `net.pingMs` (2 s); `ts` = host time |
+| guest → host | `{t:'pong', ts}` | answer to a ping; the host's round trip `now − ts` is the guest's **ping** |
+| guest → host | `{t:'ping'}` | "still here", every `net.pingMs` |
+| host → guest | `{t:'stats', list:[{index, host:true} \| {index, rtt, rate}]}` | every `net.pingMs`: each player's ping (ms) and the data the host sends them (bytes/s) |
+| host → guest | `{t:'summary', summary:{level, mode, winner, rows:[{index,name,color,planet,share,score,wins,next}]}}` | results of the eaten planet; sent again whenever someone presses Next planet |
+| guest → host | `{t:'next'}` | I pressed Next planet |
+| host → guest | `{t:'notice', text}` | "Pink joined", "Pink left the room", "Pink: connection lost" — shown in the HUD for `net.noticeMs` |
+| both | `{t:'bye'}` | leaving (a guest closing the tab, or the host closing the room) |
 
 Binary messages (`js/net/Protocol.js`, little-endian):
 
@@ -71,4 +83,4 @@ The public PeerJS server can be replaced by a local one. Start a PeerJS server (
 window.HIVE_PEER_OPTIONS = { host: '127.0.0.1', port: 9000, path: '/peerjs', secure: false };
 ```
 
-(e.g. with Playwright's `addInitScript`). Then open the game in two tabs: create a room in one, open its link in the other, and press Start in both.
+(e.g. with Playwright's `addInitScript`). Then open the game in two tabs: create a room in one, open its link in the other, and press Start in both. The automated version of this is `tests/test_multi.py` (see `tests/README.md`).
