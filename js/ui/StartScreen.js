@@ -8,7 +8,7 @@ import { el, button, linkRow, hex, MODE_NAME, roomLink, backToMenu } from './dom
 export class StartScreen {
   /**
    * @param {HTMLElement} root
-   * @param {{available:boolean, onSolo:()=>void, onCreate:(mode:'coop'|'pvp')=>void, onReady:()=>void}} opts
+   * @param {{available:boolean, onSolo:()=>void, onCreate:(mode:'coop'|'pvp')=>void, onReady:(ready:boolean)=>void}} opts
    */
   constructor(root, opts) {
     this.root = root;
@@ -75,11 +75,15 @@ export class StartScreen {
     }
     this.card.append(el('p', 'menu-note', `${room.players.length} / 4 players`), list);
 
-    const start = button(me && me.ready ? 'Waiting for the others…' : 'Start', () => this.opts.onReady(), 'menu-start');
-    start.disabled = !me || me.ready;
+    // Start marks you ready; pressing it again ("Not ready") takes it back
+    const ready = Boolean(me && me.ready);
+    const start = button(ready ? 'Not ready' : 'Start', () => this.opts.onReady(!ready), ready ? 'menu-start is-ready' : 'menu-start');
+    start.disabled = !me;
     this.card.append(
       start,
-      el('p', 'menu-note', 'The game starts when every player has pressed Start.'),
+      el('p', 'menu-note', ready
+        ? 'Waiting for the others… Press Not ready to take it back.'
+        : 'The game starts when every player has pressed Start.'),
       button('Leave room', backToMenu),
     );
     if (!start.disabled) start.focus();

@@ -7,7 +7,7 @@ Up to 4 players over WebRTC, peer to peer, with [PeerJS](https://peerjs.com/) 1.
 1. On the start screen choose **Multiplayer · Co-op** or **Multiplayer · PvP** — a room opens (the waiting room).
 2. Click **Copy link** and send it. The link is the game's address with `?room=CODE`.
 3. Others open the link and join the waiting room automatically (up to 4 players; a 5th sees "This room is full").
-4. Everyone presses **Start**. The match begins once every player in the room has pressed it; until then the swarms wait at their beacons and the planet stands still. Someone who opens the link after the match has begun joins it straight away.
+4. Everyone presses **Start** (**Not ready** takes it back while waiting). The match begins once every player in the room has pressed it; until then the swarms wait at their beacons and the planet stands still. Someone who opens the link after the match has begun joins it straight away.
 5. **Leave room** (or closing the tab) returns to the start screen. If the host leaves, guests see "The host left the room".
 
 - **Co-op** — everyone eats the same planet; the scoreboard shows how many voxels each player ate.
@@ -38,7 +38,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | host → guest | `{t:'welcome', index, mode, code}` | your player index (1–3), `coop` / `pvp` |
 | host → guest | `{t:'players', list:[{index,name,color,beaconColor,ready,spawn}], started}` | who is in the room, who pressed Start, spawn points, whether the match has begun (sent on every join, leave and Start) |
 | host → guest | `{t:'full'}` | the room already has 4 players |
-| guest → host | `{t:'ready'}` | I pressed Start |
+| guest → host | `{t:'ready', ready}` | I pressed Start (`true`) or Not ready (`false`) |
 | guest → host | `{t:'cmd', kind:'click', p:{x,y,z}}` | send my swarm to this point (planet frame) |
 | guest → host | `{t:'cmd', kind:'recall'}` | call my swarm back to its beacon |
 | guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `spacing`, `cohesion`, `nearest` |

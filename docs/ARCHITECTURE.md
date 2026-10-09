@@ -33,7 +33,7 @@ The simulation runs in the **planet's frame**: voxels never move. To make the pl
 
 ## One frame (solo / host)
 
-Until the match has started (`game.started`: Single player chosen, or every player in the room pressed Start) the frame only draws: swarms wait at their beacons and the planet doesn't turn.
+Until the match has started (`game.started`: Single player chosen, or every player in the room pressed Start; the single-player **Menu** button sets it back to `false`, which pauses the game) the frame only draws: swarms wait at their beacons and the planet doesn't turn.
 
 1. `spin += spinSpeed`, apply it to camera, sky and sun.
 2. For every player (`Player.update`):

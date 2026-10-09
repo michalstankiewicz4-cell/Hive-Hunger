@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.7.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.7.1 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -18,6 +18,7 @@ A planet counts as eaten only when its last voxel is gone. The swarm then flies 
 - **Click the beacon** (marker at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
 - **Right mouse button / two fingers** — rotate the camera
 - **Mouse wheel** — zoom
+- **Menu** (bottom left, single player) — pause and go back to the start screen; **Single player** carries on with the same game
 - **Panel in the top-right corner** — adjust your swarm live:
   - **Units** — number of units in the swarm
   - **Speed** — the shared flying speed
@@ -29,7 +30,7 @@ A planet counts as eaten only when its last voxel is gone. The swarm then flies 
 
 ## Multiplayer
 
-The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). The match begins when every player in the room has pressed **Start**.
+The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). The match begins when every player in the room has pressed **Start** (**Not ready** takes it back).
 
 - **Co-op** — everyone eats the same planet together; the scoreboard shows each player's share.
 - **PvP** — a race on the same planet: whoever eats more of it wins the planet.

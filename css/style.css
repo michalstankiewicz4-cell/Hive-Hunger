@@ -406,3 +406,37 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+.menu-start.is-ready {
+  background: transparent;
+  color: var(--accent);
+}
+
+/* Single player: back to the start screen (bottom left) */
+.menu-button {
+  position: fixed;
+  left: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: var(--panel-bg);
+  color: var(--hud-text);
+  font: 12px monospace;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.menu-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.menu-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.menu-button[hidden] {
+  display: none;
+}

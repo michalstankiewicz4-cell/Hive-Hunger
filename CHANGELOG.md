@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.7.1] — 2026-10-09
+
+### Added
+- **Menu** button in single player (bottom left): pauses the game and goes back to the start screen without reloading; **Single player** carries on with the same game.
+- In the waiting room, **Not ready** takes back a pressed Start.
+
 ## [0.7.0] — 2026-10-09
 
 ### Added
@@ -68,6 +74,7 @@ All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https:
 ### Added
 - First release on GitHub Pages: a 3D swarm (boids, constant speed) that eats a voxel planet; deliberate feeding with one claimed voxel per unit; live sliders for units, speed, power, spacing and cohesion; space background with nebulae and stars; GitHub Pages deployment workflow.
 
+[0.7.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.5.0...v0.5.1

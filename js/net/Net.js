@@ -97,7 +97,7 @@ export class NetHost {
       this.lastSeen.set(conn, performance.now());
       const { json } = await readData(data);
       if (json && json.t === 'bye') this.drop(conn);
-      else if (json && json.t === 'ready') this.setReady(index);
+      else if (json && json.t === 'ready') this.setReady(index, json.ready !== false);
       else if (json) this.game.onGuestMessage(index, json);
     });
     conn.on('close', () => this.drop(conn));
@@ -117,11 +117,11 @@ export class NetHost {
     this.broadcastPlayers();
   }
 
-  /** A player pressed Start in the waiting room (index 0 = the host). */
-  setReady(index) {
+  /** A player pressed Start (ready) or Not ready in the waiting room (index 0 = the host). */
+  setReady(index, ready = true) {
     const p = this.game.players[index];
-    if (!p || p.ready) return;
-    p.ready = true;
+    if (!p || this.game.started || p.ready === ready) return;
+    p.ready = ready;
     this.checkStart();
     this.broadcastPlayers();
   }
@@ -239,9 +239,9 @@ export class NetGuest {
     this.conn?.open && this.conn.send(JSON.stringify({ t: 'cmd', ...cmd }));
   }
 
-  /** We pressed Start in the waiting room. */
-  sendReady() {
-    this.conn?.open && this.conn.send(JSON.stringify({ t: 'ready' }));
+  /** We pressed Start (ready) or Not ready in the waiting room. */
+  sendReady(ready = true) {
+    this.conn?.open && this.conn.send(JSON.stringify({ t: 'ready', ready }));
   }
 
   sendSetting(key, value) {

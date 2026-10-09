@@ -8,6 +8,7 @@ import { StartScreen } from './ui/StartScreen.js';
 const hudEl = document.getElementById('hud');
 const lobbyEl = document.getElementById('lobby');
 const menuEl = document.getElementById('menu');
+const menuButton = document.getElementById('menu-button');
 document.getElementById('version').textContent = `v${VERSION}`;
 
 // a room link looks like …/Hive-Hunger/?room=ABC123
@@ -42,22 +43,32 @@ if (!window.THREE) {
     onSolo: () => {
       game.started = true;
       menu.hide();
+      menuButton.hidden = false;
     },
     onCreate: (mode) => {
+      menuButton.hidden = true;
       menu.showBusy('Multiplayer', 'Creating room…');
       new NetHost(game, mode, (status, info) => {
         if (status === 'error') menu.showMessage(info.message);
         else showRoom();
       });
     },
-    onReady: () => {
-      if (game.role === 'host') game.net.setReady(0);
+    // Start / Not ready in the waiting room
+    onReady: (ready) => {
+      if (game.role === 'host') game.net.setReady(0, ready);
       else if (game.localPlayer) {
-        game.localPlayer.ready = true;
-        game.net.sendReady();
+        game.localPlayer.ready = ready;
+        game.net.sendReady(ready);
         showRoom();
       }
     },
+  });
+
+  // single player: "Menu" pauses the game and goes back to the start screen
+  menuButton.addEventListener('click', () => {
+    game.started = false;
+    menuButton.hidden = true;
+    menu.showStart();
   });
 
   /** Who is in the room, for the waiting room and the room panel. */

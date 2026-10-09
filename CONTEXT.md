@@ -24,8 +24,8 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Beacon** at the spawn point (about one planet radius above the surface, on screen, away from the panel): clicking it calls the swarm home.
 - **100% means every voxel is gone.** Then the swarm returns home and only then does the next planet appear.
 - **Defaults:** units 20, speed 0.05, power 0.5, spacing 1.5, cohesion 1.0, "Eat nearest block" on. "Reset to default" restores them.
-- **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP.
-- **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
+- **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player a **Menu** button pauses and returns to it (no reload).
+- **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
 - **SEO:** title, description, keywords (including "incremental free"), Open Graph/Twitter thumbnail (`og-image.png`, rendered from the game — not the owner's early screenshot), `VideoGame` JSON-LD, sitemap.
 
 ## Working with the owner
@@ -62,6 +62,7 @@ See `docs/ARCHITECTURE.md` (modules, frame loop, swarm, planet) and `docs/MULTIP
 | 0.5.1 | `3fd82b5` | smoother unit turning |
 | 0.6.0 | tag `v0.6.0` | multiplayer (WebRTC, Co-op/PvP, up to 4), docs, versioning |
 | 0.7.0 | tag `v0.7.0` | start screen, waiting room with Start, symmetric spawns |
+| 0.7.1 | tag `v0.7.1` | Menu button in single player, Not ready in the waiting room |
 
 ## Known limitations
 
@@ -76,4 +77,5 @@ Suggested during development; not built because the owner hasn't asked for them.
 - Bird- or ship-shaped units instead of sticks.
 - Planet types (desert, ice, gas, lava), a separate cloud layer, city lights on the night side.
 - Pinch-to-zoom on phones.
+- Swarm settings already in the waiting room.
 - Points and upgrades for the swarm; sound.
