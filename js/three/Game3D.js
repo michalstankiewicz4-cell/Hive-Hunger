@@ -43,7 +43,8 @@ export class Game3D {
     this.raycaster = new THREE.Raycaster();
     this.tmp = new THREE.Vector3();
 
-    const start = this.pointFromScreen(new THREE.Vector2(0.55, 0.55));
+    this.resize(); // camera aspect is needed to keep the spawn point on screen
+    const start = this.spawnPoint();
     this.leader = new Leader(this.cfg.leader, start, ['x', 'y', 'z']);
     this.debris = new Debris3D(this.scene, this.cfg.debris);
     this.swarm = new Swarm3D(this.scene, this.cfg.swarm, new THREE.Vector3(start.x, start.y, start.z));
@@ -102,6 +103,28 @@ export class Game3D {
 
     this.bindInput();
     window.addEventListener('resize', () => this.resize());
+  }
+
+  /**
+   * Spawn point at a distance from the planet's surface of about the planet's size
+   * (spawnGap × radius). The direction is chosen so the swarm is on screen, on the left
+   * (away from the panel): as far to the side as the screen allows, more in front of the
+   * planet on narrow screens.
+   */
+  spawnPoint() {
+    const r = this.cfg.planet.radius * (1 + this.cfg.swarm.spawnGap);
+    const toCam = this.camera.position.clone().normalize();
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion);
+    const left = new THREE.Vector3(-1, 0, 0).applyQuaternion(this.camera.quaternion);
+    const side = left.multiplyScalar(1).add(up.multiplyScalar(0.3)).normalize();
+    const p = new THREE.Vector3();
+    for (let deg = 85; deg >= 5; deg -= 5) {
+      const a = (deg * Math.PI) / 180;
+      p.copy(toCam).multiplyScalar(Math.cos(a)).addScaledVector(side, Math.sin(a)).multiplyScalar(r);
+      const ndc = p.clone().project(this.camera);
+      if (Math.abs(ndc.x) < 0.8 && Math.abs(ndc.y) < 0.7 && ndc.z < 1) break;
+    }
+    return { x: p.x, y: p.y, z: p.z };
   }
 
   /** While travelling to a click, the swarm target flies around the planet, not through it. */

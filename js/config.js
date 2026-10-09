@@ -93,6 +93,7 @@ export const CONFIG = Object.freeze({
     eatFrames: 25,           // frames a unit sits on its bite before it is eaten
     biteRadius: 0.5,         // power: radius of the crater eaten out of a bite
     spawnSpread: 4,
+    spawnGap: 1,             // spawn distance from the planet's surface, in planet radii
     color: 0x8fd0ff,
     size: [0.14, 0.14, 0.7],
   },
