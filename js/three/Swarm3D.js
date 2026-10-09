@@ -58,6 +58,7 @@ export class Swarm3D {
     this.spawn = spawn.clone();
     this.pos = new Float32Array(this.max * 3);
     this.dir = new Float32Array(this.max * 3);
+    this.look = new Float32Array(this.max * 3); // drawn heading (smoothed), see render()
     // every unit has its own "bite" — a voxel it deliberately flies to in order to eat it
     this.food = new Int32Array(this.max).fill(-1);
     this.foodPos = new Float32Array(this.max * 3);
@@ -111,6 +112,7 @@ export class Swarm3D {
         this.dir[i3] = q * Math.cos(a);
         this.dir[i3 + 1] = u;
         this.dir[i3 + 2] = q * Math.sin(a);
+        this.look[i3] = this.dir[i3]; this.look[i3 + 1] = this.dir[i3 + 1]; this.look[i3 + 2] = this.dir[i3 + 2];
         this.food[i] = -1;
         this.landed[i] = 0;
         this.redirect[i] = 0;
@@ -352,12 +354,26 @@ export class Swarm3D {
     }
   }
 
+  /**
+   * Draws the units. The drawn heading follows the flying direction smoothly (turnSmoothing),
+   * so sharp changes — sliding along a wall, landing on a bite — don't look like snapping.
+   * Only the look is smoothed; movement and collisions use the real direction.
+   */
   render() {
     const dm = this.dummy;
+    const k = this.cfg.turnSmoothing;
+    const look = this.look;
     for (let i = 0; i < this.count; i++) {
       const i3 = i * 3;
+      let lx = look[i3] + (this.dir[i3] - look[i3]) * k;
+      let ly = look[i3 + 1] + (this.dir[i3 + 1] - look[i3 + 1]) * k;
+      let lz = look[i3 + 2] + (this.dir[i3 + 2] - look[i3 + 2]) * k;
+      const l = Math.hypot(lx, ly, lz);
+      if (l < 1e-4) { lx = this.dir[i3]; ly = this.dir[i3 + 1]; lz = this.dir[i3 + 2]; }
+      else { lx /= l; ly /= l; lz /= l; }
+      look[i3] = lx; look[i3 + 1] = ly; look[i3 + 2] = lz;
       dm.position.set(this.pos[i3], this.pos[i3 + 1], this.pos[i3 + 2]);
-      dm.quaternion.setFromUnitVectors(FORWARD, this.v.set(this.dir[i3], this.dir[i3 + 1], this.dir[i3 + 2]));
+      dm.quaternion.setFromUnitVectors(FORWARD, this.v.set(lx, ly, lz));
       dm.updateMatrix();
       this.mesh.setMatrixAt(i, dm.matrix);
     }

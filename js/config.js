@@ -77,6 +77,7 @@ export const CONFIG = Object.freeze({
     perception: 3,           // how far a unit sees its neighbours
     separationDistance: 1.5, // distance below which units push each other away
     turnRate: 0.07,          // how fast a unit can turn
+    turnSmoothing: 0.12,     // how quickly the drawn heading follows the flying direction (lower = smoother)
     weights: {
       separation: 1.8,       // keep your distance
       alignment: 1.0,        // fly the same way as your neighbours
