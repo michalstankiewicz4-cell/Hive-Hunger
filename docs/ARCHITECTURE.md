@@ -6,7 +6,7 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 
 | File | What it does |
 | --- | --- |
-| `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the settings panel, the multiplayer panel, starts the loop |
+| `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the settings panel, the start screen and room panel, starts the loop |
 | `js/config.js` | All parameters: planet, flock, feeding, beacon, marker, network, slider ranges |
 | `js/version.js` | Game version (keep in sync with `CHANGELOG.md`) |
 | `js/three/Game3D.js` | Scene, camera, input, roles (solo / host / guest), planet lifecycle, HUD data, guest-side handling of network messages |
@@ -22,7 +22,9 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/net/Protocol.js` | Binary snapshot and planet messages |
 | `js/ui/Hud.js` | Planet counter, hints, multiplayer scoreboard and banner |
 | `js/ui/ControlPanel.js` | Sliders, the "Eat nearest block" toggle, "Reset to default" |
-| `js/ui/Lobby.js` | Multiplayer panel: mode, create room, link, leave |
+| `js/ui/StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
+| `js/ui/Lobby.js` | Room panel during a multiplayer match: room, link, leave |
+| `js/ui/dom.js` | Small DOM helpers for the menus |
 | `js/utils/*` | Noise (fBm), terrain colours, nebula/star colours |
 
 ## Frames of reference and the planet spin
@@ -30,6 +32,8 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 The simulation runs in the **planet's frame**: voxels never move. To make the planet look like it spins, the camera, the sky group, the sun and the beacons (they live in the sky group) turn around the planet by `spin` (`planet.spinSpeed` per frame). The swarm flies in the planet's frame, so on screen it turns together with the planet. A beacon moves in the planet's frame, so a swarm flying home follows a slowly moving target.
 
 ## One frame (solo / host)
+
+Until the match has started (`game.started`: Single player chosen, or every player in the room pressed Start) the frame only draws: swarms wait at their beacons and the planet doesn't turn.
 
 1. `spin += spinSpeed`, apply it to camera, sky and sun.
 2. For every player (`Player.update`):

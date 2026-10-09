@@ -4,15 +4,16 @@ Up to 4 players over WebRTC, peer to peer, with [PeerJS](https://peerjs.com/) 1.
 
 ## Playing
 
-1. In the **Multiplayer** panel (bottom left) choose **Co-op** or **PvP** and click **Create room**.
+1. On the start screen choose **Multiplayer · Co-op** or **Multiplayer · PvP** — a room opens (the waiting room).
 2. Click **Copy link** and send it. The link is the game's address with `?room=CODE`.
-3. Others open the link and join automatically (up to 4 players; a 5th sees "This room is full").
-4. **Leave room** (or closing the tab) returns to single player. If the host leaves, guests see "The host left the room".
+3. Others open the link and join the waiting room automatically (up to 4 players; a 5th sees "This room is full").
+4. Everyone presses **Start**. The match begins once every player in the room has pressed it; until then the swarms wait at their beacons and the planet stands still. Someone who opens the link after the match has begun joins it straight away.
+5. **Leave room** (or closing the tab) returns to the start screen. If the host leaves, guests see "The host left the room".
 
 - **Co-op** — everyone eats the same planet; the scoreboard shows how many voxels each player ate.
 - **PvP** — the same planet, a race: when it is eaten, the player who ate most of it wins the planet ("Blue wins planet 2"); the scoreboard shows voxels eaten of the current planet and planets won.
 
-Players: 1 Blue (host), 2 Pink, 3 Green, 4 Violet. Each has their own beacon (in their colour), a spawn point a quarter turn around the planet from the previous player, and their own settings panel. Every player's camera starts facing their own spawn.
+Players: 1 Blue (host), 2 Pink, 3 Green, 4 Violet. Each has their own beacon (in their colour) and their own settings panel. Spawn points are spread evenly around the planet: 2 players opposite each other, 3 a third of a turn apart, 4 a quarter; the host keeps its spawn and the others are spread again whenever someone joins or leaves. Every player's camera starts facing their own spawn.
 
 ## How it works
 
@@ -35,8 +36,9 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | --- | --- | --- |
 | guest → host | `{t:'hello'}` | first message after connecting |
 | host → guest | `{t:'welcome', index, mode, code}` | your player index (1–3), `coop` / `pvp` |
-| host → guest | `{t:'players', list:[{index,name,color,beaconColor,spawn}]}` | who is in the room (sent on every join/leave) |
+| host → guest | `{t:'players', list:[{index,name,color,beaconColor,ready,spawn}], started}` | who is in the room, who pressed Start, spawn points, whether the match has begun (sent on every join, leave and Start) |
 | host → guest | `{t:'full'}` | the room already has 4 players |
+| guest → host | `{t:'ready'}` | I pressed Start |
 | guest → host | `{t:'cmd', kind:'click', p:{x,y,z}}` | send my swarm to this point (planet frame) |
 | guest → host | `{t:'cmd', kind:'recall'}` | call my swarm back to its beacon |
 | guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `spacing`, `cohesion`, `nearest` |
@@ -69,4 +71,4 @@ The public PeerJS server can be replaced by a local one. Start a PeerJS server (
 window.HIVE_PEER_OPTIONS = { host: '127.0.0.1', port: 9000, path: '/peerjs', secure: false };
 ```
 
-(e.g. with Playwright's `addInitScript`). Then open the game in two tabs: create a room in one, open its link in the other.
+(e.g. with Playwright's `addInitScript`). Then open the game in two tabs: create a room in one, open its link in the other, and press Start in both.

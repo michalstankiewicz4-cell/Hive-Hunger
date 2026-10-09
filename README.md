@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.6.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.7.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -29,12 +29,12 @@ A planet counts as eaten only when its last voxel is gone. The swarm then flies 
 
 ## Multiplayer
 
-Single player is the default. To play together, open the **Multiplayer** panel (bottom left), choose a mode and click **Create room**, then **Copy link** and send it — others join by opening the link (up to 4 players).
+The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). The match begins when every player in the room has pressed **Start**.
 
 - **Co-op** — everyone eats the same planet together; the scoreboard shows each player's share.
 - **PvP** — a race on the same planet: whoever eats more of it wins the planet.
 
-Every player has their own swarm (Blue, Pink, Green, Violet), beacon and settings. It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
+Every player has their own swarm (Blue, Pink, Green, Violet), beacon and settings. Spawn points are spread evenly around the planet (2 players opposite each other, 3 a third of a turn apart, 4 a quarter). It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 ## Running locally
 
@@ -65,7 +65,7 @@ sitemap.xml           sitemap for Google Search Console
 .github/workflows/    GitHub Pages deployment
 css/style.css
 js/
-  main.js               entry point (single player or joining a room)
+  main.js               entry point: start screen, single player, hosting or joining a room
   config.js             all game, network and slider parameters
   version.js            game version
   core/Leader.js        the swarm's "brain": finds matter on its own + follows clicks
@@ -81,7 +81,9 @@ js/
   net/Protocol.js       binary network messages
   ui/Hud.js             planet counter, hints, scoreboard
   ui/ControlPanel.js    sliders, toggle and reset button
-  ui/Lobby.js           multiplayer panel
+  ui/StartScreen.js     start screen and multiplayer waiting room
+  ui/Lobby.js           room panel during a multiplayer match
+  ui/dom.js             small DOM helpers for the menus
   utils/noise.js        3D noise / fBm
   utils/terrain.js      terrain colours
   utils/space.js        nebula and star colours

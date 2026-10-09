@@ -84,7 +84,9 @@ export class NetHost {
       }
       this.guests.set(conn, index);
       this.lastSeen.set(conn, performance.now());
-      this.game.addPlayer(index);
+      // someone joining a match that has already begun plays straight away
+      this.game.addPlayer(index).ready = this.game.started;
+      this.game.layoutSpawns();
       conn.send(JSON.stringify({ t: 'welcome', index, mode: this.mode, code: this.code }));
       conn.send(encodePlanet(this.game.planet, this.game.level, true));
       this.broadcastPlayers();
@@ -95,6 +97,7 @@ export class NetHost {
       this.lastSeen.set(conn, performance.now());
       const { json } = await readData(data);
       if (json && json.t === 'bye') this.drop(conn);
+      else if (json && json.t === 'ready') this.setReady(index);
       else if (json) this.game.onGuestMessage(index, json);
     });
     conn.on('close', () => this.drop(conn));
@@ -109,7 +112,24 @@ export class NetHost {
     this.guests.delete(conn);
     try { conn.close(); } catch { /* already closed */ }
     this.game.removePlayer(index);
+    this.game.layoutSpawns();
+    this.checkStart();
     this.broadcastPlayers();
+  }
+
+  /** A player pressed Start in the waiting room (index 0 = the host). */
+  setReady(index) {
+    const p = this.game.players[index];
+    if (!p || p.ready) return;
+    p.ready = true;
+    this.checkStart();
+    this.broadcastPlayers();
+  }
+
+  /** The match begins once every player in the room has pressed Start. */
+  checkStart() {
+    const players = this.game.activePlayers();
+    if (!this.game.started && players.length > 0 && players.every((p) => p.ready)) this.game.started = true;
   }
 
   playerList() {
@@ -118,14 +138,15 @@ export class NetHost {
       name: p.name,
       color: p.color,
       beaconColor: p.color,
+      ready: p.ready,
       spawn: { x: p.spawnSpace.x, y: p.spawnSpace.y, z: p.spawnSpace.z },
     }));
   }
 
   broadcastPlayers() {
-    const msg = JSON.stringify({ t: 'players', list: this.playerList() });
+    const msg = JSON.stringify({ t: 'players', list: this.playerList(), started: this.game.started });
     for (const conn of this.guests.keys()) conn.send(msg);
-    this.onStatus('players', { count: this.game.activePlayers().length });
+    this.onStatus('players');
   }
 
   /** A new planet appeared: guests build it from the same seed. */
@@ -201,7 +222,10 @@ export class NetGuest {
       if (json.t === 'welcome') {
         g.onWelcome(json);
         this.onStatus('joined', { code: this.code, index: json.index, mode: json.mode });
-      } else if (json.t === 'players') g.onPlayers(json.list);
+      } else if (json.t === 'players') {
+        g.onPlayers(json.list, json.started);
+        this.onStatus('players');
+      }
       else if (json.t === 'full') this.onStatus('error', { message: 'This room is full (4 players).' });
       return;
     }
@@ -213,6 +237,11 @@ export class NetGuest {
 
   sendCommand(cmd) {
     this.conn?.open && this.conn.send(JSON.stringify({ t: 'cmd', ...cmd }));
+  }
+
+  /** We pressed Start in the waiting room. */
+  sendReady() {
+    this.conn?.open && this.conn.send(JSON.stringify({ t: 'ready' }));
   }
 
   sendSetting(key, value) {

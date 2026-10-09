@@ -3,9 +3,11 @@ import { VERSION } from './version.js';
 import { Hud } from './ui/Hud.js';
 import { ControlPanel } from './ui/ControlPanel.js';
 import { Lobby } from './ui/Lobby.js';
+import { StartScreen } from './ui/StartScreen.js';
 
 const hudEl = document.getElementById('hud');
 const lobbyEl = document.getElementById('lobby');
+const menuEl = document.getElementById('menu');
 document.getElementById('version').textContent = `v${VERSION}`;
 
 // a room link looks like …/Hive-Hunger/?room=ABC123
@@ -14,7 +16,7 @@ const roomCode = (new URLSearchParams(location.search).get('room') || '').toUppe
 if (!window.THREE) {
   hudEl.textContent = 'Could not load the 3D library. Check your connection and reload the page.';
 } else {
-  const { Game3D, PLAYERS } = await import('./three/Game3D.js');
+  const { Game3D } = await import('./three/Game3D.js');
   const { NetHost, NetGuest } = await import('./net/Net.js');
   const canNet = Boolean(window.Peer);
   const role = roomCode && canNet ? 'guest' : 'solo';
@@ -33,27 +35,57 @@ if (!window.THREE) {
   new ControlPanel(document.getElementById('controls'), CONFIG.controls,
     Object.fromEntries(['count', 'speed', 'power', 'spacing', 'cohesion', 'nearest'].map((k) => [k, bind(k)])));
 
-  const lobby = new Lobby(lobbyEl, {
+  // start screen → (multiplayer) waiting room → match; the room panel stays during the match
+  const lobby = new Lobby(lobbyEl);
+  const menu = new StartScreen(menuEl, {
     available: canNet,
+    onSolo: () => {
+      game.started = true;
+      menu.hide();
+    },
     onCreate: (mode) => {
+      menu.showBusy('Multiplayer', 'Creating room…');
       new NetHost(game, mode, (status, info) => {
-        if (status === 'open') lobby.showHost(info.code, mode, 1);
-        else if (status === 'players') lobby.showHost(game.net.code, mode, info.count);
-        else if (status === 'error') lobby.showMessage(info.message);
+        if (status === 'error') menu.showMessage(info.message);
+        else showRoom();
       });
+    },
+    onReady: () => {
+      if (game.role === 'host') game.net.setReady(0);
+      else if (game.localPlayer) {
+        game.localPlayer.ready = true;
+        game.net.sendReady();
+        showRoom();
+      }
     },
   });
 
+  /** Who is in the room, for the waiting room and the room panel. */
+  const roomState = () => ({
+    code: game.net.code,
+    mode: game.mode,
+    players: game.activePlayers().map((p) => ({ name: p.name, color: p.color, ready: p.ready, local: p.index === game.localIndex })),
+  });
+  const showRoom = () => {
+    if (!game.net || !game.localPlayer) return;
+    if (game.started) {
+      menu.hide();
+      lobby.showRoom(roomState());
+    } else menu.showRoom(roomState());
+  };
+
   if (role === 'guest') {
-    lobby.showJoining(roomCode);
+    menu.showBusy(`Room ${roomCode}`, 'Joining…');
     new NetGuest(game, roomCode, (status, info) => {
-      if (status === 'joined') lobby.showGuest(info.code, info.mode, PLAYERS[info.index].name);
-      else if (status === 'error') lobby.showMessage(info.message);
-      else if (status === 'closed') lobby.showMessage('The host left the room.');
+      if (status === 'error') menu.showMessage(info.message);
+      else if (status === 'closed') {
+        lobby.hide();
+        menu.showMessage('The host left the room.');
+      } else showRoom();
     });
   } else if (roomCode && !canNet) {
-    lobby.showMessage('Could not join the room: the connection library did not load. Check your connection and reload.');
-  }
+    menu.showMessage('Could not join the room: the connection library did not load. Check your connection and reload.');
+  } else menu.showStart();
 
   // leaving the page closes the room (host) or says goodbye to the host (guest)
   window.addEventListener('pagehide', () => game.net?.close());

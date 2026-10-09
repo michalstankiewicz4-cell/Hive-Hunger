@@ -204,7 +204,7 @@ body {
   color: var(--hud-dim);
 }
 
-/* Multiplayer panel (bottom left) */
+/* Multiplayer room panel during a match (bottom left) */
 .lobby {
   position: fixed;
   left: 16px;
@@ -228,12 +228,6 @@ body {
 
 .lobby-note {
   color: var(--hud-dim);
-}
-
-.lobby-modes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
 }
 
 .lobby-row {
@@ -273,12 +267,6 @@ body {
   color: var(--accent);
 }
 
-.lobby-mode[aria-pressed='true'] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--bg);
-}
-
 .lobby-button:focus-visible,
 .lobby-link:focus-visible {
   outline: 2px solid var(--accent);
@@ -293,4 +281,128 @@ body {
   font: 11px monospace;
   pointer-events: none;
   z-index: 1;
+}
+
+.lobby[hidden],
+.menu[hidden] {
+  display: none;
+}
+
+/* Start screen and waiting room (over the game) */
+.menu {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 6, 12, 0.55);
+  z-index: 3;
+  overflow-y: auto;
+}
+
+.menu-card {
+  display: grid;
+  gap: 10px;
+  width: min(360px, 100%);
+  box-sizing: border-box;
+  padding: 22px 22px 18px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  color: var(--hud-text);
+  font: 13px/1.45 monospace;
+}
+
+.menu-title {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.menu-tagline,
+.menu-note {
+  margin: 0;
+  color: var(--hud-dim);
+}
+
+.menu-choice,
+.menu-start {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--hud-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-choice:hover:not(:disabled),
+.menu-start:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.menu-choice:disabled,
+.menu-start:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.menu-choice-label {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.menu-choice-note {
+  font-size: 12px;
+  color: var(--hud-dim);
+}
+
+.menu-start {
+  text-align: center;
+  font-weight: 700;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.menu-start:disabled {
+  background: transparent;
+  color: var(--hud-text);
+}
+
+.menu-players {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-player {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-player.is-local {
+  font-weight: 700;
+}
+
+.menu-ready {
+  color: var(--accent);
+}
+
+.menu-waiting {
+  color: var(--hud-dim);
+}
+
+.menu-choice:focus-visible,
+.menu-start:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

@@ -2,6 +2,16 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.7.0] — 2026-10-09
+
+### Added
+- Start screen: **Single player**, **Multiplayer · Co-op** or **Multiplayer · PvP**.
+- Multiplayer waiting room: the room link, the players and who is ready. The match begins only when every player in the room has pressed **Start**; until then the swarms wait at their beacons and the planet stands still. Someone who joins a match that has already begun plays straight away.
+
+### Changed
+- Players' spawn points are spread evenly around the planet: 2 players opposite each other, 3 a third of a turn apart, 4 a quarter. When someone joins or leaves, the spawns are spread again.
+- During a match the room panel (bottom left) shows the room, its link and Leave; leaving returns to the start screen.
+
 ## [0.6.0] — 2026-10-09
 
 ### Added
@@ -58,6 +68,7 @@ All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https:
 ### Added
 - First release on GitHub Pages: a 3D swarm (boids, constant speed) that eats a voxel planet; deliberate feeding with one claimed voxel per unit; live sliders for units, speed, power, spacing and cohesion; space background with nebulae and stars; GitHub Pages deployment workflow.
 
+[0.7.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.4.0...v0.5.0

@@ -29,6 +29,7 @@ export class Player {
     this.score = 0;         // voxels eaten in total
     this.planetScore = 0;   // voxels eaten of the current planet
     this.wins = 0;          // planets won (PvP)
+    this.ready = false;     // multiplayer: pressed Start in the waiting room
 
     this.beacon = new SpawnBeacon(game.space.group, this.spawnSpace.clone(), { ...CONFIG.beacon, color: info.beaconColor });
     const start = this.spawnWorld();
@@ -87,6 +88,29 @@ export class Player {
       isSolidCell: (idx) => idx >= 0 && game.planet.hp[idx] > 0,
       bite: (idx, ownFood) => game.biteCell(idx, ownFood, this),
     };
+  }
+
+  /** Move this player's spawn (and beacon) to a new point in the space frame. */
+  setSpawn(spawn) {
+    this.spawnSpace.set(spawn.x, spawn.y, spawn.z);
+    this.beacon.group.position.copy(this.spawnSpace);
+    this.beacon.group.updateWorldMatrix(true, false);
+    // before the match starts the swarm waits at its beacon, so it moves along with it
+    if (!this.game.started) this.placeAtSpawn();
+  }
+
+  /** Moves the whole swarm (and its target) to the beacon. */
+  placeAtSpawn() {
+    const home = this.spawnWorld();
+    const s = this.swarm;
+    const c = s.count > 0 ? s.center() : home;
+    const dx = home.x - c.x, dy = home.y - c.y, dz = home.z - c.z;
+    for (let i = 0; i < s.count * 3; i += 3) {
+      s.pos[i] += dx; s.pos[i + 1] += dy; s.pos[i + 2] += dz;
+    }
+    const L = this.leader;
+    L.pos.x = home.x; L.pos.y = home.y; L.pos.z = home.z;
+    L.vel.x = L.vel.y = L.vel.z = 0;
   }
 
   /** Current world position of this player's spawn beacon. */

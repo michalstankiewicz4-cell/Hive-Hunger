@@ -24,7 +24,8 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Beacon** at the spawn point (about one planet radius above the surface, on screen, away from the panel): clicking it calls the swarm home.
 - **100% means every voxel is gone.** Then the swarm returns home and only then does the next planet appear.
 - **Defaults:** units 20, speed 0.05, power 0.5, spacing 1.5, cohesion 1.0, "Eat nearest block" on. "Reset to default" restores them.
-- **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings.
+- **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP.
+- **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
 - **SEO:** title, description, keywords (including "incremental free"), Open Graph/Twitter thumbnail (`og-image.png`, rendered from the game — not the owner's early screenshot), `VideoGame` JSON-LD, sitemap.
 
 ## Working with the owner
@@ -46,8 +47,8 @@ See `docs/ARCHITECTURE.md` (modules, frame loop, swarm, planet) and `docs/MULTIP
 
 - Headless Chromium (Playwright) with SwiftShader WebGL; Three.js and PeerJS served from local npm copies (the sandbox could not reach CDNs).
 - The game exposes nothing global; test copies add `window.__dbg = game` in `main.js` to drive and inspect it (fast-forward `game.update()` in chunks, read `planet.left`, swarm arrays, scores).
-- Multiplayer: a local PeerJS server (`peer` package, `ExpressPeerServer` on `127.0.0.1:9000`, path `/peerjs`) plus `window.HIVE_PEER_OPTIONS` injected before load; two pages = host + guest.
-- Checked: full planet eaten to 0 and new planet; return home; recall; reset; no unit inside solid voxels; no shared bites; host/guest planet and scores identical; late join; guest leaving detected; single player unchanged.
+- Multiplayer: a local PeerJS server (`peer` package, `ExpressPeerServer` on `127.0.0.1:9000`, path `/peerjs`) plus `window.HIVE_PEER_OPTIONS` injected before load; two pages = host + guest. On a small test machine, pause rendering on guest pages after they join (`__dbg.stop()`), otherwise 4–5 WebGL pages starve the CPU and the last one can't join.
+- Checked: full planet eaten to 0 and new planet; return home; recall; reset; no unit inside solid voxels; no shared bites; host/guest planet and scores identical; late join; guest leaving detected; single player unchanged; start screen; match starts only after every player pressed Start; spawns at 180° / 120° / 90° and re-spread on leave.
 
 ## Version history (short)
 
@@ -60,6 +61,7 @@ See `docs/ARCHITECTURE.md` (modules, frame loop, swarm, planet) and `docs/MULTIP
 | 0.5.0 | `3e32ecb` | planet spin, beacon/recall, full eating + return home, reset to default |
 | 0.5.1 | `3fd82b5` | smoother unit turning |
 | 0.6.0 | tag `v0.6.0` | multiplayer (WebRTC, Co-op/PvP, up to 4), docs, versioning |
+| 0.7.0 | tag `v0.7.0` | start screen, waiting room with Start, symmetric spawns |
 
 ## Known limitations
 

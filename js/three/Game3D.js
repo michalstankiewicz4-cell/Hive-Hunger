@@ -37,7 +37,8 @@ export class Game3D {
     this.mode = null;        // multiplayer: 'coop' | 'pvp'
     this.net = null;         // NetHost / NetGuest
     this.level = 0;
-    this.running = false;
+    this.running = false;    // the render loop is on
+    this.started = false;    // the match has begun (start screen / waiting room before that)
     this.spin = 0;           // planet rotation angle (radians)
     this.remoteSpin = 0;     // guest: spin from the host
     this.returnFrames = 0;
@@ -116,21 +117,40 @@ export class Game3D {
     return { x: p.x, y: p.y, z: p.z };
   }
 
-  /** Spawn point of player `index` (in the space frame): the base spawn turned a quarter per player. */
-  spawnFor(index) {
-    const v = new THREE.Vector3(this.baseSpawn.x, this.baseSpawn.y, this.baseSpawn.z).applyAxisAngle(Y_AXIS, (index * Math.PI) / 2);
+  /** Turn of spawn slot `slot` out of `total` players: spread evenly around the planet. */
+  slotAngle(slot, total) {
+    return total > 0 ? (slot * 2 * Math.PI) / total : 0;
+  }
+
+  /** Spawn point for slot `slot` of `total` (in the space frame): the base spawn turned around the planet. */
+  spawnFor(slot, total = 1) {
+    const v = new THREE.Vector3(this.baseSpawn.x, this.baseSpawn.y, this.baseSpawn.z).applyAxisAngle(Y_AXIS, this.slotAngle(slot, total));
     return { x: v.x, y: v.y, z: v.z };
+  }
+
+  /**
+   * Host: spread every player's spawn evenly around the planet — 2 players opposite each
+   * other, 3 a third of a turn apart, 4 a quarter. Called whenever someone joins or leaves.
+   * The host keeps slot 0, so its own spawn never moves.
+   */
+  layoutSpawns() {
+    const list = this.activePlayers();
+    list.forEach((p, slot) => {
+      p.setSpawn(this.spawnFor(slot, list.length));
+    });
   }
 
   playerInfo(index) {
     const look = PLAYERS[index];
+    // the slot this player will take among everyone in the game (players are ordered by index)
+    const indices = [...new Set([...this.activePlayers().map((p) => p.index), index])].sort((a, b) => a - b);
     return {
       index,
       name: look.name,
       color: look.color,
       // single player keeps the amber beacon; in multiplayer each beacon has its player's colour
       beaconColor: this.multiplayer ? look.color : this.cfg.beacon.color,
-      spawn: this.spawnFor(index),
+      spawn: this.spawnFor(indices.indexOf(index), indices.length),
     };
   }
 
@@ -234,7 +254,7 @@ export class Game3D {
   /** A tap on the screen: own beacon → call the swarm back, planet → send the swarm there. */
   onTap(ndc) {
     const me = this.localPlayer;
-    if (!me || !this.planet) return;
+    if (!me || !this.planet || !this.started) return;
     this.raycaster.setFromCamera(ndc, this.camera);
     if (me.beacon.hitBy(this.raycaster.ray)) {
       if (this.role === 'guest') this.net.sendCommand({ kind: 'recall' });
@@ -313,21 +333,23 @@ export class Game3D {
 
   /** Single player and host: run the simulation. */
   updateSim() {
-    this.spin += this.cfg.planet.spinSpeed;
+    // the planet starts turning with the match (while waiting, swarms sit at their beacons)
+    if (this.started) this.spin += this.cfg.planet.spinSpeed;
     this.applySpin();
     const players = this.activePlayers();
-    for (const p of players) p.update();
+    // before the start, swarms wait at their beacons
+    if (this.started) for (const p of players) p.update();
 
     const pl = this.planet;
     // the planet counts as eaten only when its last voxel is gone; then every swarm flies home
-    if (pl.alive && pl.left <= 0) {
+    if (this.started && pl.alive && pl.left <= 0) {
       pl.shatter((idx, color) => this.debris.emit(pl.cellCenter(idx, this.tmp), color, this.cfg.debris.perCellOnFinish));
       for (const p of players) p.returnHome();
       this.returnFrames = 0;
       this.banner = this.planetResult();
     }
     // back home: the next planet appears once every swarm has gathered at its beacon
-    if (!pl.alive) {
+    if (this.started && !pl.alive) {
       this.returnFrames++;
       if (players.every((p) => p.gatheredAtHome()) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames) {
         pl.dispose();
@@ -354,8 +376,10 @@ export class Game3D {
   /** Guest: show what the host sends. */
   updateGuest() {
     // the planet keeps turning between updates; small differences are eased out
-    this.remoteSpin += this.cfg.planet.spinSpeed;
-    this.spin += this.cfg.planet.spinSpeed;
+    if (this.started) {
+      this.remoteSpin += this.cfg.planet.spinSpeed;
+      this.spin += this.cfg.planet.spinSpeed;
+    }
     const ds = this.remoteSpin - this.spin;
     this.spin = Math.abs(ds) > 0.05 ? this.remoteSpin : this.spin + ds * 0.1;
     this.applySpin();
@@ -387,21 +411,32 @@ export class Game3D {
 
   // --- multiplayer: guest side ---
 
-  /** The host accepted us: build the players and point the camera at our own spawn. */
+  /** The host accepted us (the players and our spawn arrive in the next 'players' message). */
   onWelcome(msg) {
     this.mode = msg.mode;
     this.localIndex = msg.index;
-    this.orbit.theta = (msg.index * Math.PI) / 2;
-    this.updateCamera();
+    this.cameraAimed = false;
   }
 
-  /** Player list from the host (someone joined or left). */
-  onPlayers(list) {
+  /**
+   * Player list from the host (someone joined or left): add and remove players and move
+   * the beacons to their new, evenly spread spawns. The first time we see our own spawn,
+   * the camera turns to face it. `started`: whether the match has begun.
+   */
+  onPlayers(list, started = false) {
+    this.started = Boolean(started);
     const seen = new Set();
-    for (const info of list) {
+    list.forEach((info, slot) => {
       seen.add(info.index);
-      if (!this.players[info.index]) this.addPlayer(info.index, info);
-    }
+      const p = this.players[info.index] || this.addPlayer(info.index, info);
+      p.setSpawn(info.spawn);
+      p.ready = Boolean(info.ready);
+      if (info.index === this.localIndex && !this.cameraAimed) {
+        this.orbit.theta = this.slotAngle(slot, list.length);
+        this.cameraAimed = true;
+        this.updateCamera();
+      }
+    });
     for (let i = 0; i < this.players.length; i++) if (this.players[i] && !seen.has(i)) this.removePlayer(i);
   }
 
