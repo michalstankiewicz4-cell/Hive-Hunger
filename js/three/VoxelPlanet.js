@@ -14,15 +14,20 @@ const NEIGHBORS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 
  * something, the neighbours underneath are added. This keeps small voxels affordable.
  */
 export class VoxelPlanet {
-  constructor(scene, cfg) {
+  /**
+   * @param {number} [seed] terrain seed — the same seed gives the same planet in every
+   *   browser, which is how multiplayer guests build the host's planet
+   */
+  constructor(scene, cfg, seed) {
     this.scene = scene;
     this.cfg = cfg;
     this.s = cfg.voxelSize;
     this.R = cfg.radius;                    // radius in world units
     this.Rv = Math.round(this.R / this.s);  // radius in voxels
     this.N = this.Rv * 2;
-    this.seed = (Math.random() * 1e6) | 0;
+    this.seed = seed ?? ((Math.random() * 1e6) | 0);
     this.alive = true;
+    this.log = null; // multiplayer host: indices of removed voxels since the last network update
 
     const N = this.N, n3 = N * N * N;
     this.hp = new Float32Array(n3);
@@ -223,6 +228,7 @@ export class VoxelPlanet {
   }
 
   remove(idx) {
+    if (this.log) this.log.push(idx);
     this.hp[idx] = 0;
     this.removeInstance(idx);
     this.left--;
@@ -230,6 +236,22 @@ export class VoxelPlanet {
     for (const [a, b, c] of NEIGHBORS) {
       const n = this.index(i + a, j + b, k + c);
       if (n >= 0 && this.hp[n] > 0 && this.slotOf[n] < 0) this.addInstance(n);
+    }
+  }
+
+  /** One bit per voxel: 1 = still solid. Sent to a guest that joins mid-planet. */
+  solidBits() {
+    const n = this.hp.length;
+    const bits = new Uint8Array((n + 7) >> 3);
+    for (let i = 0; i < n; i++) if (this.hp[i] > 0) bits[i >> 3] |= 1 << (i & 7);
+    return bits;
+  }
+
+  /** Removes every voxel that is no longer solid in `bits` (from solidBits on the host). */
+  applySolidBits(bits) {
+    const n = this.hp.length;
+    for (let i = 0; i < n; i++) {
+      if (this.hp[i] > 0 && !(bits[i >> 3] & (1 << (i & 7)))) this.remove(i);
     }
   }
 

@@ -1,8 +1,8 @@
 # Hive Hunger
 
-A 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels. A click (or tap) gives it a target — the swarm slowly drifts there, then acts on its own again. When only scraps are left, the planet shatters and a new one appears.
+A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.6.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -10,15 +10,15 @@ The swarm moves like a flock of birds (boids): units keep their distance from ea
 
 Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), flies to it, lands on it and eats it, then picks the next one. One voxel is eaten by one unit only — bites are shared only when the planet has fewer exposed voxels left than there are units. Units never eat in passing. They don't bounce off matter or pass through it; they slide along the surface. The swarm target moves on once no free voxels are left nearby.
 
-A planet counts as eaten only when its last voxel is gone. The swarm then flies back to its spawn point (the amber beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
+A planet counts as eaten only when its last voxel is gone. The swarm then flies back to its spawn point (the beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
 
 ## Controls
 
 - **Click / tap** — send the swarm there (a pulsing ring marks the spot): every unit drops its current bite, the swarm flies over (around the planet, not through it) and starts eating at the clicked spot. A unit stuck in a corner of a crater or tunnel bites through the blocking voxel (if it isn't someone else's) and carries on
-- **Click the beacon** (amber marker at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
+- **Click the beacon** (marker at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
 - **Right mouse button / two fingers** — rotate the camera
 - **Mouse wheel** — zoom
-- **Panel in the top-right corner** — adjust live:
+- **Panel in the top-right corner** — adjust your swarm live:
   - **Units** — number of units in the swarm
   - **Speed** — the shared flying speed
   - **Power** — radius of the crater a unit eats out of its bite
@@ -26,6 +26,15 @@ A planet counts as eaten only when its last voxel is gone. The swarm then flies 
   - **Cohesion** — how strongly units stay with the group
   - **Eat nearest block** (test mechanic) — when on, every unit flies straight from the voxel it just ate to the nearest uneaten, unclaimed voxel; no free flying, only spacing between units is kept
   - **Reset to default** — restore all settings to their starting values
+
+## Multiplayer
+
+Single player is the default. To play together, open the **Multiplayer** panel (bottom left), choose a mode and click **Create room**, then **Copy link** and send it — others join by opening the link (up to 4 players).
+
+- **Co-op** — everyone eats the same planet together; the scoreboard shows each player's share.
+- **PvP** — a race on the same planet: whoever eats more of it wins the planet.
+
+Every player has their own swarm (Blue, Pink, Green, Violet), beacon and settings. It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 ## Running locally
 
@@ -37,7 +46,14 @@ npx serve .
 python -m http.server
 ```
 
-Three.js r128 is loaded from a CDN (cdnjs).
+Three.js r128 (cdnjs) and PeerJS 1.5.4 (unpkg) are loaded from CDNs.
+
+## Documentation
+
+- [CHANGELOG.md](CHANGELOG.md) — versions and what changed
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — modules, the frame loop, the swarm and the planet
+- [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) — rooms, roles and the network protocol
+- [CONTEXT.md](CONTEXT.md) — project context: decisions, publishing and testing, to pick the project up again
 
 ## Project structure
 
@@ -49,24 +65,30 @@ sitemap.xml           sitemap for Google Search Console
 .github/workflows/    GitHub Pages deployment
 css/style.css
 js/
-  main.js               entry point
-  config.js             all game and slider parameters
+  main.js               entry point (single player or joining a room)
+  config.js             all game, network and slider parameters
+  version.js            game version
   core/Leader.js        the swarm's "brain": finds matter on its own + follows clicks
-  three/Game3D.js       scene, camera, input, game loop
+  three/Game3D.js       scene, camera, input, game loop, roles (solo / host / guest)
+  three/Player.js       one player: swarm, brain, beacon, settings, score
   three/VoxelPlanet.js  voxel planet + atmosphere
   three/Swarm3D.js      the flock (boids) with collisions and feeding
   three/Debris3D.js     debris
   three/ClickMarker.js  ring marking the clicked spot
   three/SpawnBeacon.js  beacon at the spawn point (call the swarm back)
   three/Space3D.js      sky (nebulae + stars)
-  ui/Hud.js             planet counter and hints
+  net/Net.js            multiplayer host and guest over PeerJS
+  net/Protocol.js       binary network messages
+  ui/Hud.js             planet counter, hints, scoreboard
   ui/ControlPanel.js    sliders, toggle and reset button
+  ui/Lobby.js           multiplayer panel
   utils/noise.js        3D noise / fBm
   utils/terrain.js      terrain colours
   utils/space.js        nebula and star colours
+docs/                 architecture and multiplayer docs
 ```
 
-All tunable values (planet size, voxel size, flock weights, eating speed, slider ranges) live in `js/config.js`.
+All tunable values (planet size, voxel size, flock weights, eating speed, network timing, slider ranges) live in `js/config.js`.
 
 ## Search & sharing
 

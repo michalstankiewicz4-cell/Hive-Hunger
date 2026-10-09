@@ -60,7 +60,8 @@
   <main class="sr-only">
     <h1>Hive Hunger — a 3D swarm game</h1>
     <p>Hive Hunger is a free 3D browser game about a hungry swarm. The swarm flies like a flock of birds, finds the nearest matter on its own and eats a voxel planet crater by crater. Click or tap to steer it to a new spot.</p>
-    <p>Adjust the swarm live with sliders: number of units, speed, bite power, spacing and cohesion. When a planet is eaten, it shatters and a new one appears.</p>
+    <p>Adjust the swarm live with sliders: number of units, speed, bite power, spacing and cohesion. When a planet is eaten, the swarm flies home and a new planet appears.</p>
+    <p>Play alone or with up to four players in your browser: create a Co-op or PvP room and share the link — no account or download needed.</p>
   </main>
   <noscript>
     <p class="noscript">Hive Hunger is a 3D game and needs JavaScript. Please enable JavaScript to play.</p>
@@ -68,7 +69,10 @@
 
   <div id="hud" class="hud"></div>
   <div id="controls" class="controls" aria-label="Swarm settings"></div>
+  <div id="lobby" class="lobby" aria-label="Multiplayer"></div>
+  <div id="version" class="version"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

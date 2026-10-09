@@ -131,6 +131,42 @@ export class Swarm3D {
     this.mesh.count = n;
   }
 
+  /**
+   * Multiplayer guest: show positions and headings received from the host instead of
+   * simulating. Units move smoothly towards the received positions between updates.
+   */
+  setRemote(count, pos, dir) {
+    count = Math.min(count, this.max);
+    if (count !== this.count) {
+      for (let i = this.count; i < count; i++) {
+        const i3 = i * 3;
+        for (let a = 0; a < 3; a++) {
+          this.pos[i3 + a] = pos[i3 + a];
+          this.dir[i3 + a] = dir[i3 + a];
+          this.look[i3 + a] = dir[i3 + a];
+        }
+      }
+      this.count = count;
+      this.mesh.count = count;
+    }
+    if (!this.remotePos || this.remotePos.length < count * 3) {
+      this.remotePos = new Float32Array(this.max * 3);
+    }
+    this.remotePos.set(pos.subarray(0, count * 3));
+    this.dir.set(dir.subarray(0, count * 3));
+  }
+
+  /** Multiplayer guest: one display step towards the last positions from the host. */
+  followRemote(k) {
+    if (!this.remotePos) return;
+    const n = this.count * 3;
+    for (let i = 0; i < n; i++) {
+      const d = this.remotePos[i] - this.pos[i];
+      // a big jump (e.g. a new planet or a respawn) snaps instead of sliding across the screen
+      this.pos[i] = Math.abs(d) > 6 ? this.remotePos[i] : this.pos[i] + d * k;
+    }
+  }
+
   center() {
     const out = new THREE.Vector3();
     for (let i = 0; i < this.count; i++) out.x += this.pos[i * 3], out.y += this.pos[i * 3 + 1], out.z += this.pos[i * 3 + 2];

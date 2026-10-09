@@ -1,31 +1,51 @@
 import { CONFIG } from '../config.js';
 import { VoxelPlanet } from './VoxelPlanet.js';
-import { Swarm3D, aroundPlanet } from './Swarm3D.js';
 import { Debris3D } from './Debris3D.js';
 import { Space3D } from './Space3D.js';
 import { ClickMarker } from './ClickMarker.js';
-import { SpawnBeacon } from './SpawnBeacon.js';
-import { Leader } from '../core/Leader.js';
+import { Player } from './Player.js';
 
 const THREE = window.THREE;
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+
+/** Player colours and names in multiplayer (index 0 is the host). */
+export const PLAYERS = [
+  { name: 'Blue', color: 0x8fd0ff },
+  { name: 'Pink', color: 0xff8fc8 },
+  { name: 'Green', color: 0xa8ff8f },
+  { name: 'Violet', color: 0xc9a6ff },
+];
 
 /**
- * The game. The swarm acts on its own; a click / tap gives it a target, a click on the
- * beacon calls it back home. Right button / two fingers = rotate the camera, wheel = zoom.
+ * The game. Each player's swarm acts on its own; a click / tap gives it a target, a click on
+ * its beacon calls it back home. Right button / two fingers = rotate the camera, wheel = zoom.
+ *
+ * Roles:
+ *  - 'solo'  — single player, everything runs here;
+ *  - 'host'  — multiplayer host: simulates the planet and every player's swarm;
+ *  - 'guest' — multiplayer guest: builds the same planet from the host's seed, shows what
+ *              the host sends and sends its own clicks and settings to the host.
  *
  * Planet spin: the simulation stays in the planet's frame (voxels never move), and the
- * camera, sky, sun and beacon turn around it instead — on screen the planet rotates.
+ * camera, sky, sun and beacons turn around it instead — on screen the planet rotates.
  */
 export class Game3D {
-  constructor(container, hud) {
+  constructor(container, hud, { role = 'solo' } = {}) {
     this.cfg = CONFIG;
     this.hud = hud;
+    this.role = role;
+    this.mode = null;        // multiplayer: 'coop' | 'pvp'
+    this.net = null;         // NetHost / NetGuest
     this.level = 0;
-    this.biteRadius = CONFIG.swarm.biteRadius; // power: crater radius (changed by a slider)
     this.running = false;
-    this.spin = 0;          // planet rotation angle (radians)
-    this.homeMode = null;   // null | 'recall' (called back by the beacon) | 'return' (planet eaten)
+    this.spin = 0;           // planet rotation angle (radians)
+    this.remoteSpin = 0;     // guest: spin from the host
     this.returnFrames = 0;
+    this.frameNo = 0;
+    this.players = [];       // index = player index
+    this.localIndex = 0;
+    this.banner = '';        // message shown in the HUD (e.g. who won the planet)
+    this.remote = { left: 0, total: 1 }; // guest: planet progress from the host
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -51,71 +71,27 @@ export class Game3D {
 
     this.raycaster = new THREE.Raycaster();
     this.tmp = new THREE.Vector3();
-
-    this.resize(); // camera aspect is needed to keep the spawn point on screen
-    const start = this.spawnPoint();
-    // the beacon lives in the space group: it stays put in space while the planet turns
-    this.beacon = new SpawnBeacon(this.space.group, new THREE.Vector3(start.x, start.y, start.z), this.cfg.beacon);
-    this.leader = new Leader(this.cfg.leader, start, ['x', 'y', 'z']);
     this.debris = new Debris3D(this.scene, this.cfg.debris);
     this.marker = new ClickMarker(this.scene, this.cfg.marker);
-    this.swarm = new Swarm3D(this.scene, this.cfg.swarm, new THREE.Vector3(start.x, start.y, start.z));
-    this.spawnPlanet();
 
-    // exposed voxels near the swarm target — computed exactly once per frame
-    this.candidates = [];
-    const L = this.cfg.leader;
-    this.world = {
-      // the swarm target stays while there are free (unclaimed) voxels nearby
-      hasMatterNear: () => this.freeCandidates > 0,
-      findMatter: (p) => this.planet.findMatter(p, L.searchSamples),
-    };
-    const feedCenter = new THREE.Vector3();
-    const nearestScratch = [];
-    this.swarmWorld = {
-      feeding: false,
-      // a free (unclaimed) voxel near the swarm target. Shared only when the planet has
-      // fewer exposed voxels left than there are units (there are no more).
-      // test mechanic (checkbox): every unit goes to the nearest free voxel from its own position
-      nearestMode: CONFIG.swarm.nearestMode,
-      clickPoint: null,
-      planetRadius: 0,
-      holding: false, // called back home: nobody picks new bites
-      pickFood: (p) => {
-        const pl = this.planet;
-        if (this.swarmWorld.nearestMode) {
-          const idx = pl.nearestFree(p, pl.count < this.swarm.count, nearestScratch);
-          pl.claim(idx);
-          return idx;
-        }
-        const list = this.candidates;
-        const n = list.length;
-        if (n === 0) return -1;
-        const start = (Math.random() * n) | 0;
-        for (let k = 0; k < n; k++) {
-          const idx = list[(start + k) % n];
-          if (pl.claims[idx] === 0 && pl.hp[idx] > 0) {
-            pl.claim(idx);
-            this.freeCandidates--;
-            return idx;
-          }
-        }
-        if (pl.count >= this.swarm.count) return -1;
-        const idx = list[start];
-        pl.claim(idx);
-        return idx;
-      },
-      release: (idx) => this.planet.release(idx),
-      claim: (idx) => this.planet.claim(idx),
-      canBite: (idx, ownFood) => !this.planet.claimedByOther(idx, ownFood),
-      cellCenter: (idx) => this.planet.cellCenter(idx, feedCenter),
-      cellAt: (p) => this.planet.cellAt(p),
-      isSolidCell: (idx) => idx >= 0 && this.planet.hp[idx] > 0,
-      bite: (idx, ownFood) => this.biteCell(idx, ownFood),
-    };
+    this.resize(); // camera aspect is needed to keep the spawn point on screen
+    this.baseSpawn = this.spawnPoint();
+
+    if (role !== 'guest') {
+      this.spawnPlanet();
+      this.addPlayer(0);
+    }
 
     this.bindInput();
     window.addEventListener('resize', () => this.resize());
+  }
+
+  get localPlayer() {
+    return this.players[this.localIndex];
+  }
+
+  get multiplayer() {
+    return this.role !== 'solo';
   }
 
   /**
@@ -140,79 +116,60 @@ export class Game3D {
     return { x: p.x, y: p.y, z: p.z };
   }
 
-  /** While travelling to a click, the swarm target flies around the planet, not through it. */
-  keepLeaderOverSurface() {
-    const L = this.leader;
-    if (!L.commanded || !this.planet.alive) return;
-    const a = this.cfg.swarm.avoid;
-    const way = aroundPlanet(L.pos.x, L.pos.y, L.pos.z, L.goal.x, L.goal.y, L.goal.z, this.planet.R, a);
-    const r = Math.hypot(L.pos.x, L.pos.y, L.pos.z) || 1;
-    if (way || (L.distanceTo(L.goal) > a.minDistance && r < this.planet.R + a.altitude)) {
-      const k = (this.planet.R + a.altitude) / r;
-      if (k > 1) { L.pos.x *= k; L.pos.y *= k; L.pos.z *= k; }
-    }
-    // steer the target's velocity towards the waypoint, so it arcs over the surface
-    if (way) {
-      const dx = way[0] - L.pos.x, dy = way[1] - L.pos.y, dz = way[2] - L.pos.z;
-      const d = Math.hypot(dx, dy, dz) || 1, v = this.cfg.leader.maxSpeed;
-      L.vel.x = (dx / d) * v; L.vel.y = (dy / d) * v; L.vel.z = (dz / d) * v;
-    }
+  /** Spawn point of player `index` (in the space frame): the base spawn turned a quarter per player. */
+  spawnFor(index) {
+    const v = new THREE.Vector3(this.baseSpawn.x, this.baseSpawn.y, this.baseSpawn.z).applyAxisAngle(Y_AXIS, (index * Math.PI) / 2);
+    return { x: v.x, y: v.y, z: v.z };
   }
 
-  /**
-   * A click / tap: the swarm target heads for the point and every unit drops its current
-   * bite, so the whole swarm goes there. In nearest-block mode each unit's next bite is
-   * the nearest free voxel to the clicked point.
-   */
-  command(point) {
-    this.homeMode = null;
-    this.leader.command(point);
-    this.swarmWorld.clickPoint = point;
-    this.dropAllBites(1);
+  playerInfo(index) {
+    const look = PLAYERS[index];
+    return {
+      index,
+      name: look.name,
+      color: look.color,
+      // single player keeps the amber beacon; in multiplayer each beacon has its player's colour
+      beaconColor: this.multiplayer ? look.color : this.cfg.beacon.color,
+      spawn: this.spawnFor(index),
+    };
   }
 
-  /** Current world position of the spawn beacon. */
-  spawnWorld() {
-    const p = this.beacon.worldPosition(new THREE.Vector3());
-    return { x: p.x, y: p.y, z: p.z };
+  addPlayer(index, info = this.playerInfo(index)) {
+    this.removePlayer(index);
+    const p = new Player(this, info);
+    this.players[index] = p;
+    return p;
   }
 
-  /** Every unit drops its bite (releasing the claim) and stops eating. */
-  dropAllBites(redirect) {
-    const s = this.swarm;
-    for (let i = 0; i < s.count; i++) {
-      if (s.food[i] >= 0) this.planet.release(s.food[i]);
-      s.food[i] = -1;
-      s.landed[i] = 0;
-      s.redirect[i] = redirect;
-    }
+  removePlayer(index) {
+    const p = this.players[index];
+    if (!p) return;
+    p.dispose();
+    this.players[index] = undefined;
   }
 
-  /** The beacon was clicked: the swarm stops eating and flies home, and waits there for a new click. */
-  recall() {
-    this.homeMode = 'recall';
-    this.swarmWorld.clickPoint = null;
-    this.dropAllBites(0);
+  /** Every player that is in the game. */
+  activePlayers() {
+    return this.players.filter(Boolean);
   }
 
-  /** Switches the nearest-block test mechanic; units drop their current bites and pick again by the new rule. */
-  setNearestMode(on) {
-    this.swarmWorld.nearestMode = on;
-    const s = this.swarm;
-    for (let i = 0; i < s.count; i++) {
-      if (s.food[i] >= 0) this.planet.release(s.food[i]);
-      s.food[i] = -1;
-      s.landed[i] = 0;
-      s.redirect[i] = 0;
-    }
+  /** Switch from single player to hosting a room (keeps the current planet and swarm). */
+  becomeHost(mode) {
+    this.role = 'host';
+    this.mode = mode;
+    this.localPlayer.beacon.setColor(PLAYERS[0].color);
+    this.planet.log = [];
   }
 
-  spawnPlanet() {
+  spawnPlanet(seed) {
     this.level++;
-    this.planet = new VoxelPlanet(this.scene, this.cfg.planet);
-    this.swarm?.food.fill(-1); // claims belonged to the old planet
-    this.swarm?.landed.fill(0);
+    this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed);
+    if (this.role === 'host') this.planet.log = [];
+    for (const p of this.activePlayers()) p.onNewPlanet();
+    this.banner = '';
   }
+
+  // --- input ---
 
   bindInput() {
     const c = this.cfg.camera;
@@ -259,15 +216,7 @@ export class Game3D {
       // a tap: left button / one finger, with no rotation and no drag
       if (e.type === 'pointerup' && tap && !rotated && pointers.size === 0 &&
           Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 8) {
-        const ndc = this.toNdc(e);
-        this.raycaster.setFromCamera(ndc, this.camera);
-        if (this.beacon.hitBy(this.raycaster.ray)) {
-          if (this.homeMode !== 'return') this.recall();
-        } else if (this.homeMode !== 'return' && this.planet.alive) {
-          const point = this.pointFromScreen(ndc);
-          this.command(point);
-          this.marker.show(point, this.lastPickHit, this.camera);
-        }
+        this.onTap(this.toNdc(e));
       }
       if (pointers.size === 0) { rotating = false; tap = null; } else last = center();
     };
@@ -280,6 +229,29 @@ export class Game3D {
       this.orbit.distance = Math.min(c.maxDistance, Math.max(c.minDistance, this.orbit.distance * f));
       this.updateCamera();
     }, { passive: false });
+  }
+
+  /** A tap on the screen: own beacon → call the swarm back, planet → send the swarm there. */
+  onTap(ndc) {
+    const me = this.localPlayer;
+    if (!me || !this.planet) return;
+    this.raycaster.setFromCamera(ndc, this.camera);
+    if (me.beacon.hitBy(this.raycaster.ray)) {
+      if (this.role === 'guest') this.net.sendCommand({ kind: 'recall' });
+      else me.recall();
+      return;
+    }
+    if (!this.planet.alive || me.homeMode === 'return') return;
+    const point = this.pointFromScreen(ndc);
+    this.marker.show(point, this.lastPickHit, this.camera);
+    if (this.role === 'guest') this.net.sendCommand({ kind: 'click', p: point });
+    else me.command(point);
+  }
+
+  /** A setting changed on the local panel. */
+  setLocalSetting(key, value) {
+    if (this.role === 'guest') this.net.sendSetting(key, value);
+    else this.localPlayer.setSetting(key, value);
   }
 
   toNdc(e) {
@@ -307,81 +279,192 @@ export class Game3D {
     return { x: this.tmp.x, y: this.tmp.y, z: this.tmp.z };
   }
 
-  /** A feeding unit eats a small crater around the voxel it sits on. */
-  biteCell(idx, ownFood) {
+  /** A feeding unit of `player` eats a small crater around the voxel it sits on. */
+  biteCell(idx, ownFood, player) {
     const pl = this.planet;
     // eating takes time: every frame on a bite removes part of its strength
     const damage = this.cfg.planet.strength / this.cfg.swarm.eatFrames;
-    pl.biteSphere(idx, this.biteRadius, damage, (n) => {
+    pl.biteSphere(idx, player.biteRadius, damage, (n) => {
+      player.score++;
+      player.planetScore++;
       this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
     }, ownFood);
   }
 
-  /** Turns the camera, sky, sun and beacon around the planet — on screen the planet spins. */
-  updateSpin() {
-    this.spin += this.cfg.planet.spinSpeed;
+  // --- frame ---
+
+  /** Turns the camera, sky, sun and beacons around the planet — on screen the planet spins. */
+  applySpin() {
     this.space.group.rotation.y = this.spin;
-    this.sun.position.copy(this.sunBase).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.spin);
+    this.sun.position.copy(this.sunBase).applyAxisAngle(Y_AXIS, this.spin);
     this.updateCamera();
   }
 
   update() {
-    this.updateSpin();
-    const pl0 = this.planet;
-    pl0.exposedNear(this.leader.pos, this.cfg.leader.feedSenseRadius, this.candidates);
-    this.freeCandidates = 0;
-    for (const idx of this.candidates) if (pl0.claims[idx] === 0) this.freeCandidates++;
-    if (this.homeMode) {
-      // heading home: the swarm target keeps following the beacon (it moves as space turns)
-      const L0 = this.leader;
-      L0.goal = this.spawnWorld();
-      L0.commanded = true;
-      L0.dwell = 0;
-    }
-    this.leader.update(this.world);
-    this.keepLeaderOverSurface();
-    // while the swarm target is travelling to a clicked point, units follow it instead of eating
-    const L = this.leader;
-    const travelling = L.commanded && L.distanceTo(L.goal) > this.cfg.leader.arriveRadius;
-    this.swarmWorld.planetRadius = this.planet.alive ? this.planet.R : 0;
-    this.swarmWorld.holding = Boolean(this.homeMode);
-    this.swarmWorld.feeding = this.candidates.length > 0 && !travelling && !this.homeMode;
-    this.swarm.update(this.leader.pos, this.swarmWorld);
+    this.frameNo++;
+    if (this.role === 'guest') this.updateGuest();
+    else this.updateSim();
 
-    const pl = this.planet;
-    // the planet counts as eaten only when its last voxel is gone; then the swarm flies home
-    if (pl.alive && pl.left <= 0) {
-      pl.shatter((idx, color) => this.debris.emit(pl.cellCenter(idx, this.tmp), color, this.cfg.debris.perCellOnFinish));
-      this.homeMode = 'return';
-      this.returnFrames = 0;
-      this.dropAllBites(0);
-    }
-    // back home: the next planet appears once the swarm has gathered at the beacon
-    if (this.homeMode === 'return') {
-      this.returnFrames++;
-      const home = this.spawnWorld();
-      const c = this.swarm.center();
-      const gathered = Math.hypot(c.x - home.x, c.y - home.y, c.z - home.z) < this.cfg.beacon.gatherRadius;
-      if ((this.leader.distanceTo(home) < this.cfg.beacon.arriveRadius && gathered) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames) {
-        pl.dispose();
-        this.spawnPlanet();
-        this.homeMode = null;
-        this.leader.commanded = false;
-        this.leader.goal = null;
-      }
-    }
-
-    pl.sync();
     this.debris.update();
     this.marker.update();
-    this.beacon.active = Boolean(this.homeMode);
-    this.beacon.update(this.camera);
-    const hint = this.homeMode === 'return'
-      ? 'planet eaten — returning to the beacon'
-      : this.homeMode === 'recall'
-        ? 'called back · click the planet to send the swarm out again'
-        : 'click: steer the swarm · click the beacon: call it back · right button / two fingers: rotate · wheel: zoom';
-    this.hud.update({ level: this.level, eaten: this.planet.eatenFraction, hint });
+    for (const p of this.activePlayers()) p.beacon.update(this.camera);
+    this.updateHud();
+  }
+
+  /** Single player and host: run the simulation. */
+  updateSim() {
+    this.spin += this.cfg.planet.spinSpeed;
+    this.applySpin();
+    const players = this.activePlayers();
+    for (const p of players) p.update();
+
+    const pl = this.planet;
+    // the planet counts as eaten only when its last voxel is gone; then every swarm flies home
+    if (pl.alive && pl.left <= 0) {
+      pl.shatter((idx, color) => this.debris.emit(pl.cellCenter(idx, this.tmp), color, this.cfg.debris.perCellOnFinish));
+      for (const p of players) p.returnHome();
+      this.returnFrames = 0;
+      this.banner = this.planetResult();
+    }
+    // back home: the next planet appears once every swarm has gathered at its beacon
+    if (!pl.alive) {
+      this.returnFrames++;
+      if (players.every((p) => p.gatheredAtHome()) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames) {
+        pl.dispose();
+        this.spawnPlanet();
+        this.net?.broadcastPlanet(this);
+      }
+    }
+    this.planet.sync();
+    if (this.role === 'host' && this.frameNo % this.cfg.net.snapshotEvery === 0) this.net?.broadcastSnapshot(this);
+  }
+
+  /** Who won the planet (PvP) or a summary (co-op / single player). */
+  planetResult() {
+    const players = this.activePlayers();
+    if (!this.multiplayer) return '';
+    if (this.mode === 'pvp') {
+      const best = players.reduce((a, b) => (b.planetScore > a.planetScore ? b : a));
+      best.wins++;
+      return `${best.name} wins planet ${this.level}`;
+    }
+    return `Planet ${this.level} eaten together`;
+  }
+
+  /** Guest: show what the host sends. */
+  updateGuest() {
+    // the planet keeps turning between updates; small differences are eased out
+    this.remoteSpin += this.cfg.planet.spinSpeed;
+    this.spin += this.cfg.planet.spinSpeed;
+    const ds = this.remoteSpin - this.spin;
+    this.spin = Math.abs(ds) > 0.05 ? this.remoteSpin : this.spin + ds * 0.1;
+    this.applySpin();
+    for (const p of this.activePlayers()) p.swarm.followRemote(this.cfg.net.follow);
+    if (this.planet) {
+      if (this.planet.alive && this.planet.left <= 0) {
+        this.planet.shatter((idx, color) => this.debris.emit(this.planet.cellCenter(idx, this.tmp), color, this.cfg.debris.perCellOnFinish));
+      }
+      this.planet.sync();
+    }
+  }
+
+  // --- multiplayer: host side ---
+
+  /** First free player slot (1–3) or -1 when the room is full. */
+  freeSlot() {
+    for (let i = 1; i < PLAYERS.length; i++) if (!this.players[i]) return i;
+    return -1;
+  }
+
+  /** A guest's command or setting arrived at the host. */
+  onGuestMessage(index, msg) {
+    const p = this.players[index];
+    if (!p) return;
+    if (msg.t === 'cmd' && msg.kind === 'click' && msg.p) p.command(msg.p);
+    else if (msg.t === 'cmd' && msg.kind === 'recall') p.recall();
+    else if (msg.t === 'set') p.setSetting(msg.key, msg.value);
+  }
+
+  // --- multiplayer: guest side ---
+
+  /** The host accepted us: build the players and point the camera at our own spawn. */
+  onWelcome(msg) {
+    this.mode = msg.mode;
+    this.localIndex = msg.index;
+    this.orbit.theta = (msg.index * Math.PI) / 2;
+    this.updateCamera();
+  }
+
+  /** Player list from the host (someone joined or left). */
+  onPlayers(list) {
+    const seen = new Set();
+    for (const info of list) {
+      seen.add(info.index);
+      if (!this.players[info.index]) this.addPlayer(info.index, info);
+    }
+    for (let i = 0; i < this.players.length; i++) if (this.players[i] && !seen.has(i)) this.removePlayer(i);
+  }
+
+  /** A planet from the host: same seed = same planet; `bits` = which voxels are still there. */
+  onPlanet({ seed, level, bits }) {
+    if (this.planet) this.planet.dispose();
+    this.level = level - 1;
+    this.spawnPlanet(seed);
+    if (bits) this.planet.applySolidBits(bits);
+    this.planet.sync();
+  }
+
+  /** A state update from the host. */
+  onSnapshot(s) {
+    this.remoteSpin = s.spin;
+    this.remote.left = s.left;
+    this.banner = s.banner;
+    for (const ps of s.players) {
+      const p = this.players[ps.index];
+      if (!p) continue;
+      p.homeMode = ps.home === 1 ? 'recall' : ps.home === 2 ? 'return' : null;
+      p.beacon.active = ps.home !== 0;
+      p.score = ps.score;
+      p.planetScore = ps.planetScore;
+      p.wins = ps.wins;
+      p.swarm.setRemote(ps.count, ps.pos, ps.dir);
+    }
+    const pl = this.planet;
+    if (pl && pl.alive) {
+      for (const idx of s.removed) {
+        if (pl.hp[idx] > 0) {
+          this.debris.emit(pl.cellCenter(idx, this.tmp), pl.colorOf(idx), this.cfg.debris.perCell);
+          pl.remove(idx);
+        }
+      }
+    }
+  }
+
+  // --- HUD ---
+
+  updateHud() {
+    const me = this.localPlayer;
+    const pl = this.planet;
+    let eaten = 0;
+    if (pl) eaten = !pl.alive ? 1 : 1 - pl.left / pl.total;
+    const hint = !me ? 'connecting…'
+      : me.homeMode === 'return'
+        ? 'planet eaten — returning to the beacon'
+        : me.homeMode === 'recall'
+          ? 'called back · click the planet to send the swarm out again'
+          : 'click: steer the swarm · click the beacon: call it back · right button / two fingers: rotate · wheel: zoom';
+
+    const scores = this.multiplayer
+      ? this.activePlayers().map((p) => ({
+        name: p.name,
+        color: p.color,
+        score: p.score,
+        planetScore: p.planetScore,
+        wins: p.wins,
+        local: p.index === this.localIndex,
+      }))
+      : null;
+    this.hud.update({ level: this.level, eaten, hint, mode: this.mode, scores, banner: this.banner });
   }
 
   resize() {
@@ -402,7 +485,7 @@ export class Game3D {
     const loop = () => {
       if (!this.running) return;
       this.update();
-      this.swarm.render();
+      for (const p of this.activePlayers()) p.swarm.render();
       this.renderer.render(this.scene, this.camera);
       this.frame = requestAnimationFrame(loop);
     };

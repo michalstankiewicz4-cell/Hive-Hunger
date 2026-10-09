@@ -115,6 +115,17 @@ export const CONFIG = Object.freeze({
   // the swarm returns here and the next planet appears once it has gathered
   beacon: { color: 0xffc861, size: 0.9, hitRadius: 3, arriveRadius: 2.5, gatherRadius: 10, returnTimeoutFrames: 1500 },
 
+  // multiplayer (WebRTC via PeerJS)
+  net: {
+    idPrefix: 'hive-hunger-', // PeerJS id = prefix + room code
+    codeLength: 6,
+    snapshotEvery: 4,         // frames between state updates sent to guests (≈15 per second)
+    maxBuffered: 1 << 20,     // skip an update while more than this many bytes wait to be sent
+    follow: 0.35,             // guests: how quickly units move towards the positions from the host
+    pingMs: 2000,             // "still here" message interval
+    timeoutMs: 10000,         // a player silent for this long has left
+  },
+
   // marker shown where the player clicked
   marker: { color: 0x8fd0ff, radius: 1.6, opacity: 0.9, lift: 0.9, lifeFrames: 240, pulseSpeed: 0.12 },
 

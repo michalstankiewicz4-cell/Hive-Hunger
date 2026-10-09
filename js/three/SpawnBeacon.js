@@ -23,6 +23,11 @@ export class SpawnBeacon {
     parent.add(this.group);
   }
 
+  setColor(color) {
+    this.material.color.set(color);
+    this.ringMaterial.color.set(color);
+  }
+
   /** World position of the beacon (it moves with the space group). */
   worldPosition(out) {
     return this.group.getWorldPosition(out);
