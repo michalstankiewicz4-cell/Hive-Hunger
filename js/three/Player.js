@@ -2,6 +2,7 @@ import { CONFIG } from '../config.js';
 import { Swarm3D, aroundPlanet } from './Swarm3D.js';
 import { SpawnBeacon } from './SpawnBeacon.js';
 import { Leader } from '../core/Leader.js';
+import { SkillTree } from '../core/SkillTree.js';
 
 const THREE = window.THREE;
 
@@ -24,7 +25,12 @@ export class Player {
     this.color = info.color;
     this.spawnSpace = new THREE.Vector3(info.spawn.x, info.spawn.y, info.spawn.z);
 
-    this.biteRadius = CONFIG.swarm.biteRadius; // power: crater radius (changed by a slider)
+    this.biteRadius = CONFIG.swarm.biteRadius; // power: crater radius (slider + upgrades)
+    // slider values; the upgrade tree adds its bonuses on top (see applyUpgrades)
+    this.base = { count: CONFIG.swarm.count, speed: CONFIG.swarm.speed, power: CONFIG.swarm.biteRadius };
+    this.tree = new SkillTree();
+    this.bolt = null;       // chain lightning settings once bought
+    this.boltClock = 0;     // seconds since the last bolt
     this.homeMode = null;   // null | 'recall' (called back by the beacon) | 'return' (planet eaten)
     this.score = 0;         // voxels eaten in total
     this.planetScore = 0;   // voxels eaten of the current planet
@@ -167,18 +173,75 @@ export class Player {
   /** Applies one setting from the panel (locally or sent by a guest). */
   setSetting(key, value) {
     const s = this.swarm;
-    if (key === 'count') s.setCount(value);
-    else if (key === 'speed') s.speed = value;
-    else if (key === 'power') this.biteRadius = value;
-    else if (key === 'spacing') s.separationDistance = value;
+    if (key === 'count' || key === 'speed' || key === 'power') {
+      this.base[key] = value;
+      this.applyUpgrades();
+    } else if (key === 'spacing') s.separationDistance = value;
     else if (key === 'cohesion') s.cohesion = value;
     else if (key === 'nearest') this.setNearestMode(value);
   }
 
   getSetting(key) {
     const s = this.swarm;
-    return { count: s.count, speed: s.speed, power: this.biteRadius, spacing: s.separationDistance,
+    return { count: this.base.count, speed: this.base.speed, power: this.base.power, spacing: s.separationDistance,
       cohesion: s.cohesion, nearest: this.swarmWorld.nearestMode }[key];
+  }
+
+  /** Points to spend in the upgrade tree: 1 eaten voxel = 1 point. */
+  get points() {
+    return this.score - this.tree.spent;
+  }
+
+  /** Buys an upgrade with this player's points; false if it isn't available or affordable. */
+  buy(id) {
+    if (!this.tree.buy(id, this.points)) return false;
+    this.applyUpgrades();
+    return true;
+  }
+
+  /** Slider values plus the bonuses of everything bought in the tree. */
+  applyUpgrades() {
+    const e = this.tree.effects();
+    const s = this.swarm;
+    const count = Math.min(CONFIG.swarm.maxCount + 100, Math.round(this.base.count + e.count));
+    if (count !== s.count) s.setCount(count);
+    s.speed = this.base.speed * (1 + e.speed);
+    this.biteRadius = this.base.power + e.power;
+    this.bolt = e.bolt;
+  }
+
+  /**
+   * Chain lightning: from a random drone it jumps to the nearest drone it hasn't hit yet
+   * (within `range`), `jumps` times; every voxel on its way loses `damage` of its strength.
+   */
+  updateLightning() {
+    if (!this.bolt) return;
+    this.boltClock += 1 / 60;
+    if (this.boltClock < this.bolt.interval) return;
+    this.boltClock = 0;
+    const s = this.swarm, pos = s.pos, n = s.count;
+    if (n < 2) return;
+    const hit = new Uint8Array(n);
+    let cur = (Math.random() * n) | 0;
+    hit[cur] = 1;
+    const path = [pos[cur * 3], pos[cur * 3 + 1], pos[cur * 3 + 2]];
+    const r2 = this.bolt.range * this.bolt.range;
+    for (let j = 0; j < this.bolt.jumps; j++) {
+      let best = -1, bestD = r2;
+      const x = pos[cur * 3], y = pos[cur * 3 + 1], z = pos[cur * 3 + 2];
+      for (let i = 0; i < n; i++) {
+        if (hit[i]) continue;
+        const d = (pos[i * 3] - x) ** 2 + (pos[i * 3 + 1] - y) ** 2 + (pos[i * 3 + 2] - z) ** 2;
+        if (d < bestD) { bestD = d; best = i; }
+      }
+      if (best < 0) break;
+      hit[best] = 1;
+      cur = best;
+      path.push(pos[cur * 3], pos[cur * 3 + 1], pos[cur * 3 + 2]);
+    }
+    if (path.length < 6) return;
+    this.game.planet.weakenAlong(path, this.bolt.damage);
+    this.game.showBolt(this, path);
   }
 
   /** A new planet appeared: old bites belonged to the old one. */
@@ -242,6 +305,7 @@ export class Player {
     this.swarmWorld.holding = Boolean(this.homeMode);
     this.swarmWorld.feeding = this.candidates.length > 0 && !travelling && !this.homeMode;
     this.swarm.update(L.pos, this.swarmWorld);
+    this.updateLightning();
 
     this.beacon.active = Boolean(this.homeMode);
   }

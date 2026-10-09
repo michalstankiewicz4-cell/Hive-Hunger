@@ -264,9 +264,54 @@ export class VoxelPlanet {
   bite(idx, amount) {
     if (!this.alive || idx < 0 || this.hp[idx] <= 0) return BITE.MISS;
     this.hp[idx] -= amount;
-    if (this.hp[idx] > 0) return BITE.HIT;
+    if (this.hp[idx] > 0) {
+      this.showDamage(idx);
+      return BITE.HIT;
+    }
     this.remove(idx);
     return BITE.REMOVED;
+  }
+
+  /**
+   * Destruction animation: a damaged voxel shrinks, darkens and shakes as its strength runs
+   * out (when it reaches 0 it is removed and breaks into debris).
+   */
+  showDamage(idx) {
+    const slot = this.slotOf[idx];
+    if (slot < 0) return;
+    const f = Math.max(0, Math.min(1, this.hp[idx] / this.cfg.strength));
+    const k = 0.45 + 0.55 * f, shake = (1 - f) * 0.08 * this.s;
+    const c = this.cellCenter(idx, this._v);
+    c.x += (Math.random() - 0.5) * shake; c.y += (Math.random() - 0.5) * shake; c.z += (Math.random() - 0.5) * shake;
+    this._m.makeScale(k, k, k).setPosition(c);
+    this.mesh.setMatrixAt(slot, this._m);
+    const [r, g, b] = this.voxelColor(idx), dark = 0.35 + 0.65 * f;
+    this.mesh.setColorAt(slot, this._c.setRGB(r * dark, g * dark, b * dark));
+    this.dirty = true;
+  }
+
+  /**
+   * Chain lightning: every solid voxel on the polyline `path` ([x, y, z, x, y, z, …]) loses
+   * `damage` × strength, but is never destroyed by it (it only gets weaker).
+   */
+  weakenAlong(path, damage) {
+    if (!this.alive) return;
+    const done = new Set(), p = { x: 0, y: 0, z: 0 }, step = this.s * 0.5;
+    const min = this.cfg.strength * 0.05;
+    for (let i = 0; i + 5 < path.length; i += 3) {
+      const ax = path[i], ay = path[i + 1], az = path[i + 2];
+      const dx = path[i + 3] - ax, dy = path[i + 4] - ay, dz = path[i + 5] - az;
+      const n = Math.max(1, Math.ceil(Math.hypot(dx, dy, dz) / step));
+      for (let t = 0; t <= n; t++) {
+        p.x = ax + (dx * t) / n; p.y = ay + (dy * t) / n; p.z = az + (dz * t) / n;
+        const idx = this.cellAt(p);
+        if (idx < 0 || done.has(idx) || this.hp[idx] <= 0) continue;
+        done.add(idx);
+        this.hp[idx] = Math.max(min, this.hp[idx] - damage * this.cfg.strength);
+        this.showDamage(idx);
+      }
+    }
+    return done.size;
   }
 
   claim(idx) {

@@ -16,6 +16,9 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/three/VoxelPlanet.js` | Voxel planet: terrain, claims, eating, exposed-voxel instancing, raycast, seed, removal log, solid bitsets, atmosphere |
 | `js/three/PlanetSurface.js` | Extra planet graphics over the voxels: `smooth` (surface nets) and `wedges` (ramps and corner pieces in the steps), built per 16³ chunk and rebuilt as voxels are eaten |
 | `js/three/shapes.js` | Which voxels are solid for a level's `shape`: `sphere`, `cube`, `text` (voxel letters with a colour per letter) |
+| `js/core/SkillTree.js` | Upgrade tree data and rules: nodes (branch, parent, cost, effect, layout), buying, adding up the effects |
+| `js/ui/TreeView.js` | The tree view (Tab): drawn on a small canvas and scaled up without smoothing (pixel art); hover tooltip, click to buy |
+| `js/three/Lightning3D.js` | Chain-lightning bolts (jagged additive lines that flicker out) |
 | `js/three/Debris3D.js` | Debris point cloud |
 | `js/three/Space3D.js` | Sky sphere with nebulae + star layers (one group, turned by the spin) |
 | `js/three/SpawnBeacon.js` | Clickable beacon at each player's spawn point |
@@ -68,6 +71,14 @@ Styles change only the graphics — collisions, claims and eating always use the
 - `wedges` — the cubes stay; every empty cell resting on a solid voxel (below = towards the planet centre along the main axis) gets a piece: a ramp next to one solid side, an inner corner next to two adjacent sides, an outer corner next to a solid diagonal.
 
 The surface is split into chunks of 16³ voxels. `VoxelPlanet.remove()` marks the chunks around the voxel dirty and `sync()` rebuilds up to 8 per frame (a guest joining mid-planet rebuilds all at once). To try a new look: add a builder to `BUILDERS` in `PlanetSurface.js`; a new shape: a case in `shapes.js`; then a level with its name in `CONFIG.levels`.
+
+## Points, upgrades and lightning
+
+- **Points** = `player.score − player.tree.spent`; `score` counts eaten voxels (1 voxel = 1 point).
+- **Upgrades** (`SkillTree`): every node is bought once and needs its parent. `Player.base` keeps the slider values; `Player.applyUpgrades()` sets the swarm to base + bonuses (units +, speed ×, bite radius +) and the lightning settings. Moving a slider changes the base, the bonus stays on top.
+- **Chain lightning** (`Player.updateLightning`, host / single player): every `interval` seconds a bolt starts at a random drone and jumps to the nearest drone not hit yet within `range`, `jumps` times. `VoxelPlanet.weakenAlong` takes `damage × strength` from every voxel on the path (down to 5%, never removing it). `Game3D.showBolt` draws it and the host sends it to guests.
+- **Destruction animation** (`VoxelPlanet.showDamage`): whenever a voxel loses strength its instance is scaled down (to 45%), darkened and jittered by how much strength is left. Removal emits debris as before. Guests don't receive voxel strength, so they see only the debris.
+- **Multiplayer:** each player has their own tree on the host; a guest sends `buy`, the host checks the guest's points and answers with `tree`.
 
 ## Frames of reference and the planet spin
 

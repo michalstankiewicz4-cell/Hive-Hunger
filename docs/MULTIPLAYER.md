@@ -54,6 +54,9 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | host → guest | `{t:'stats', list:[{index, host:true} \| {index, rtt, rate}]}` | every `net.pingMs`: each player's ping (ms) and the data the host sends them (bytes/s) |
 | host → guest | `{t:'summary', summary:{level, mode, winner, rows:[{index,name,color,planet,share,score,wins,next}]}}` | results of the eaten planet; sent again whenever someone presses Next planet |
 | guest → host | `{t:'next'}` | I pressed Next planet |
+| guest → host | `{t:'buy', id}` | buy upgrade `id` with my points |
+| host → guest | `{t:'tree', tree:{owned, spent}}` | your upgrade tree after a purchase |
+| host → guest | `{t:'bolt', index, p:[x,y,z,…]}` | a chain-lightning bolt of player `index` to draw |
 | host → guest | `{t:'notice', text}` | "Pink joined", "Pink left the room", "Pink: connection lost" — shown in the HUD for `net.noticeMs` |
 | both | `{t:'bye'}` | leaving (a guest closing the tab, or the host closing the room) |
 

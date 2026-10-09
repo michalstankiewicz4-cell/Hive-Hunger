@@ -136,6 +136,10 @@ export class NetHost {
       if (json.t === 'bye') this.drop(conn, 'left');
       else if (json.t === 'pong') this.links.get(conn).rtt = Math.round(performance.now() - json.ts);
       else if (json.t === 'ready') this.setReady(index, json.ready !== false);
+      else if (json.t === 'buy') {
+        const tree = this.game.onGuestBuy(index, json.id);
+        if (tree) this.send(conn, JSON.stringify({ t: 'tree', tree }));
+      }
       else this.game.onGuestMessage(index, json);
     });
     // a guest who leaves says goodbye first; a connection that closes or fails without it was lost
@@ -198,6 +202,12 @@ export class NetHost {
   broadcastPlanet(game) {
     const buf = encodePlanet(game.planet, game.level, false);
     for (const conn of this.guests.keys()) this.send(conn, buf);
+  }
+
+  /** A chain-lightning bolt for the guests to draw (positions rounded to 1 cm). */
+  broadcastBolt(index, path) {
+    const msg = JSON.stringify({ t: 'bolt', index, p: path.map((v) => Math.round(v * 100) / 100) });
+    for (const conn of this.guests.keys()) this.send(conn, msg);
   }
 
   /** Results of the eaten planet (and who pressed Next planet) for the guests' summary screens. */
@@ -289,6 +299,8 @@ export class NetGuest {
         this.onStatus('stats');
       } else if (json.t === 'notice') g.notify(json.text);
       else if (json.t === 'summary') g.setSummary(json.summary);
+      else if (json.t === 'bolt') g.onBolt(json);
+      else if (json.t === 'tree') g.onTree(json.tree);
       else if (json.t === 'bye') {
         this.hostLeft = true;
         this.lost();
@@ -308,6 +320,11 @@ export class NetGuest {
   /** We pressed Start (ready) or Not ready in the waiting room. */
   sendReady(ready = true) {
     this.conn?.open && this.conn.send(JSON.stringify({ t: 'ready', ready }));
+  }
+
+  /** We want to buy an upgrade (the host checks our points and answers with our tree). */
+  sendBuy(id) {
+    this.conn?.open && this.conn.send(JSON.stringify({ t: 'buy', id }));
   }
 
   /** We pressed Next planet on the summary. */

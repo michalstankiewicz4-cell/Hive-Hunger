@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.10.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.11.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -14,12 +14,17 @@ Planets come in a cycle of levels: 1 — a smaller planet, 2 — the usual one, 
 
 A planet counts as eaten only when its last voxel is gone. The swarm then flies back to its spawn point (the beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
 
+## Points and upgrades
+
+Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the counter) opens the upgrade tree: Brood (+units), Wings (+speed), Jaws (+bite radius) and Chain lightning — a bolt that jumps between your drones every few seconds and weakens the voxels on its way — with upgrades for more jumps, stronger and more frequent bolts. Upgrades add to the settings panel. Voxels show damage as they are eaten: they shrink, darken and shake before breaking apart.
+
 ## Controls
 
 - **Click / tap** — send the swarm there (a pulsing ring marks the spot): every unit drops its current bite, the swarm flies over (around the planet, not through it) and starts eating at the clicked spot. A unit stuck in a corner of a crater or tunnel bites through the blocking voxel (if it isn't someone else's) and carries on
 - **Click the beacon** (marker at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
 - **Right mouse button / two fingers** — rotate the camera
 - **Mouse wheel** — zoom
+- **Tab** — upgrade tree (Esc closes it)
 - **Menu** (bottom left, single player) — pause and go back to the start screen; **Single player** carries on with the same game
 - **Panel in the top-right corner** — adjust your swarm live:
   - **Units** — number of units in the swarm
@@ -85,6 +90,7 @@ js/
   config.js             all game, network and slider parameters
   version.js            game version
   core/Leader.js        the swarm's "brain": finds matter on its own + follows clicks
+  core/SkillTree.js     upgrade tree: nodes, costs, effects
   three/Game3D.js       scene, camera, input, game loop, roles (solo / host / guest)
   three/Player.js       one player: swarm, brain, beacon, settings, score
   three/VoxelPlanet.js  voxel planet + atmosphere
@@ -102,12 +108,14 @@ js/
   ui/StartScreen.js     start screen and multiplayer waiting room
   ui/Lobby.js           room panel during a multiplayer match
   ui/Summary.js         multiplayer summary after each planet
+  ui/TreeView.js        the upgrade tree (Tab), pixel art
+  three/Lightning3D.js  chain-lightning bolts
   ui/dom.js             small DOM helpers for the menus
   utils/noise.js        3D noise / fBm
   utils/terrain.js      terrain colours
   utils/space.js        nebula and star colours
 docs/                 architecture, multiplayer and configuration docs
-tests/                browser tests (Playwright): solo, multiplayer, levels and a local PeerJS server
+tests/                browser tests (Playwright): solo, multiplayer, levels, upgrade tree and a local PeerJS server
 LICENSE               MIT
 ```
 

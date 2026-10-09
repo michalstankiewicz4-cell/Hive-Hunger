@@ -4,8 +4,15 @@ import { hex, pingText } from './dom.js';
 
 /** Planet counter, control hints and — in multiplayer — the scoreboard (top left). */
 export class Hud {
-  constructor(element) {
+  /**
+   * @param {HTMLElement} element top-left HUD
+   * @param {HTMLElement} [pointsEl] points counter (top centre)
+   */
+  constructor(element, pointsEl) {
     this.el = element;
+    this.pointsEl = pointsEl;
+    this.pointsValue = pointsEl?.querySelector('.points-value');
+    this.lastPoints = null;
     this.last = '';
   }
 
@@ -18,8 +25,14 @@ export class Hud {
    * @param {Array<{name,color,score,planetScore,wins,local,net}>|null} [s.scores] multiplayer only
    * @param {string} [s.banner] e.g. who won the planet
    * @param {string[]} [s.notices] e.g. who left or lost the connection
+   * @param {number|null} [s.points] your points to spend (1 voxel = 1 point)
    */
-  update({ level, eaten, hint = '', mode = null, scores = null, banner = '', notices = [] }) {
+  update({ level, eaten, hint = '', mode = null, scores = null, banner = '', notices = [], points = null }) {
+    if (this.pointsValue && points !== this.lastPoints) {
+      this.lastPoints = points;
+      this.pointsEl.hidden = points === null;
+      this.pointsValue.textContent = (points ?? 0).toLocaleString('en');
+    }
     const title = `Planet ${level} · ${Math.floor(eaten * 100)}% eaten${mode ? ` · ${MODE_LABEL[mode]}` : ''}`;
     const key = JSON.stringify([title, hint, scores, banner, notices]);
     if (key === this.last) return;

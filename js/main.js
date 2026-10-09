@@ -5,11 +5,13 @@ import { ControlPanel } from './ui/ControlPanel.js';
 import { Lobby } from './ui/Lobby.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { Summary } from './ui/Summary.js';
+import { TreeView } from './ui/TreeView.js';
 import { pingText, rateText } from './ui/dom.js';
 
 const hudEl = document.getElementById('hud');
 const lobbyEl = document.getElementById('lobby');
 const menuEl = document.getElementById('menu');
+const pointsEl = document.getElementById('points');
 const menuButton = document.getElementById('menu-button');
 document.getElementById('version').textContent = `v${VERSION}`;
 
@@ -23,7 +25,7 @@ if (!window.THREE) {
   const { NetHost, NetGuest } = await import('./net/Net.js');
   const canNet = Boolean(window.Peer);
   const role = roomCode && canNet ? 'guest' : 'solo';
-  const game = new Game3D(document.body, new Hud(hudEl), { role });
+  const game = new Game3D(document.body, new Hud(hudEl, pointsEl), { role });
 
   // the panel controls your own swarm; a guest's settings are sent to the host
   const S = CONFIG.swarm;
@@ -80,8 +82,23 @@ if (!window.THREE) {
   });
   game.onSummaryChange = (s) => (s ? summary.show(s, game.localIndex) : summary.hide());
 
+  // upgrade tree: Tab or a click on the points counter; points = voxels eaten − points spent
+  const tree = new TreeView(document.getElementById('tree'), {
+    getTree: () => game.localPlayer?.tree || null,
+    getPoints: () => game.localPlayer?.points ?? 0,
+    onBuy: (id) => game.buyUpgrade(id),
+  });
+  pointsEl.addEventListener('click', () => tree.toggle());
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' && game.started && menuEl.hidden) {
+      e.preventDefault();
+      tree.toggle();
+    } else if (e.key === 'Escape' && tree.isOpen) tree.close();
+  });
+
   // single player: "Menu" pauses the game and goes back to the start screen
   menuButton.addEventListener('click', () => {
+    tree.close();
     game.started = false;
     menuButton.hidden = true;
     menu.showStart();

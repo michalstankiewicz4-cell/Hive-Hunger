@@ -4,6 +4,7 @@ import { Debris3D } from './Debris3D.js';
 import { Space3D } from './Space3D.js';
 import { ClickMarker } from './ClickMarker.js';
 import { Player } from './Player.js';
+import { Lightning3D } from './Lightning3D.js';
 
 const THREE = window.THREE;
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
@@ -78,6 +79,8 @@ export class Game3D {
     this.tmp = new THREE.Vector3();
     this.debris = new Debris3D(this.scene, this.cfg.debris);
     this.marker = new ClickMarker(this.scene, this.cfg.marker);
+    this.lightning = new Lightning3D(this.scene);
+    this.onTreeChange = null; // () => void — the upgrade tree view refreshes
 
     this.resize(); // camera aspect is needed to keep the spawn point on screen
     this.baseSpawn = this.spawnPoint();
@@ -341,6 +344,7 @@ export class Game3D {
 
     this.debris.update();
     this.marker.update();
+    this.lightning.update();
     for (const p of this.activePlayers()) p.beacon.update(this.camera);
     this.updateHud();
   }
@@ -403,6 +407,48 @@ export class Game3D {
     this.summary = summary;
     if (this.role === 'host' && summary) this.net?.broadcastSummary(summary);
     this.onSummaryChange?.(summary);
+  }
+
+  /** Draws a chain-lightning bolt (and, on the host, sends it to the guests). */
+  showBolt(player, path) {
+    this.lightning.show(path, player.color);
+    if (this.role === 'host') this.net?.broadcastBolt(player.index, path);
+  }
+
+  /** A guest sees a bolt the host fired. */
+  onBolt({ index, p }) {
+    const player = this.players[index];
+    if (player) this.lightning.show(p, player.color);
+  }
+
+  /**
+   * Buys an upgrade for the local player. A guest asks the host (which owns the game) and
+   * gets its tree back in a 'tree' message.
+   */
+  buyUpgrade(id) {
+    const me = this.localPlayer;
+    if (!me) return false;
+    if (this.role === 'guest') {
+      this.net.sendBuy(id);
+      return true;
+    }
+    const ok = me.buy(id);
+    if (ok) this.onTreeChange?.();
+    return ok;
+  }
+
+  /** Host: a guest wants to buy an upgrade; returns the guest's tree to send back. */
+  onGuestBuy(index, id) {
+    const p = this.players[index];
+    if (!p) return null;
+    p.buy(id);
+    return p.tree.toJSON();
+  }
+
+  /** Guest: our tree from the host after a purchase. */
+  onTree(tree) {
+    this.localPlayer?.tree.load(tree);
+    this.onTreeChange?.();
   }
 
   /** Player `index` pressed Next planet on the summary (host / via a guest's message). */
@@ -569,6 +615,7 @@ export class Game3D {
     const now = performance.now();
     this.notices = this.notices.filter((n) => n.until > now);
     this.hud.update({ level: this.level, eaten, hint, mode: this.mode, scores, banner: this.banner,
+      points: me ? me.points : null,
       notices: this.notices.map((n) => n.text) });
   }
 

@@ -72,6 +72,25 @@ async def main():
             t.ok(await guests[1].evaluate('() => window.__dbg.started') and await guests[1].locator('#menu').is_hidden(),
                  'guests start too')
 
+            # upgrades in multiplayer: a guest buys through the host with its own points
+            await host.evaluate('() => { window.__dbg.players[2].score = 500; }')
+            await h.fast_forward(host, 20)
+            await guests[1].wait_for_function('() => window.__dbg.localPlayer.points === 500', timeout=10000)
+            await guests[1].evaluate("() => { window.__dbg.buyUpgrade('units1'); window.__dbg.buyUpgrade('bolt1'); }")
+            await host.wait_for_timeout(1000)
+            await guests[1].evaluate("() => window.__dbg.buyUpgrade('units2')")
+            await host.wait_for_timeout(1000)
+            hp = await host.evaluate('() => { const p = window.__dbg.players[2]; return { owned: [...p.tree.owned], spent: p.tree.spent, count: p.swarm.count, base: p.base.count }; }')
+            gp = await guests[1].evaluate('() => { const p = window.__dbg.localPlayer; return { owned: [...p.tree.owned], points: p.points }; }')
+            t.ok('units1' in hp['owned'] and 'bolt1' in hp['owned'] and hp['count'] == hp['base'] + 20,
+                 'guest upgrades are applied on the host', hp)
+            t.ok(sorted(gp['owned']) == sorted(hp['owned']) and gp['points'] == 500 - hp['spent'],
+                 'the guest gets its tree and points back', gp)
+            before = await guests[0].evaluate('() => window.__dbg.lightning.shown')
+            await h.fast_forward(host, 6 * 60 + 30)
+            await host.wait_for_timeout(1000)
+            t.ok(await guests[0].evaluate('() => window.__dbg.lightning.shown') > before, 'other guests see the lightning')
+
             # play a little on the host, then compare
             await host.evaluate("""() => window.__dbg.activePlayers().forEach(p => {
               p.setSetting('count', 200); p.setSetting('speed', 0.5); p.setSetting('power', 2); })""")
