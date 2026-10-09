@@ -1,6 +1,6 @@
 const THREE = window.THREE;
 
-/** Odłamki w 3D jako chmura punktów; zanikają przez przyciemnianie koloru. */
+/** Debris as a point cloud; particles fade out by darkening their colour. */
 export class Debris3D {
   constructor(scene, cfg) {
     this.cfg = cfg;
@@ -30,7 +30,7 @@ export class Debris3D {
     const len = at.length() || 1;
     for (let k = 0; k < n; k++) {
       let i = this.count;
-      if (i >= c.max) i = (Math.random() * c.max) | 0; // pełny bufor: nadpisz losowy
+      if (i >= c.max) i = (Math.random() * c.max) | 0; // buffer full: overwrite a random one
       else this.count++;
       const s = c.minSpeed + Math.random() * (c.maxSpeed - c.minSpeed);
       this.pos.set([at.x, at.y, at.z], i * 3);

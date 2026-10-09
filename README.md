@@ -1,46 +1,58 @@
-# Rój
+# Hive Hunger
 
-Gra przeglądarkowa 3D: rój (stado) sam szuka najbliższej materii i zjada planetę zbudowaną z wokseli. Kliknięcie (stuknięcie) wskazuje mu cel — rój powoli tam płynie, a potem znów działa sam. Gdy zostaną resztki, planeta się rozsypuje i pojawia się następna.
+A 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels. A click (or tap) gives it a target — the swarm slowly drifts there, then acts on its own again. When only scraps are left, the planet shatters and a new one appears.
 
-Rój zachowuje się jak stado ptaków (boids): osobniki trzymają dystans od siebie, lecą w tę samą stronę co sąsiedzi i trzymają się grupy. Każdy leci ze stałą, identyczną prędkością.
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/
 
-Jedzenie jest celowe: przy materii każdy osobnik rezerwuje własny woksel (kąsek), leci w niego, ląduje i wygryza go, a potem wybiera następny. Jeden woksel je tylko jeden osobnik — wspólne kąski pojawiają się dopiero, gdy na planecie zostaje mniej wokseli niż osobników. W przelocie osobniki nie gryzą; o materię się nie odbijają i nie przenikają przez nią, tylko ślizgają się po powierzchni. Cel roju przesuwa się dalej, gdy w okolicy nie ma już wolnych wokseli.
+## How the swarm behaves
 
-Sterowanie:
-- klik / stuknięcie — wskaż cel roju
-- prawy przycisk myszy / dwa palce — obrót kamery
-- kółko — przybliżenie
-- panel w prawym górnym rogu — liczba osobników, prędkość, siła (promień krateru), odstęp i spójność stada, na żywo
+The swarm moves like a flock of birds (boids): units keep their distance from each other, fly the same way as their neighbours and stay with the group. Every unit flies at the same constant speed — only its direction changes.
 
-## Uruchomienie
+Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), flies to it, lands on it and eats it, then picks the next one. One voxel is eaten by one unit only — bites are shared only when the planet has fewer exposed voxels left than there are units. Units never eat in passing. They don't bounce off matter or pass through it; they slide along the surface. The swarm target moves on once no free voxels are left nearby.
 
-Kod używa modułów ES, więc trzeba go serwować przez HTTP (otwarcie `index.html` z dysku nie zadziała):
+## Controls
+
+- **Click / tap** — give the swarm a target
+- **Right mouse button / two fingers** — rotate the camera
+- **Mouse wheel** — zoom
+- **Panel in the top-right corner** — adjust live:
+  - **Units** — number of units in the swarm
+  - **Speed** — the shared flying speed
+  - **Power** — radius of the crater a unit eats out of its bite
+  - **Spacing** — distance units keep from each other
+  - **Cohesion** — how strongly units stay with the group
+
+## Running locally
+
+The code uses ES modules, so it has to be served over HTTP (opening `index.html` straight from disk won't work):
 
 ```bash
 npx serve .
-# albo
+# or
 python -m http.server
 ```
 
-Three.js r128 ładowany jest z CDN (cdnjs).
+Three.js r128 is loaded from a CDN (cdnjs).
 
-## Struktura
+## Project structure
 
 ```
 index.html
 css/style.css
 js/
-  main.js               punkt wejścia
-  config.js             wszystkie parametry gry i suwaków
-  core/Leader.js        „mózg” roju: samodzielne szukanie materii + polecenia z kliknięcia
-  three/Game3D.js       scena, kamera, sterowanie, pętla gry
-  three/VoxelPlanet.js  planeta z wokseli + atmosfera
-  three/Swarm3D.js      stado (boids) z kolizjami
-  three/Debris3D.js     odłamki
-  three/Space3D.js      niebo (mgławice + gwiazdy)
-  ui/Hud.js             licznik planety i podpowiedzi
-  ui/ControlPanel.js    suwaki
-  utils/noise.js        szum 3D / fBm
-  utils/terrain.js      kolory terenu
-  utils/space.js        kolory mgławic i gwiazd
+  main.js               entry point
+  config.js             all game and slider parameters
+  core/Leader.js        the swarm's "brain": finds matter on its own + follows clicks
+  three/Game3D.js       scene, camera, input, game loop
+  three/VoxelPlanet.js  voxel planet + atmosphere
+  three/Swarm3D.js      the flock (boids) with collisions and feeding
+  three/Debris3D.js     debris
+  three/Space3D.js      sky (nebulae + stars)
+  ui/Hud.js             planet counter and hints
+  ui/ControlPanel.js    sliders
+  utils/noise.js        3D noise / fBm
+  utils/terrain.js      terrain colours
+  utils/space.js        nebula and star colours
 ```
+
+All tunable values (planet size, voxel size, flock weights, eating speed, slider ranges) live in `js/config.js`.

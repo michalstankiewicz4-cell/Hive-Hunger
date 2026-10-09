@@ -2,7 +2,7 @@ import { nebulaColor, starColor } from '../utils/space.js';
 
 const THREE = window.THREE;
 
-/** Niebo w 3D: sfera z mgławicami (tekstura generowana szumem) + gwiazdy jako punkty. */
+/** Sky: a sphere with nebulae (noise-generated texture) plus stars as points. */
 export class Space3D {
   constructor(scene, cfg) {
     this.cfg = cfg;
@@ -26,7 +26,7 @@ export class Space3D {
       const st = Math.sin(theta), ct = Math.cos(theta);
       for (let i = 0; i < width; i++) {
         const phi = ((i + 0.5) / width) * Math.PI * 2;
-        // ten sam układ co UV w THREE.SphereGeometry — bez szwu
+        // same layout as THREE.SphereGeometry UVs — no seam
         const x = -Math.cos(phi) * st, y = ct, z = Math.sin(phi) * st;
         const c = nebulaColor(x * 1.6, y * 1.6, z * 1.6, this.seed, nebula);
         const o = (j * width + i) * 4;
@@ -53,7 +53,7 @@ export class Space3D {
     const v = new THREE.Vector3();
     const r = this.cfg.radius * 0.9;
     for (let k = 0; k < count; k++) {
-      // równomiernie na sferze
+      // uniformly on the sphere
       const u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, q = Math.sqrt(1 - u * u);
       v.set(q * Math.cos(a), u, q * Math.sin(a)).multiplyScalar(r);
       pos.set([v.x, v.y, v.z], k * 3);

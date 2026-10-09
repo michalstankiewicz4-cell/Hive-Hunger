@@ -1,8 +1,8 @@
 /**
- * Panel suwaków. Każdy suwak zmienia grę na żywo, w trakcie przesuwania.
- * @param {HTMLElement} root kontener panelu
- * @param {Array<{id,label,min,max,step,decimals}>} defs definicje z CONFIG.controls
- * @param {Record<string,{get:()=>number,set:(v:number)=>void}>} bindings co dany suwak zmienia
+ * Slider panel. Every slider changes the game live, while it is being dragged.
+ * @param {HTMLElement} root panel container
+ * @param {Array<{id,label,min,max,step,decimals}>} defs definitions from CONFIG.controls
+ * @param {Record<string,{get:()=>number,set:(v:number)=>void}>} bindings what each slider changes
  */
 export class ControlPanel {
   constructor(root, defs, bindings) {

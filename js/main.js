@@ -5,7 +5,7 @@ import { ControlPanel } from './ui/ControlPanel.js';
 const hudEl = document.getElementById('hud');
 
 if (!window.THREE) {
-  hudEl.textContent = 'Nie udało się wczytać biblioteki 3D. Sprawdź połączenie i odśwież stronę.';
+  hudEl.textContent = 'Could not load the 3D library. Check your connection and reload the page.';
 } else {
   const { Game3D } = await import('./three/Game3D.js');
   const game = new Game3D(document.body, new Hud(hudEl));

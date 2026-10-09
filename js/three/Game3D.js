@@ -8,15 +8,15 @@ import { Leader } from '../core/Leader.js';
 const THREE = window.THREE;
 
 /**
- * Tryb 3D. Rój działa sam; kliknięcie / stuknięcie wskazuje mu cel.
- * Prawy przycisk / dwa palce = obrót kamery, kółko = przybliżenie.
+ * The game. The swarm acts on its own; a click / tap gives it a target.
+ * Right button / two fingers = rotate the camera, wheel = zoom.
  */
 export class Game3D {
   constructor(container, hud) {
     this.cfg = CONFIG;
     this.hud = hud;
     this.level = 0;
-    this.biteRadius = CONFIG.swarm.biteRadius; // siła: promień krateru (zmieniany suwakiem)
+    this.biteRadius = CONFIG.swarm.biteRadius; // power: crater radius (changed by a slider)
     this.running = false;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -36,7 +36,7 @@ export class Game3D {
 
     this.space = new Space3D(this.scene, this.cfg.space);
 
-    // kamera na sferze wokół środka planety
+    // camera on a sphere around the planet centre
     this.orbit = { theta: 0, phi: Math.PI / 2, distance: this.cfg.camera.distance };
     this.updateCamera();
 
@@ -49,19 +49,19 @@ export class Game3D {
     this.swarm = new Swarm3D(this.scene, this.cfg.swarm, new THREE.Vector3(start.x, start.y, start.z));
     this.spawnPlanet();
 
-    // odsłonięte woksele przy celu roju — liczone dokładnie raz na klatkę
+    // exposed voxels near the swarm target — computed exactly once per frame
     this.candidates = [];
     const L = this.cfg.leader;
     this.world = {
-      // cel roju zostaje, dopóki w okolicy są wolne (niczyje) woksele
+      // the swarm target stays while there are free (unclaimed) voxels nearby
       hasMatterNear: () => this.freeCandidates > 0,
       findMatter: (p) => this.planet.findMatter(p, L.searchSamples),
     };
     const feedCenter = new THREE.Vector3();
     this.swarmWorld = {
       feeding: false,
-      // wolny (niezarezerwowany) woksel przy celu roju. Wspólny tylko wtedy, gdy na planecie
-      // zostało mniej odsłoniętych wokseli niż osobników (więcej już nie ma).
+      // a free (unclaimed) voxel near the swarm target. Shared only when the planet has
+      // fewer exposed voxels left than there are units (there are no more).
       pickFood: () => {
         const list = this.candidates;
         const pl = this.planet;
@@ -97,7 +97,7 @@ export class Game3D {
   spawnPlanet() {
     this.level++;
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet);
-    this.swarm?.food.fill(-1); // rezerwacje dotyczyły starej planety
+    this.swarm?.food.fill(-1); // claims belonged to the old planet
     this.swarm?.landed.fill(0);
   }
 
@@ -143,7 +143,7 @@ export class Game3D {
     const end = (e) => {
       if (!pointers.has(e.pointerId)) return;
       pointers.delete(e.pointerId);
-      // stuknięcie: lewy przycisk / jeden palec, bez obrotu i bez przeciągania
+      // a tap: left button / one finger, with no rotation and no drag
       if (e.type === 'pointerup' && tap && !rotated && pointers.size === 0 &&
           Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 8) {
         this.leader.command(this.pointFromScreen(this.toNdc(e)));
@@ -173,7 +173,7 @@ export class Game3D {
     this.camera.updateMatrixWorld();
   }
 
-  /** Punkt w świecie pod ekranem: pierwszy pełny woksel, a obok planety — płaszczyzna przez jej środek. */
+  /** World point under the screen point: the first solid voxel, or beside the planet — the plane through its centre. */
   pointFromScreen(ndc) {
     this.raycaster.setFromCamera(ndc, this.camera);
     const ray = this.raycaster.ray;
@@ -185,10 +185,10 @@ export class Game3D {
     return { x: this.tmp.x, y: this.tmp.y, z: this.tmp.z };
   }
 
-  /** Uderzenie osobnika wygryza mały krater wokół trafionego woksela. */
+  /** A feeding unit eats a small crater around the voxel it sits on. */
   biteCell(idx, ownFood) {
     const pl = this.planet;
-    // jedzenie trwa: każda klatka na kąsku zabiera część wytrzymałości
+    // eating takes time: every frame on a bite removes part of its strength
     const damage = this.cfg.planet.strength / this.cfg.swarm.eatFrames;
     pl.biteSphere(idx, this.biteRadius, damage, (n) => {
       this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
@@ -218,7 +218,7 @@ export class Game3D {
     this.hud.update({
       level: this.level,
       eaten: pl.eatenFraction,
-      hint: 'klik: kieruj rój · prawy przycisk / dwa palce: obrót · kółko: zoom',
+      hint: 'click: steer the swarm · right button / two fingers: rotate · wheel: zoom',
     });
   }
 
@@ -227,7 +227,7 @@ export class Game3D {
     this.renderer.setSize(w, h);
     const aspect = w / h;
     this.camera.aspect = aspect;
-    // na wąskim (pionowym) ekranie trzymaj kąt widzenia w poziomie, żeby planeta się mieściła
+    // on a narrow (portrait) screen keep the horizontal field of view so the planet fits
     const half = (this.cfg.fov / 2) * (Math.PI / 180);
     this.camera.fov = aspect < 1 ? (2 * Math.atan(Math.tan(half) / aspect) * 180) / Math.PI : this.cfg.fov;
     this.camera.updateProjectionMatrix();

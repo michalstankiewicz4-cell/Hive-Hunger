@@ -1,4 +1,4 @@
-// Szum wartości 3D + fBm. Próbkowanie w 3D na sferze daje teren bez zniekształceń na krawędzi dysku.
+// 3D value noise + fBm. Sampling in 3D on a sphere gives terrain with no distortion or seams.
 
 function hash3(x, y, z, seed) {
   let h = (x * 374761393 + y * 668265263 + z * 1274126177 + seed * 2246822519) | 0;
@@ -21,7 +21,7 @@ export function valueNoise3(x, y, z, seed) {
   );
 }
 
-/** Fractal Brownian motion, wynik w przybliżeniu 0..1. */
+/** Fractal Brownian motion, result roughly in 0..1. */
 export function fbm3(x, y, z, seed, octaves = 5) {
   let sum = 0, amp = 0.5, freq = 1, norm = 0;
   for (let o = 0; o < octaves; o++) {

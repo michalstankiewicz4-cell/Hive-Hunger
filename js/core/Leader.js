@@ -1,12 +1,12 @@
 /**
- * „Mózg” roju: punkt, wokół którego krąży rój. Działa w 2D i 3D (lista osi).
+ * The swarm's "brain": the point the flock heads for. Works on any list of axes.
  *
- * - Sam: zostaje tam, gdzie jest materia do jedzenia; gdy w okolicy nic nie ma,
- *   płynie do najbliższej materii.
- * - Po kliknięciu: powoli płynie do wskazanego punktu, chwilę tam zostaje,
- *   a potem znów działa sam.
+ * - On its own: stays where there is matter to eat; when nothing is left nearby,
+ *   it drifts to the nearest matter.
+ * - After a click: slowly drifts to the clicked point, stays there for a moment,
+ *   then acts on its own again.
  *
- * `world` musi mieć metody hasMatterNear(pos) i findMatter(pos) → punkt albo null.
+ * `world` must provide hasMatterNear(pos) and findMatter(pos) → point or null.
  */
 export class Leader {
   constructor(cfg, start, axes) {

@@ -7,19 +7,19 @@ export const BITE = Object.freeze({ MISS: 0, HIT: 1, REMOVED: 2 });
 const NEIGHBORS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 
 /**
- * Planeta z wokseli. Zewnętrzna warstwa ma kolory terenu (ocean, ląd, lód, chmury),
- * pod nią jest skała.
+ * A planet made of voxels. The outer layer has terrain colours (ocean, land, ice, clouds),
+ * with rock underneath.
  *
- * Rysowane są tylko odsłonięte woksele (mające pustego sąsiada) — gdy rój coś zje,
- * sąsiedzi pod spodem są dorysowywani. Dzięki temu można mieć drobne woksele.
+ * Only exposed voxels (ones with an empty neighbour) are drawn — when the swarm eats
+ * something, the neighbours underneath are added. This keeps small voxels affordable.
  */
 export class VoxelPlanet {
   constructor(scene, cfg) {
     this.scene = scene;
     this.cfg = cfg;
     this.s = cfg.voxelSize;
-    this.R = cfg.radius;                    // promień w jednostkach świata
-    this.Rv = Math.round(this.R / this.s);  // promień w wokselach
+    this.R = cfg.radius;                    // radius in world units
+    this.Rv = Math.round(this.R / this.s);  // radius in voxels
     this.N = this.Rv * 2;
     this.seed = (Math.random() * 1e6) | 0;
     this.alive = true;
@@ -27,7 +27,7 @@ export class VoxelPlanet {
     const N = this.N, n3 = N * N * N;
     this.hp = new Float32Array(n3);
     this.slotOf = new Int32Array(n3).fill(-1);
-    // ilu osobników zarezerwowało dany woksel do zjedzenia
+    // how many units have claimed this voxel to eat
     this.claims = new Uint16Array(n3);
 
     let total = 0;
@@ -65,7 +65,7 @@ export class VoxelPlanet {
 
   createMaterial() {
     const material = new THREE.MeshLambertMaterial();
-    // Normalna woksela przechylona w stronę normalnej kuli — płynne cieniowanie dnia i nocy.
+    // Voxel normal tilted towards the sphere normal — smooth day/night shading.
     material.onBeforeCompile = (shader) => {
       shader.vertexShader = shader.vertexShader.replace(
         '#include <beginnormal_vertex>',
@@ -97,7 +97,7 @@ export class VoxelPlanet {
     this.scene.add(mesh);
   }
 
-  // --- siatka ---
+  // --- grid ---
 
   coords(idx) {
     const N = this.N;
@@ -125,7 +125,7 @@ export class VoxelPlanet {
     return out.set((i + 0.5) * s - this.R, (j + 0.5) * s - this.R, (k + 0.5) * s - this.R);
   }
 
-  /** Indeks woksela pod punktem (obiekt z x, y, z) albo -1. */
+  /** Index of the voxel at a point (object with x, y, z), or -1. */
   cellAt(p) {
     const s = this.s;
     return this.index(Math.floor((p.x + this.R) / s), Math.floor((p.y + this.R) / s), Math.floor((p.z + this.R) / s));
@@ -136,7 +136,7 @@ export class VoxelPlanet {
     return idx >= 0 && this.hp[idx] > 0;
   }
 
-  // --- kolory ---
+  // --- colours ---
 
   colorOf(idx) {
     const p = this.cellCenter(idx, this._v);
@@ -150,7 +150,7 @@ export class VoxelPlanet {
     return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255];
   }
 
-  // --- instancje ---
+  // --- instances ---
 
   addInstance(idx) {
     if (this.count >= this.capacity) this.createMesh(Math.ceil(this.capacity * 1.6));
@@ -183,7 +183,7 @@ export class VoxelPlanet {
     this.dirty = true;
   }
 
-  // --- jedzenie ---
+  // --- eating ---
 
   bite(idx, amount) {
     if (!this.alive || idx < 0 || this.hp[idx] <= 0) return BITE.MISS;
@@ -201,14 +201,14 @@ export class VoxelPlanet {
     if (idx >= 0 && this.claims[idx] > 0) this.claims[idx]--;
   }
 
-  /** Czy woksel jest zarezerwowany przez kogoś innego niż właściciel `ownFood`. */
+  /** Whether the voxel is claimed by someone other than the owner of `ownFood`. */
   claimedByOther(idx, ownFood) {
     return idx !== ownFood && this.claims[idx] > 0;
   }
 
   /**
-   * Gryzie woksele w kuli o promieniu `radius` wokół woksela `idx`, pomijając
-   * woksele zarezerwowane przez inne osobniki; onRemoved(idx) dla zjedzonych.
+   * Bites voxels within a sphere of `radius` around voxel `idx`, skipping
+   * voxels claimed by other units; onRemoved(idx) is called for each eaten one.
    */
   biteSphere(idx, radius, amount, onRemoved, ownFood = -1) {
     if (!this.alive || idx < 0) return;
@@ -234,8 +234,8 @@ export class VoxelPlanet {
   }
 
   /**
-   * Wszystkie odsłonięte (widoczne) woksele w kuli o promieniu `r` wokół punktu.
-   * Wynik trafia do tablicy `out` (czyszczonej na początku); zwraca jej długość.
+   * All exposed (visible) voxels within a sphere of radius `r` around a point.
+   * Results go into the `out` array (cleared first); returns its length.
    */
   exposedNear(p, r, out) {
     out.length = 0;
@@ -261,7 +261,7 @@ export class VoxelPlanet {
     return out.length;
   }
 
-  /** Najbliższy wolny (niczyj) woksel z losowej próbki odsłoniętych; gdy brak wolnych — najbliższy dowolny. */
+  /** Nearest free (unclaimed) voxel from a random sample of exposed ones; if none is free — the nearest of any. */
   findMatter(p, samples) {
     if (!this.alive || this.count === 0) return null;
     let best = -1, bestD = Infinity, bestFree = false;
@@ -281,7 +281,7 @@ export class VoxelPlanet {
   }
 
 
-  /** Pierwszy pełny woksel na promieniu albo null. */
+  /** First solid voxel along a ray, or null. */
   raycastSolid(ray, out) {
     const R = this.R;
     const o = ray.origin, d = ray.direction;
@@ -301,7 +301,7 @@ export class VoxelPlanet {
     return this.alive ? 1 - this.left / this.total : 1;
   }
 
-  /** Rozsypuje resztę planety; callback dostaje (idx, kolor) dla odsłoniętych wokseli. */
+  /** Shatters the rest of the planet; the callback gets (idx, colour) for exposed voxels. */
   shatter(onCell) {
     this.alive = false;
     this.scene.remove(this.atmosphere);
@@ -343,10 +343,10 @@ export class VoxelPlanet {
         uniform float uInner, uOuter, uPower, uIntensity;
         varying vec3 vWorld;
         void main() {
-          // odległość promienia widzenia od środka planety (środek w 0,0,0)
+          // distance of the view ray from the planet centre (centre at 0,0,0)
           vec3 dir = normalize(vWorld - cameraPosition);
           float d = length(cross(dir, -cameraPosition));
-          // tylko pierścień poza planetą — przez wygryzione dziury poświata nie prześwituje
+          // only a ring outside the planet — the glow does not show through eaten holes
           float f = d < uInner ? 0.0 : pow(clamp((uOuter - d) / (uOuter - uInner), 0.0, 1.0), uPower);
           gl_FragColor = vec4(uColor * f * uIntensity, 1.0);
         }`,

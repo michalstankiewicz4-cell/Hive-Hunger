@@ -4,8 +4,8 @@ import { mix } from './terrain.js';
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /**
- * Kolor mgławicy (0–255, do dodania do tła) w punkcie przestrzeni.
- * W 2D próbkowane na płaszczyźnie, w 3D na sferze nieba.
+ * Nebula colour (0–255, added on top of the background) at a point in space,
+ * sampled on the sky sphere.
  */
 export function nebulaColor(x, y, z, seed, cfg) {
   const k = cfg.scale;
@@ -18,7 +18,7 @@ export function nebulaColor(x, y, z, seed, cfg) {
   return [base[0] * density, base[1] * density, base[2] * density];
 }
 
-/** Losowy kolor gwiazdy: od chłodnobiałej po ciepłożółtą. */
+/** Random star colour, from cool white to warm yellow. */
 export function starColor() {
   const tints = [[200, 215, 255], [235, 240, 255], [255, 245, 225], [255, 225, 190], [180, 200, 255]];
   return tints[(Math.random() * tints.length) | 0];

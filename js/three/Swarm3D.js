@@ -1,34 +1,34 @@
 const THREE = window.THREE;
 const FORWARD = new THREE.Vector3(0, 0, 1);
-const HASH_SIZE = 4096; // potęga dwójki
+const HASH_SIZE = 4096; // power of two
 const AXES = ['x', 'y', 'z'];
-const MAX_STEP = 0.2;   // maks. długość kroku ruchu (mniej niż połowa woksela)
+const MAX_STEP = 0.2;   // max movement step length (less than half a voxel)
 
 /**
- * Rój jako stado (boids). Każdy osobnik:
- *  - trzyma dystans od sąsiadów (separacja),
- *  - leci w tę samą stronę co sąsiedzi (wyrównanie),
- *  - trzyma się grupy (spójność),
- *  - leci do celu roju.
- * Wszyscy lecą ze stałą, identyczną prędkością — zmienia się tylko kierunek.
- * Sąsiedzi wyszukiwani przez siatkę haszującą, więc działa płynnie także dla ponad tysiąca osobników.
+ * The swarm as a flock (boids). Every unit:
+ *  - keeps its distance from neighbours (separation),
+ *  - flies the same way as its neighbours (alignment),
+ *  - stays with the group (cohesion),
+ *  - heads for the swarm target.
+ * All units fly at the same constant speed — only their direction changes.
+ * Neighbours are found through a spatial hash grid, so it stays smooth with over a thousand units.
  */
 export class Swarm3D {
   constructor(scene, cfg, spawn) {
     this.cfg = cfg;
     this.max = cfg.maxCount;
     this.count = 0;
-    this.speed = cfg.speed; // wspólna, stała prędkość wszystkich osobników (zmieniana suwakiem)
+    this.speed = cfg.speed; // shared, constant speed of all units (changed by a slider)
     this.spawn = spawn.clone();
     this.pos = new Float32Array(this.max * 3);
     this.dir = new Float32Array(this.max * 3);
-    // każdy osobnik ma własny „kąsek” — woksel, w który celowo leci, żeby go zjeść
+    // every unit has its own "bite" — a voxel it deliberately flies to in order to eat it
     this.food = new Int32Array(this.max).fill(-1);
     this.foodPos = new Float32Array(this.max * 3);
-    // 1 = osobnik siedzi na swoim kąsku i go wygryza
+    // 1 = the unit has landed on its bite and is eating it
     this.landed = new Uint8Array(this.max);
 
-    // parametry zmieniane suwakami
+    // parameters changed by sliders
     this.separationDistance = cfg.separationDistance;
     this.cohesion = cfg.weights.cohesion;
 
@@ -50,7 +50,7 @@ export class Swarm3D {
     this.setCount(cfg.count);
   }
 
-  /** Zmienia liczbę osobników na żywo. Nowe pojawiają się przy środku stada. */
+  /** Changes the number of units live. New ones appear near the flock's centre. */
   setCount(n) {
     const c = this.cfg;
     n = Math.max(c.minCount, Math.min(this.max, Math.round(n)));
@@ -61,7 +61,7 @@ export class Swarm3D {
         this.pos[i3] = center.x + (Math.random() - 0.5) * c.spawnSpread;
         this.pos[i3 + 1] = center.y + (Math.random() - 0.5) * c.spawnSpread;
         this.pos[i3 + 2] = center.z + (Math.random() - 0.5) * c.spawnSpread;
-        // losowy kierunek równomiernie na sferze
+        // random direction, uniform on the sphere
         const u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, q = Math.sqrt(1 - u * u);
         this.dir[i3] = q * Math.cos(a);
         this.dir[i3 + 1] = u;
@@ -70,7 +70,7 @@ export class Swarm3D {
         this.landed[i] = 0;
       }
     }
-    // usuwane osobniki zwalniają swoje rezerwacje
+    // removed units release their claims
     for (let i = n; i < this.count; i++) {
       if (this.food[i] >= 0) this.world?.release(this.food[i]);
       this.food[i] = -1;
@@ -89,7 +89,7 @@ export class Swarm3D {
     return ((ix * 73856093) ^ (iy * 19349663) ^ (iz * 83492791)) & (HASH_SIZE - 1);
   }
 
-  /** Zasięg widzenia sąsiadów — co najmniej trochę większy niż odstęp. */
+  /** Neighbour perception radius — at least a bit larger than the spacing. */
   get perception() {
     return Math.max(this.cfg.perception, this.separationDistance * 1.3);
   }
@@ -109,11 +109,11 @@ export class Swarm3D {
   }
 
   /**
-   * @param {{x:number,y:number,z:number}} target cel roju
+   * @param {{x:number,y:number,z:number}} target the swarm target
    * @param {object} world
-   *   feeding: czy cel roju jest przy materii (wtedy osobniki celowo jedzą),
-   *   pickFood(): indeks woksela do zjedzenia przy celu albo -1,
-   *   cellCenter(idx): środek woksela, cellAt(p), isSolidCell(idx), bite(idx)
+   *   feeding: whether the swarm target is at matter (units then eat deliberately),
+   *   pickFood(): index of a voxel to eat near the target, or -1,
+   *   cellCenter(idx): voxel centre, cellAt(p), isSolidCell(idx), bite(idx)
    */
   update(target, world) {
     const c = this.cfg;
@@ -130,7 +130,7 @@ export class Swarm3D {
     for (let i = 0; i < this.count; i++) {
       const i3 = i * 3;
 
-      // siedzi na kąsku: wygryza go, aż zniknie, potem startuje
+      // landed on its bite: eats it until it is gone, then takes off
       if (landed[i]) {
         if (food[i] >= 0 && world.isSolidCell(food[i])) {
           world.bite(food[i], food[i]);
@@ -140,9 +140,9 @@ export class Swarm3D {
       }
 
       const px = pos[i3], py = pos[i3 + 1], pz = pos[i3 + 2];
-      let sx = 0, sy = 0, sz = 0;   // separacja
-      let ax = 0, ay = 0, az = 0;   // wyrównanie
-      let cx = 0, cy = 0, cz = 0;   // spójność
+      let sx = 0, sy = 0, sz = 0;   // separation
+      let ax = 0, ay = 0, az = 0;   // alignment
+      let cx = 0, cy = 0, cz = 0;   // cohesion
       let n = 0;
 
       const gx = Math.floor(px / cell), gy = Math.floor(py / cell), gz = Math.floor(pz / cell);
@@ -160,11 +160,11 @@ export class Swarm3D {
         }
       }
 
-      // cel osobnika: przy materii — własny kąsek, w innym wypadku — cel roju
+      // the unit's target: at matter — its own bite, otherwise — the swarm target
       let tx = target.x, ty = target.y, tz = target.z;
       let targetWeight = w.target;
       let flocking = 1;
-      // kąsek trzymany do końca, nawet gdy rój leci dalej; nowy wybierany przy celu roju
+      // a bite is kept until eaten, even when the swarm moves on; new ones are picked near the swarm target
       if (food[i] >= 0 && !world.isSolidCell(food[i])) {
         world.release(food[i]);
         food[i] = -1;
@@ -182,7 +182,7 @@ export class Swarm3D {
         flocking = c.feedFlocking;
       }
 
-      // suma sterowań (każde jako wektor jednostkowy z wagą)
+      // sum of steering forces (each a weighted unit vector)
       let fx = 0, fy = 0, fz = 0;
       const add = (x, y, z, weight) => {
         const l = Math.hypot(x, y, z);
@@ -195,15 +195,15 @@ export class Swarm3D {
       }
       add(tx - px, ty - py, tz - pz, targetWeight);
 
-      // skręt o ograniczonej szybkości, potem normalizacja → stała prędkość
+      // turn at a limited rate, then normalise → constant speed
       let dx = dir[i3] + fx * c.turnRate, dy = dir[i3 + 1] + fy * c.turnRate, dz = dir[i3 + 2] + fz * c.turnRate;
       let l = Math.hypot(dx, dy, dz) || 1;
       dx /= l; dy /= l; dz /= l;
 
-      // Ruch oś po osi; przy dużej prędkości dzielony na kroki, żeby nie przeskoczyć przez woksel.
-      // Pełny woksel zatrzymuje ruch w tej osi — bez odbicia i bez przenikania:
-      //  - jedzący osobnik trafia w swój albo wolny woksel → ląduje na nim i zaczyna jeść,
-      //  - w innym wypadku ślizga się wzdłuż powierzchni.
+      // Move axis by axis; at high speed split into substeps so a voxel can't be skipped.
+      // A solid voxel stops movement along that axis — no bounce and no passing through:
+      //  - a feeding unit that hits its own or a free voxel lands on it and starts eating,
+      //  - otherwise it slides along the surface.
       p.x = px; p.y = py; p.z = pz;
       const d = [dx, dy, dz];
       const substeps = Math.max(1, Math.ceil(this.speed / MAX_STEP));
@@ -225,10 +225,10 @@ export class Swarm3D {
               foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
             }
             landed[i] = 1;
-            d[0] = foodPos[i3] - p.x; d[1] = foodPos[i3 + 1] - p.y; d[2] = foodPos[i3 + 2] - p.z; // przodem do kąska
+            d[0] = foodPos[i3] - p.x; d[1] = foodPos[i3 + 1] - p.y; d[2] = foodPos[i3 + 2] - p.z; // face the bite
             break move;
           }
-          d[a] = 0; // ślizg
+          d[a] = 0; // slide
         }
       }
 

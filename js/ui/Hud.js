@@ -1,3 +1,4 @@
+/** Planet counter and control hints (top left). */
 export class Hud {
   constructor(element) {
     this.el = element;
@@ -5,7 +6,7 @@ export class Hud {
   }
 
   update({ level, eaten, hint = '' }) {
-    const text = `Planeta ${level} · zjedzono ${Math.floor(eaten * 100)}%`;
+    const text = `Planet ${level} · ${Math.floor(eaten * 100)}% eaten`;
     const key = text + hint;
     if (key === this.last) return;
     this.last = key;
