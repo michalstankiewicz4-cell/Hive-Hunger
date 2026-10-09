@@ -4,13 +4,17 @@ import { Swarm3D, aroundPlanet } from './Swarm3D.js';
 import { Debris3D } from './Debris3D.js';
 import { Space3D } from './Space3D.js';
 import { ClickMarker } from './ClickMarker.js';
+import { SpawnBeacon } from './SpawnBeacon.js';
 import { Leader } from '../core/Leader.js';
 
 const THREE = window.THREE;
 
 /**
- * The game. The swarm acts on its own; a click / tap gives it a target.
- * Right button / two fingers = rotate the camera, wheel = zoom.
+ * The game. The swarm acts on its own; a click / tap gives it a target, a click on the
+ * beacon calls it back home. Right button / two fingers = rotate the camera, wheel = zoom.
+ *
+ * Planet spin: the simulation stays in the planet's frame (voxels never move), and the
+ * camera, sky, sun and beacon turn around it instead — on screen the planet rotates.
  */
 export class Game3D {
   constructor(container, hud) {
@@ -19,6 +23,9 @@ export class Game3D {
     this.level = 0;
     this.biteRadius = CONFIG.swarm.biteRadius; // power: crater radius (changed by a slider)
     this.running = false;
+    this.spin = 0;          // planet rotation angle (radians)
+    this.homeMode = null;   // null | 'recall' (called back by the beacon) | 'return' (planet eaten)
+    this.returnFrames = 0;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -31,9 +38,10 @@ export class Game3D {
     this.camera = new THREE.PerspectiveCamera(this.cfg.fov, 1, 0.1, 3000);
 
     const [lx, ly, lz] = this.cfg.planet.light;
-    const sun = new THREE.DirectionalLight(0xffffff, 0.95);
-    sun.position.set(lx, ly, lz).multiplyScalar(100);
-    this.scene.add(sun, new THREE.AmbientLight(0xffffff, 0.14));
+    this.sun = new THREE.DirectionalLight(0xffffff, 0.95);
+    this.sunBase = new THREE.Vector3(lx, ly, lz).multiplyScalar(100);
+    this.sun.position.copy(this.sunBase);
+    this.scene.add(this.sun, new THREE.AmbientLight(0xffffff, 0.14));
 
     this.space = new Space3D(this.scene, this.cfg.space);
 
@@ -46,6 +54,8 @@ export class Game3D {
 
     this.resize(); // camera aspect is needed to keep the spawn point on screen
     const start = this.spawnPoint();
+    // the beacon lives in the space group: it stays put in space while the planet turns
+    this.beacon = new SpawnBeacon(this.space.group, new THREE.Vector3(start.x, start.y, start.z), this.cfg.beacon);
     this.leader = new Leader(this.cfg.leader, start, ['x', 'y', 'z']);
     this.debris = new Debris3D(this.scene, this.cfg.debris);
     this.marker = new ClickMarker(this.scene, this.cfg.marker);
@@ -70,6 +80,7 @@ export class Game3D {
       nearestMode: CONFIG.swarm.nearestMode,
       clickPoint: null,
       planetRadius: 0,
+      holding: false, // called back home: nobody picks new bites
       pickFood: (p) => {
         const pl = this.planet;
         if (this.swarmWorld.nearestMode) {
@@ -154,15 +165,34 @@ export class Game3D {
    * the nearest free voxel to the clicked point.
    */
   command(point) {
+    this.homeMode = null;
     this.leader.command(point);
     this.swarmWorld.clickPoint = point;
+    this.dropAllBites(1);
+  }
+
+  /** Current world position of the spawn beacon. */
+  spawnWorld() {
+    const p = this.beacon.worldPosition(new THREE.Vector3());
+    return { x: p.x, y: p.y, z: p.z };
+  }
+
+  /** Every unit drops its bite (releasing the claim) and stops eating. */
+  dropAllBites(redirect) {
     const s = this.swarm;
     for (let i = 0; i < s.count; i++) {
       if (s.food[i] >= 0) this.planet.release(s.food[i]);
       s.food[i] = -1;
       s.landed[i] = 0;
-      s.redirect[i] = 1;
+      s.redirect[i] = redirect;
     }
+  }
+
+  /** The beacon was clicked: the swarm stops eating and flies home, and waits there for a new click. */
+  recall() {
+    this.homeMode = 'recall';
+    this.swarmWorld.clickPoint = null;
+    this.dropAllBites(0);
   }
 
   /** Switches the nearest-block test mechanic; units drop their current bites and pick again by the new rule. */
@@ -229,9 +259,15 @@ export class Game3D {
       // a tap: left button / one finger, with no rotation and no drag
       if (e.type === 'pointerup' && tap && !rotated && pointers.size === 0 &&
           Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 8) {
-        const point = this.pointFromScreen(this.toNdc(e));
-        this.command(point);
-        this.marker.show(point, this.lastPickHit, this.camera);
+        const ndc = this.toNdc(e);
+        this.raycaster.setFromCamera(ndc, this.camera);
+        if (this.beacon.hitBy(this.raycaster.ray)) {
+          if (this.homeMode !== 'return') this.recall();
+        } else if (this.homeMode !== 'return' && this.planet.alive) {
+          const point = this.pointFromScreen(ndc);
+          this.command(point);
+          this.marker.show(point, this.lastPickHit, this.camera);
+        }
       }
       if (pointers.size === 0) { rotating = false; tap = null; } else last = center();
     };
@@ -253,7 +289,7 @@ export class Game3D {
 
   updateCamera() {
     const { theta, phi, distance } = this.orbit;
-    this.camera.position.setFromSphericalCoords(distance, phi, theta);
+    this.camera.position.setFromSphericalCoords(distance, phi, theta + this.spin);
     this.camera.lookAt(0, 0, 0);
     this.camera.updateMatrixWorld();
   }
@@ -281,37 +317,71 @@ export class Game3D {
     }, ownFood);
   }
 
+  /** Turns the camera, sky, sun and beacon around the planet — on screen the planet spins. */
+  updateSpin() {
+    this.spin += this.cfg.planet.spinSpeed;
+    this.space.group.rotation.y = this.spin;
+    this.sun.position.copy(this.sunBase).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.spin);
+    this.updateCamera();
+  }
+
   update() {
+    this.updateSpin();
     const pl0 = this.planet;
     pl0.exposedNear(this.leader.pos, this.cfg.leader.feedSenseRadius, this.candidates);
     this.freeCandidates = 0;
     for (const idx of this.candidates) if (pl0.claims[idx] === 0) this.freeCandidates++;
+    if (this.homeMode) {
+      // heading home: the swarm target keeps following the beacon (it moves as space turns)
+      const L0 = this.leader;
+      L0.goal = this.spawnWorld();
+      L0.commanded = true;
+      L0.dwell = 0;
+    }
     this.leader.update(this.world);
     this.keepLeaderOverSurface();
     // while the swarm target is travelling to a clicked point, units follow it instead of eating
     const L = this.leader;
     const travelling = L.commanded && L.distanceTo(L.goal) > this.cfg.leader.arriveRadius;
     this.swarmWorld.planetRadius = this.planet.alive ? this.planet.R : 0;
-    this.swarmWorld.feeding = this.candidates.length > 0 && !travelling;
+    this.swarmWorld.holding = Boolean(this.homeMode);
+    this.swarmWorld.feeding = this.candidates.length > 0 && !travelling && !this.homeMode;
     this.swarm.update(this.leader.pos, this.swarmWorld);
 
     const pl = this.planet;
-    if (pl.alive && pl.left < pl.total * this.cfg.planet.finishThreshold) {
+    // the planet counts as eaten only when its last voxel is gone; then the swarm flies home
+    if (pl.alive && pl.left <= 0) {
       pl.shatter((idx, color) => this.debris.emit(pl.cellCenter(idx, this.tmp), color, this.cfg.debris.perCellOnFinish));
-      setTimeout(() => {
+      this.homeMode = 'return';
+      this.returnFrames = 0;
+      this.dropAllBites(0);
+    }
+    // back home: the next planet appears once the swarm has gathered at the beacon
+    if (this.homeMode === 'return') {
+      this.returnFrames++;
+      const home = this.spawnWorld();
+      const c = this.swarm.center();
+      const gathered = Math.hypot(c.x - home.x, c.y - home.y, c.z - home.z) < this.cfg.beacon.gatherRadius;
+      if ((this.leader.distanceTo(home) < this.cfg.beacon.arriveRadius && gathered) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames) {
         pl.dispose();
         this.spawnPlanet();
-      }, this.cfg.planet.nextPlanetDelay);
+        this.homeMode = null;
+        this.leader.commanded = false;
+        this.leader.goal = null;
+      }
     }
 
     pl.sync();
     this.debris.update();
     this.marker.update();
-    this.hud.update({
-      level: this.level,
-      eaten: pl.eatenFraction,
-      hint: 'click: steer the swarm · right button / two fingers: rotate · wheel: zoom',
-    });
+    this.beacon.active = Boolean(this.homeMode);
+    this.beacon.update(this.camera);
+    const hint = this.homeMode === 'return'
+      ? 'planet eaten — returning to the beacon'
+      : this.homeMode === 'recall'
+        ? 'called back · click the planet to send the swarm out again'
+        : 'click: steer the swarm · click the beacon: call it back · right button / two fingers: rotate · wheel: zoom';
+    this.hud.update({ level: this.level, eaten: this.planet.eatenFraction, hint });
   }
 
   resize() {

@@ -10,9 +10,12 @@ The swarm moves like a flock of birds (boids): units keep their distance from ea
 
 Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), flies to it, lands on it and eats it, then picks the next one. One voxel is eaten by one unit only — bites are shared only when the planet has fewer exposed voxels left than there are units. Units never eat in passing. They don't bounce off matter or pass through it; they slide along the surface. The swarm target moves on once no free voxels are left nearby.
 
+A planet counts as eaten only when its last voxel is gone. The swarm then flies back to its spawn point (the amber beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
+
 ## Controls
 
 - **Click / tap** — send the swarm there (a pulsing ring marks the spot): every unit drops its current bite, the swarm flies over (around the planet, not through it) and starts eating at the clicked spot. A unit stuck in a corner of a crater or tunnel bites through the blocking voxel (if it isn't someone else's) and carries on
+- **Click the beacon** (amber marker at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
 - **Right mouse button / two fingers** — rotate the camera
 - **Mouse wheel** — zoom
 - **Panel in the top-right corner** — adjust live:
@@ -22,6 +25,7 @@ Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), fli
   - **Spacing** — distance units keep from each other
   - **Cohesion** — how strongly units stay with the group
   - **Eat nearest block** (test mechanic) — when on, every unit flies straight from the voxel it just ate to the nearest uneaten, unclaimed voxel; no free flying, only spacing between units is kept
+  - **Reset to default** — restore all settings to their starting values
 
 ## Running locally
 
@@ -52,9 +56,11 @@ js/
   three/VoxelPlanet.js  voxel planet + atmosphere
   three/Swarm3D.js      the flock (boids) with collisions and feeding
   three/Debris3D.js     debris
+  three/ClickMarker.js  ring marking the clicked spot
+  three/SpawnBeacon.js  beacon at the spawn point (call the swarm back)
   three/Space3D.js      sky (nebulae + stars)
   ui/Hud.js             planet counter and hints
-  ui/ControlPanel.js    sliders
+  ui/ControlPanel.js    sliders, toggle and reset button
   utils/noise.js        3D noise / fBm
   utils/terrain.js      terrain colours
   utils/space.js        nebula and star colours

@@ -41,8 +41,7 @@ export const CONFIG = Object.freeze({
     radius: 24,
     voxelSize: 0.5,        // smaller = smoother sphere, more voxels
     terrainDepth: 1.6,     // thickness of the terrain-coloured layer
-    finishThreshold: 0.03, // below this fraction the planet shatters
-    nextPlanetDelay: 1500, // ms
+    spinSpeed: 0.0005,     // planet rotation, radians per frame (one turn ≈ 3.5 min at 60 fps)
     strength: 1,
     rock: [96, 84, 74],     // interior below the surface (rock)
     rockCore: [58, 50, 46], // darker rock near the core
@@ -89,6 +88,7 @@ export const CONFIG = Object.freeze({
     avoid: { minDistance: 6, dipMargin: 3, altitude: 3, pitDepth: 0.5 },
     // getting unstuck: frames without progress, minimal progress, and how recent the wall contact must be
     stuck: { frames: 45, progress: 0.3, recentContact: 10 },
+    reachDistance: 0.8,      // a unit this close to its own bite lands on it
     landSwapDistance: 1.5,   // a unit may land on a free voxel this close to its own bite instead
     nearestMode: true,       // test mechanic: after eating, fly to the nearest uneaten voxel (checkbox)
     feedFlocking: 0.35,      // while feeding: how much alignment and cohesion remain
@@ -109,6 +109,10 @@ export const CONFIG = Object.freeze({
     { id: 'cohesion', label: 'Cohesion', min: 0,   max: 3,   step: 0.1, decimals: 1 },
     { id: 'nearest', type: 'toggle', label: 'Eat nearest block' },
   ],
+
+  // beacon at the spawn point: click it to call the swarm back; after a planet is eaten
+  // the swarm returns here and the next planet appears once it has gathered
+  beacon: { color: 0xffc861, size: 0.9, hitRadius: 3, arriveRadius: 2.5, gatherRadius: 10, returnTimeoutFrames: 1500 },
 
   // marker shown where the player clicked
   marker: { color: 0x8fd0ff, radius: 1.6, opacity: 0.9, lift: 0.9, lifeFrames: 240, pulseSpeed: 0.12 },

@@ -7,8 +7,11 @@ export class Space3D {
   constructor(scene, cfg) {
     this.cfg = cfg;
     this.seed = (Math.random() * 1e6) | 0;
-    scene.add(this.createSky());
-    for (const layer of cfg.stars.layers) scene.add(this.createStars(layer));
+    // everything fixed in space goes into one group, so the game can turn it around the planet
+    this.group = new THREE.Group();
+    this.group.add(this.createSky());
+    for (const layer of cfg.stars.layers) this.group.add(this.createStars(layer));
+    scene.add(this.group);
   }
 
   createSky() {

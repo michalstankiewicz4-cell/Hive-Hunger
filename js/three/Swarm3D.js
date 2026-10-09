@@ -220,7 +220,7 @@ export class Swarm3D {
         world.release(food[i]);
         food[i] = -1;
       }
-      if (food[i] < 0 && (world.feeding || world.nearestMode)) {
+      if (food[i] < 0 && (world.feeding || world.nearestMode) && !world.holding) {
         p.x = px; p.y = py; p.z = pz;
         if (world.nearestMode && this.redirect[i] && world.clickPoint) {
           food[i] = world.pickFood(world.clickPoint);
@@ -241,6 +241,20 @@ export class Swarm3D {
         flocking = world.nearestMode ? 0 : c.feedFlocking;
       }
 
+      // within reach of its own bite: land on it. At constant speed a unit could otherwise
+      // circle a small, isolated scrap forever without ever touching it.
+      if (food[i] >= 0) {
+        const fx0 = foodPos[i3] - px, fy0 = foodPos[i3 + 1] - py, fz0 = foodPos[i3 + 2] - pz;
+        const reach = c.reachDistance + this.speed;
+        if (fx0 * fx0 + fy0 * fy0 + fz0 * fz0 < reach * reach) {
+          landed[i] = 1;
+          this.redirect[i] = 0;
+          const l0 = Math.hypot(fx0, fy0, fz0) || 1;
+          dir[i3] = fx0 / l0; dir[i3 + 1] = fy0 / l0; dir[i3 + 2] = fz0 / l0;
+          continue;
+        }
+      }
+
       // stuck detection: no progress towards the target for a while, while touching a wall
       // (a corner of a crater or tunnel) → bite through the blocking voxel if it isn't someone
       // else's, otherwise turn in a random direction to slide out
@@ -250,7 +264,7 @@ export class Swarm3D {
       if (stuck[i] > c.stuck.frames) {
         const b = lastBlock[i];
         if (blockAge[i] < c.stuck.recentContact && world.isSolidCell(b)) {
-          if (world.canBite(b, food[i])) {
+          if (!world.holding && world.canBite(b, food[i])) {
             if (b !== food[i]) {
               world.release(food[i]);
               world.claim(b);
