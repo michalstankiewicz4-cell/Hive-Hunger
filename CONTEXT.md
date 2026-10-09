@@ -16,6 +16,7 @@ A recovery file: everything needed to pick the project up again — what it is, 
 These came from the owner's requests; keep them unless he asks otherwise.
 
 - **3D only** (a 2D version existed early on and was removed on request).
+- **Levels:** a cycle of four planets, repeated until more levels are designed — 1 smaller (radius −30%), 2 the usual, 3 smooth surface, 4 cubes with wedges in the steps. Smooth/wedges are **graphics only** (owner's choice); new levels are meant to try new graphics approaches.
 - **Planet:** voxel sphere with Earth-like terrain, clouds, ice caps, atmosphere glow; rock inside (no coloured layered interior — removed on request). Small voxels for a smooth look. Slowly spins.
 - **Swarm = flock (boids):** units keep spacing, align, stay together; **every unit has the same constant speed**; turning on screen is smoothed.
 - **Eating is deliberate:** a unit claims its own voxel, flies to it, lands and eats; **one voxel is eaten by one unit only** unless there are no more free voxels; **no eating in passing**; **no bouncing and no passing through voxels** (units slide along surfaces).
@@ -55,7 +56,7 @@ How an assistant working in a cloud workspace publishes (as done for 0.6.0–0.8
 
 ## Testing
 
-Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` instead of the CDNs, a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. Run both after every change to the game.
+Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` instead of the CDNs, a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the level cycle and the smooth / wedge surfaces (`SHOTS=<folder>` saves screenshots). Run all three after every change to the game.
 
 Lessons from writing them:
 
@@ -87,6 +88,7 @@ Lessons from writing them:
 | 0.7.0 | tag `v0.7.0` | start screen, waiting room with Start, symmetric spawns |
 | 0.7.1 | tag `v0.7.1` | Menu button in single player, Not ready in the waiting room |
 | 0.8.0 | tag `v0.8.0` | planet summary with Next planet, ping and connection stats, joined / left / connection lost notices, tests in `tests/`, MIT licence, more docs |
+| 0.9.0 | tag `v0.9.0` | planet levels: smaller planet, smooth surface, wedges |
 
 ## Known limitations
 

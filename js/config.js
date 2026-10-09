@@ -68,6 +68,17 @@ export const CONFIG = Object.freeze({
     },
   },
 
+  // Planets in a cycle: planet 1 uses the first entry, planet 5 the first again, …
+  // radiusScale × planet.radius = the planet's radius. style = graphics only (physics and eating
+  // always use the voxels): 'cubes' — the voxels; 'smooth' — a smooth surface over them;
+  // 'wedges' — cubes plus low-poly wedges in the steps. New looks are tried out as new levels.
+  levels: [
+    { radiusScale: 0.7, style: 'cubes' },
+    { radiusScale: 1, style: 'cubes' },
+    { radiusScale: 1, style: 'smooth' },
+    { radiusScale: 1, style: 'wedges' },
+  ],
+
   // Flock (boids). Every unit flies at the same constant speed — only its direction changes.
   swarm: {
     count: 20,

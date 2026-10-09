@@ -36,6 +36,17 @@ The point the flock heads for.
 | `feedSenseRadius` | 10 | units pick their bites within this radius of the target; the target moves on when nothing free is left in it | larger = the swarm spreads wider while eating |
 | `searchSamples` | 600 | random voxels checked when looking for new matter | more = better choice, slower |
 
+## Levels (`levels`)
+
+A cycle of planets: planet 1 uses the first entry, planet 5 the first again.
+
+| Field | What it does |
+| --- | --- |
+| `radiusScale` | planet radius = `radiusScale × planet.radius` (0.7 = 30% smaller; voxel count grows with the cube of it) |
+| `style` | graphics only: `cubes`, `smooth` (smooth surface, cubes hidden) or `wedges` (cubes + ramps and corners in the steps) |
+
+Default: `0.7 cubes`, `1 cubes`, `1 smooth`, `1 wedges`.
+
 ## Flock (`swarm`)
 
 | Value | Default | What it does | More / less |

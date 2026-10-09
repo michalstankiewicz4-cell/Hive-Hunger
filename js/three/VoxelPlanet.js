@@ -1,4 +1,5 @@
 import { terrainColor, mix } from '../utils/terrain.js';
+import { PlanetSurface } from './PlanetSurface.js';
 
 const THREE = window.THREE;
 
@@ -12,17 +13,22 @@ const NEIGHBORS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 
  *
  * Only exposed voxels (ones with an empty neighbour) are drawn — when the swarm eats
  * something, the neighbours underneath are added. This keeps small voxels affordable.
+ *
+ * `look.style` picks the graphics (physics and eating are always the voxels):
+ * 'cubes' — the voxels themselves; 'smooth' / 'wedges' — see PlanetSurface.
  */
 export class VoxelPlanet {
   /**
    * @param {number} [seed] terrain seed — the same seed gives the same planet in every
    *   browser, which is how multiplayer guests build the host's planet
+   * @param {{radius?:number, style?:'cubes'|'smooth'|'wedges'}} [look] size and graphics of this planet
    */
-  constructor(scene, cfg, seed) {
+  constructor(scene, cfg, seed, look = {}) {
     this.scene = scene;
     this.cfg = cfg;
     this.s = cfg.voxelSize;
-    this.R = cfg.radius;                    // radius in world units
+    this.style = look.style || 'cubes';
+    this.R = look.radius || cfg.radius;     // radius in world units
     this.Rv = Math.round(this.R / this.s);  // radius in voxels
     this.N = this.Rv * 2;
     this.seed = seed ?? ((Math.random() * 1e6) | 0);
@@ -31,6 +37,9 @@ export class VoxelPlanet {
 
     const N = this.N, n3 = N * N * N;
     this.hp = new Float32Array(n3);
+    // voxel colours, computed when first needed
+    this.colors = new Uint8Array(n3 * 3);
+    this.colored = new Uint8Array(n3);
     this.slotOf = new Int32Array(n3).fill(-1);
     // how many units have claimed this voxel to eat
     this.claims = new Uint16Array(n3);
@@ -64,6 +73,13 @@ export class VoxelPlanet {
     }
     this.dirty = true;
 
+    if (this.style !== 'cubes') {
+      this.surfaceMaterial = this.createSurfaceMaterial();
+      this.surface = new PlanetSurface(this, this.style, this.surfaceMaterial);
+      // the smooth surface replaces the cubes; wedges are added to them
+      if (this.style === 'smooth') this.mesh.visible = false;
+    }
+
     this.atmosphere = this.createAtmosphere();
     scene.add(this.atmosphere);
   }
@@ -81,6 +97,19 @@ export class VoxelPlanet {
     return material;
   }
 
+  /** Material of the extra surfaces: vertex colours, the same day/night shading as the cubes. */
+  createSurfaceMaterial() {
+    const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+    material.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <beginnormal_vertex>',
+        `vec3 sphereNormal = normalize(position + 1e-4);
+         vec3 objectNormal = normalize(mix(vec3(normal), sphereNormal, ${this.cfg.sphereShading.toFixed(2)}));`,
+      );
+    };
+    return material;
+  }
+
   createMesh(capacity) {
     const old = this.mesh;
     const mesh = new THREE.InstancedMesh(this.geometry, this.material, capacity);
@@ -90,6 +119,7 @@ export class VoxelPlanet {
     const idxOfSlot = new Int32Array(capacity);
 
     if (old) {
+      mesh.visible = old.visible;
       mesh.instanceMatrix.array.set(old.instanceMatrix.array.subarray(0, this.count * 16));
       mesh.instanceColor.array.set(old.instanceColor.array.subarray(0, this.count * 3));
       idxOfSlot.set(this.idxOfSlot.subarray(0, this.count));
@@ -153,6 +183,17 @@ export class VoxelPlanet {
       rgb = mix(this.cfg.rockCore, this.cfg.rock, d / this.R);
     }
     return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255];
+  }
+
+  /** Colour of a voxel (0..1 RGB), cached — used by the extra surfaces. */
+  voxelColor(idx) {
+    const c = this.colors, o = idx * 3;
+    if (!this.colored[idx]) {
+      const [r, g, b] = this.colorOf(idx);
+      c[o] = r * 255; c[o + 1] = g * 255; c[o + 2] = b * 255;
+      this.colored[idx] = 1;
+    }
+    return [c[o] / 255, c[o + 1] / 255, c[o + 2] / 255];
   }
 
   // --- instances ---
@@ -233,6 +274,7 @@ export class VoxelPlanet {
     this.removeInstance(idx);
     this.left--;
     const [i, j, k] = this.coords(idx);
+    this.surface?.touch(i, j, k);
     for (const [a, b, c] of NEIGHBORS) {
       const n = this.index(i + a, j + b, k + c);
       if (n >= 0 && this.hp[n] > 0 && this.slotOf[n] < 0) this.addInstance(n);
@@ -253,6 +295,7 @@ export class VoxelPlanet {
     for (let i = 0; i < n; i++) {
       if (this.hp[i] > 0 && !(bits[i >> 3] & (1 << (i & 7)))) this.remove(i);
     }
+    this.surface?.sync(true);
   }
 
   /**
@@ -365,12 +408,14 @@ export class VoxelPlanet {
       onCell(idx, this.colorOf(idx));
     }
     this.hp.fill(0);
+    this.surface?.clear();
     this.count = 0;
     this.mesh.count = 0;
     this.left = 0;
   }
 
   sync() {
+    this.surface?.sync();
     if (!this.dirty) return;
     this.mesh.instanceMatrix.needsUpdate = true;
     this.mesh.instanceColor.needsUpdate = true;
@@ -414,6 +459,8 @@ export class VoxelPlanet {
   }
 
   dispose() {
+    this.surface?.dispose();
+    this.surfaceMaterial?.dispose();
     this.scene.remove(this.mesh);
     this.scene.remove(this.atmosphere);
     this.geometry.dispose();

@@ -3,6 +3,7 @@
 Two end-to-end tests drive the real game in headless Chromium (Playwright, WebGL in software via SwiftShader):
 
 - `test_solo.py` — start screen; nothing moves before a mode is chosen; Single player; **Menu** pauses and resumes; a big, fast swarm eats the whole planet to the last voxel with no unit inside solid voxels and no shared bites; the swarm returns home and the next planet appears.
+- `test_levels.py` — the level cycle: sizes and styles of planets 1–5, the smooth and wedge surfaces being built and rebuilt after eating (`SHOTS=<folder>` saves a screenshot of every level).
 - `test_multi.py` — with a local PeerJS server: PvP room, two guests; spawns 120° apart and the same on every page; **Start / Not ready**; the match starts only when everyone is ready; host and guests have the same planet and eaten voxels; pings measured and shown; "Pink left the room" after a goodbye; "Green: connection lost" after a dropped connection; spawns spread again (180°); joining a running match; "The host left the room".
 
 ## Setup (once)
@@ -22,6 +23,7 @@ From the repository root:
 ```bash
 python tests/test_solo.py     # ~2–4 min
 python tests/test_multi.py    # ~2–3 min
+python tests/test_levels.py   # ~1 min
 ```
 
 Each prints PASS / FAIL lines and exits with 1 if anything failed.

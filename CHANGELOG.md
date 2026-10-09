@@ -2,6 +2,13 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.9.0] — 2026-10-09
+
+### Added
+- **Planet levels** in a cycle of four (then it starts again): planet 1 — a smaller planet (radius 30% smaller), planet 2 — the usual planet, planet 3 — a **smooth surface** (steps become slopes, corners round off), planet 4 — **wedges**: cubes with low-poly ramps and inner/outer corner pieces in the steps. Levels 3 and 4 change only the graphics; the swarm still collides with and eats the voxels.
+- `CONFIG.levels` (size and look of each level) and `js/three/PlanetSurface.js` (the surfaces, rebuilt in chunks as voxels are eaten); new looks can be tried out as new levels.
+- `tests/test_levels.py`.
+
 ## [0.8.0] — 2026-10-09
 
 ### Added
@@ -86,6 +93,7 @@ All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https:
 ### Added
 - First release on GitHub Pages: a 3D swarm (boids, constant speed) that eats a voxel planet; deliberate feeding with one claimed voxel per unit; live sliders for units, speed, power, spacing and cohesion; space background with nebulae and stars; GitHub Pages deployment workflow.
 
+[0.9.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.6.0...v0.7.0

@@ -187,10 +187,20 @@ export class Game3D {
 
   spawnPlanet(seed) {
     this.level++;
-    this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed);
+    this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level));
     if (this.role === 'host') this.planet.log = [];
     for (const p of this.activePlayers()) p.onNewPlanet();
     this.banner = '';
+  }
+
+  /**
+   * Size and graphics of planet `level`: CONFIG.levels repeats in a cycle (planet 5 looks like
+   * planet 1, and so on). Every client builds the same planet from the level and the seed.
+   */
+  levelLook(level) {
+    const list = this.cfg.levels;
+    const l = list[(level - 1) % list.length];
+    return { radius: this.cfg.planet.radius * l.radiusScale, style: l.style };
   }
 
   // --- input ---

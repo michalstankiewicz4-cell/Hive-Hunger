@@ -14,6 +14,7 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/three/Swarm3D.js` | The flock (boids), feeding, collisions, getting unstuck, drawing; `aroundPlanet()` path helper |
 | `js/core/Leader.js` | The swarm's "brain": a point the flock heads for; stays at matter, finds new matter, follows clicks |
 | `js/three/VoxelPlanet.js` | Voxel planet: terrain, claims, eating, exposed-voxel instancing, raycast, seed, removal log, solid bitsets, atmosphere |
+| `js/three/PlanetSurface.js` | Extra planet graphics over the voxels: `smooth` (surface nets) and `wedges` (ramps and corner pieces in the steps), built per 16³ chunk and rebuilt as voxels are eaten |
 | `js/three/Debris3D.js` | Debris point cloud |
 | `js/three/Space3D.js` | Sky sphere with nebulae + star layers (one group, turned by the spin) |
 | `js/three/SpawnBeacon.js` | Clickable beacon at each player's spawn point |
@@ -52,6 +53,18 @@ stateDiagram-v2
 - **Playing:** `game.started` is `true`. In multiplayer the room panel (`Lobby`, bottom left) has the link and **Leave room**; leaving reloads the page without `?room=`, i.e. back to the start screen.
 - Someone who opens a room link while the match is running skips the waiting room.
 - **Returning home:** after the last voxel, every swarm flies to its beacon; the next planet appears when all have gathered (or after `beacon.returnTimeoutFrames`). In multiplayer the summary (`Summary`) is open meanwhile and the next planet also waits until every player has pressed **Next planet** (`Player.nextReady`).
+
+## Planet levels and looks
+
+`CONFIG.levels` is a cycle: planet `n` uses entry `(n − 1) mod length` — `radiusScale` (× `planet.radius`) and `style`. `Game3D.levelLook(level)` turns it into the planet's radius and style; every client builds the same planet from the level and the seed, so multiplayer needs nothing extra.
+
+Styles change only the graphics — collisions, claims and eating always use the voxels:
+
+- `cubes` — the instanced voxel cubes.
+- `smooth` — the cubes are hidden; `PlanetSurface` draws a surface net: one vertex per grid cell the surface passes through (the average of the solid/empty crossings on its edges) and a quad for every solid/empty pair of neighbouring voxels. Steps become slopes and corners round off without a case table. Colours are averaged from the solid voxels around each vertex.
+- `wedges` — the cubes stay; every empty cell resting on a solid voxel (below = towards the planet centre along the main axis) gets a piece: a ramp next to one solid side, an inner corner next to two adjacent sides, an outer corner next to a solid diagonal.
+
+The surface is split into chunks of 16³ voxels. `VoxelPlanet.remove()` marks the chunks around the voxel dirty and `sync()` rebuilds up to 8 per frame (a guest joining mid-planet rebuilds all at once). To try a new look: add a builder to `BUILDERS` in `PlanetSurface.js` and a level with its name in `CONFIG.levels`.
 
 ## Frames of reference and the planet spin
 
