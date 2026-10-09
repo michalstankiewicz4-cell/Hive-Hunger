@@ -1,0 +1,101 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0c14;
+  --hud-text: #cfe8ff;
+  --hud-dim: #7f93ad;
+  --panel-bg: rgba(18, 22, 36, 0.82);
+  --panel-border: #2a3550;
+  --accent: #8fd0ff;
+  --track: #2a3550;
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  touch-action: none;
+}
+
+.game-canvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  cursor: crosshair;
+}
+
+.hud {
+  position: fixed;
+  top: calc(16px + var(--safe-top));
+  left: 16px;
+  max-width: calc(100% - 330px);
+  color: var(--hud-text);
+  font: 14px/1.5 monospace;
+  pointer-events: none;
+  text-shadow: 0 0 4px #000;
+  z-index: 1;
+}
+
+.hud-hint {
+  color: var(--hud-dim);
+  font-size: 12px;
+}
+
+/* Panel suwaków w prawym górnym rogu */
+.controls {
+  position: fixed;
+  top: calc(12px + var(--safe-top));
+  right: 16px;
+  display: grid;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  color: var(--hud-text);
+  font: 600 12px monospace;
+  letter-spacing: 0.04em;
+  z-index: 2;
+}
+
+.control {
+  display: grid;
+  grid-template-columns: 9ch 1fr 5ch;
+  align-items: center;
+  gap: 10px;
+}
+
+.control input[type='range'] {
+  width: 150px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.control input[type='range']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.control output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .controls {
+    left: 16px;
+  }
+
+  .control input[type='range'] {
+    width: 100%;
+  }
+
+  .hud {
+    top: calc(176px + var(--safe-top));
+    max-width: calc(100% - 32px);
+  }
+}
