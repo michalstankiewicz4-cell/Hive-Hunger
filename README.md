@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.12.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.12.1 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -39,7 +39,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 
 The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). A room always starts from scratch — a fresh planet 1, no points or upgrades — even if you were playing single player before (only your settings panel stays). The match begins when every player in the room has pressed **Start** (**Not ready** takes it back).
 
-- **Co-op** — everyone eats the same planet together; the scoreboard shows each player's share.
+- **Co-op** — everyone eats the same planet together; the scoreboard shows how many voxels each player has eaten (the summary after each planet shows the shares).
 - **PvP** — a race on the same planet: whoever eats more of it wins the planet.
 
 Every player has their own swarm (Blue, Pink, Green, Violet), beacon and settings. After each planet a summary shows who ate how much of it (and in PvP who won it); the next planet comes once everyone has pressed **Next planet**. The scoreboard shows each player's ping (the host is marked "host"), the room panel shows your connection, and a short notice appears when someone joins, leaves or loses the connection. Spawn points are spread evenly around the planet (2 players opposite each other, 3 a third of a turn apart, 4 a quarter). It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
@@ -103,7 +103,7 @@ js/
   three/Space3D.js      sky (nebulae + stars)
   net/Net.js            multiplayer host and guest over PeerJS
   net/Protocol.js       binary network messages
-  ui/Hud.js             planet counter, hints, scoreboard
+  ui/Hud.js             planet counter, points counter, hints, notices, scoreboard
   ui/ControlPanel.js    sliders, toggle and reset button
   ui/StartScreen.js     start screen and multiplayer waiting room
   ui/Lobby.js           room panel during a multiplayer match
@@ -119,7 +119,7 @@ tests/                browser tests (Playwright): solo, multiplayer, levels, upg
 LICENSE               MIT
 ```
 
-All tunable values (planet size, voxel size, flock weights, eating speed, network timing, slider ranges) live in `js/config.js`.
+Almost all tunable values (planet size, voxel size, levels, flock weights, eating speed, network timing, slider ranges) live in `js/config.js`; upgrade costs and the lightning's base values are in `js/core/SkillTree.js` (see [docs/CONFIG.md](docs/CONFIG.md)).
 
 ## Search & sharing
 

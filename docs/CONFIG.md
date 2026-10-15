@@ -1,6 +1,6 @@
 # Configuration (`js/config.js`)
 
-Every tunable value is in `js/config.js`. Units: 1 = one unit of the 3D world (a voxel is `planet.voxelSize` = 0.5); speeds and times are **per frame** (about 60 frames per second). Values marked *slider* are the defaults of the settings panel — players change them live.
+Almost every tunable value is in `js/config.js` (upgrade costs and the lightning's base values are in `js/core/SkillTree.js` — see the last sections). Units: 1 = one unit of the 3D world (a voxel is `planet.voxelSize` = 0.5); speeds and times are **per frame** (about 60 frames per second). Values marked *slider* are the defaults of the settings panel — players change them live.
 
 ## Camera
 
@@ -20,6 +20,9 @@ Every tunable value is in `js/config.js`. Units: 1 = one unit of the 3D world (a
 | `planet.voxelSize` | 0.5 | voxel edge | smaller = smoother sphere but many more voxels (halving it = 8×) |
 | `planet.terrainDepth` | 1.6 | thickness of the coloured surface layer; rock below | |
 | `planet.spinSpeed` | 0.0005 | rotation in radians per frame (one turn ≈ 3.5 min) | 0 = no spin |
+| `planet.strength` | 1 | a voxel's strength; eating takes `strength / eatFrames` per frame, lightning drains a share of it | (planned: harder voxels later) |
+| `planet.rock`, `planet.rockCore` | | rock colours below the surface (outer → core) | |
+| `planet.light` | | direction of the sun | |
 | `planet.sphereShading` | 0.7 | 0 = flat cube faces, 1 = smooth sphere lighting | |
 | `planet.surface` | | terrain noise (`noiseScale`, `octaves`), `seaLevel`, polar ice (`iceLatitude`), `clouds`, colour `palette` | |
 
@@ -30,6 +33,7 @@ The point the flock heads for.
 | Value | Default | What it does | More / less |
 | --- | --- | --- | --- |
 | `maxSpeed` | 0.12 | top speed of the target point | faster travel to a click |
+| `steer`, `brake`, `slowRadius` | 0.02, 0.9, 6 | how fast the target accelerates, damping of its speed, distance at which it starts slowing down | |
 | `arriveRadius` | 1.2 | distance at which a click target counts as reached | |
 | `dwellFrames` | 90 | frames it stays at a clicked point before acting on its own | longer obedience to clicks |
 | `feedSenseRadius` | 10 | units pick their bites within this radius of the target; the target moves on when nothing free is left in it | larger = the swarm spreads wider while eating |
@@ -53,7 +57,7 @@ Default: sphere 0.7 cubes, sphere 1 cubes, sphere 1 smooth, sphere 1 wedges, cub
 | Value | Default | What it does | More / less |
 | --- | --- | --- | --- |
 | `count` | 20 | *slider Units* | |
-| `minCount`, `maxCount` | 10, 1500 | limits of the Units slider | |
+| `minCount`, `maxCount` | 10, 1500 | hard limits on the number of units (slider + Brood bonuses); the slider's own range is in `controls` | |
 | `speed` | 0.05 | *slider Speed* — identical constant speed of every unit | |
 | `perception` | 3 | how far a unit sees neighbours (at least 1.3 × spacing) | larger = smoother flock, slower |
 | `separationDistance` | 1.5 | *slider Spacing* | |
@@ -71,7 +75,7 @@ Default: sphere 0.7 cubes, sphere 1 cubes, sphere 1 smooth, sphere 1 wedges, cub
 | `stuck.frames` | 45 | frames without progress before a unit counts as stuck | lower = unsticks sooner, more random turns |
 | `stuck.progress` | 0.3 | minimal distance gained in that time | |
 | `stuck.recentContact` | 10 | the unit must have touched a wall this recently | |
-| `reachDistance` | 0.8 | a unit this close to its bite lands on it | lower = scraps get circled longer |
+| `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
 | `nearestMode` | true | *toggle Eat nearest block* | |
 | `feedFlocking` | 0.35 | how much alignment/cohesion remains while feeding (with Eat nearest block it is 0) | higher = units pull each other off their bites |
@@ -79,7 +83,7 @@ Default: sphere 0.7 cubes, sphere 1 cubes, sphere 1 smooth, sphere 1 wedges, cub
 | `biteRadius` | 0.5 | *slider Power* — crater radius per bite | |
 | `spawnSpread` | 4 | size of the cloud new units appear in | |
 | `spawnGap` | 1 | spawn distance from the surface, in planet radii | |
-| `color`, `size` | | single-player colour, unit box size | |
+| `color`, `size` | | `color` is unused (swarm colours come from `PLAYERS` in `Game3D.js`); `size` — unit box size | |
 
 ## Settings panel (`controls`)
 
@@ -109,6 +113,28 @@ Slider ranges and steps (`min`, `max`, `step`, `decimals`) and the `Eat nearest 
 
 ## Other
 
+- `background` — scene background colour behind the sky.
 - `space` — sky: nebula texture, colours and star layers.
 - `marker` — the ring shown at a click (`lifeFrames`, `pulseSpeed`, `lift` above the surface).
 - `debris` — eaten-voxel particles: `max` count, speeds, `friction`, `fade`, `size`.
+
+## Upgrades and lightning (`js/core/SkillTree.js`)
+
+Every node is bought once and needs its parent; effects add up on top of the sliders.
+
+| Branch | Nodes | Costs (points) | Effect per node |
+| --- | --- | --- | --- |
+| Brood | I–V | 40, 90, 180, 360, 700 | +10 units |
+| Wings | I–V | 40, 90, 180, 360, 700 | +10% speed |
+| Jaws | I–V | 40, 90, 180, 360, 700 | +0.2 bite radius |
+| Chain lightning | 1 | 250 | unlocks the bolt |
+| Arcs | I–III | 150, 300, 600 | +2 jumps |
+| Voltage | I–III | 150, 300, 600 | +0.15 strength drained per voxel |
+| Capacitor | I–III | 150, 300, 600 | a bolt 1 s more often |
+
+`BOLT_BASE` — the bolt before upgrades: every 6 s, 4 jumps, drains 0.25 of a voxel's strength (never below 5%), jumps up to 9 units between drones.
+
+## Other constants outside `config.js`
+
+- `js/three/PlanetSurface.js`: `CHUNK = 16` (voxels per chunk edge of the smooth / wedge surfaces), `buildPerFrame = 8` (chunks rebuilt per frame).
+- `js/three/Lightning3D.js`: `life = 20` (frames a bolt stays visible), `jag` (how jagged it is), `pieces` (kinks per jump).

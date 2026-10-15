@@ -1,12 +1,12 @@
 # Architecture
 
-Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnjs) and PeerJS 1.5.4 (from unpkg) — no build step, no server code. Every tunable value lives in `js/config.js`.
+Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnjs) and PeerJS 1.5.4 (from unpkg) — no build step, no server code. Almost every tunable value lives in `js/config.js` (upgrade costs and the lightning's base values in `js/core/SkillTree.js`).
 
 ## Modules
 
 | File | What it does |
 | --- | --- |
-| `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the settings panel, the start screen and room panel, starts the loop |
+| `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the settings panel, the start screen, room panel, summary and upgrade tree; Tab / Esc keys; starts the loop |
 | `js/config.js` | All parameters: planet, flock, feeding, beacon, marker, network, slider ranges |
 | `js/version.js` | Game version (keep in sync with `CHANGELOG.md`) |
 | `js/three/Game3D.js` | Scene, camera, input, roles (solo / host / guest), planet lifecycle, HUD data, guest-side handling of network messages |
@@ -25,7 +25,7 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/three/ClickMarker.js` | Ring shown where the player clicked |
 | `js/net/Net.js` | `NetHost` / `NetGuest` over PeerJS: rooms, joining, pings, timeouts |
 | `js/net/Protocol.js` | Binary snapshot and planet messages |
-| `js/ui/Hud.js` | Planet counter, hints, multiplayer scoreboard and banner |
+| `js/ui/Hud.js` | Planet counter, points counter, hints, notices, multiplayer scoreboard and banner |
 | `js/ui/ControlPanel.js` | Sliders, the "Eat nearest block" toggle, "Reset to default" |
 | `js/ui/StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
 | `js/ui/Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
@@ -107,7 +107,7 @@ Until the match has started (`game.started`: Single player chosen, or every play
 
 ## The planet (`VoxelPlanet`)
 
-- A sphere of voxels (`radius` / `voxelSize` ≈ 460 000 voxels). Colours come from 3D noise on the sphere (`terrainColor`) for the outer `terrainDepth`, rock below.
+- Voxels in the level's shape (`shapes.js`): a full-size sphere (radius 24 / voxel 0.5) has ≈ 463 000 voxels, planet 1 ≈ 165 000, the cube ≈ 314 000, the text ≈ 8 000. Colours come from 3D noise on the sphere (`terrainColor`) for the outer `terrainDepth`, rock below (the text: a colour per letter).
 - Only **exposed** voxels (with an empty neighbour) are instances of the `InstancedMesh`; when a voxel is eaten, its hidden neighbours are added. This keeps tens of thousands of instances instead of hundreds of thousands.
 - `seed` makes the planet reproducible. `log` collects eaten voxels for the network; `solidBits()` / `applySolidBits()` transfer the whole state to a guest who joins mid-planet.
 
@@ -115,4 +115,4 @@ Until the match has started (`game.started`: Single player chosen, or every play
 
 - **solo** — everything above runs locally; one player.
 - **host** — the same, with up to 3 more players whose commands and settings arrive over the network, plus snapshots sent out.
-- **guest** — no simulation: builds the planet from the host's seed, removes the voxels the host reports (emitting debris locally), shows swarm positions from snapshots (eased towards them every frame), sends clicks, recall and settings. See `docs/MULTIPLAYER.md`.
+- **guest** — no simulation: builds the planet from the host's seed, removes the voxels the host reports (emitting debris locally), shows swarm positions from snapshots (eased towards them every frame), sends clicks, recall, settings, Start / Not ready, Next planet and upgrade purchases. See `docs/MULTIPLAYER.md`.

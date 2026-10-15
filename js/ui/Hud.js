@@ -63,7 +63,7 @@ export class Hud {
         name.textContent = s.local ? `${s.name} (you)` : s.name;
         const value = document.createElement('span');
         value.className = 'hud-score-value';
-        // PvP shows planets won and voxels eaten of this planet; co-op shows each player's share
+        // PvP shows planets won and voxels eaten of this planet; co-op shows each player's total
         value.textContent = mode === 'pvp'
           ? `${s.planetScore.toLocaleString('en')} · ${s.wins} won`
           : s.score.toLocaleString('en');

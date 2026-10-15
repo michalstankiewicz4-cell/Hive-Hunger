@@ -24,7 +24,7 @@ Players: 1 Blue (host), 2 Pink, 3 Green, 4 Violet. Each has their own beacon (in
 - they build the planet themselves from the host's **seed** (same seed → same planet);
 - they remove the voxels the host reports and show debris locally;
 - they show swarm positions from **snapshots**, easing towards them every frame (`net.follow`);
-- they send their **clicks**, **recall** and **settings** to the host, which applies them to that player's swarm.
+- they send their **clicks**, **recall** and **settings** to the host, which applies them to that player's swarm, and their **Start / Not ready**, **Next planet** and **upgrade purchases**.
 
 All swarms share the planet's voxel claims on the host, so one voxel is eaten by one unit of one swarm.
 

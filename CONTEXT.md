@@ -28,7 +28,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Defaults:** units 20, speed 0.05, power 0.5, spacing 1.5, cohesion 1.0, "Eat nearest block" on. "Reset to default" restores them.
 - **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player **Esc** pauses and opens it, Esc again carries on (no Menu button — removed on request). No atmosphere glow (removed on request).
 - **Fair rooms:** creating a Co-op/PvP room starts from scratch (planet 1, no points/upgrades/eaten voxels from single player); only the settings panel stays.
-- **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (points per player, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
+- **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (voxels eaten of the planet per player, share, total, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
 - **SEO:** title, description, keywords (including "incremental free"), Open Graph/Twitter thumbnail (`og-image.png`, rendered from the game — not the owner's early screenshot), `VideoGame` JSON-LD, sitemap.
 
 ## Working with the owner
@@ -48,13 +48,13 @@ Licence: MIT (`LICENSE`), chosen by the owner.
 - Versioning: bump `js/version.js`, add a `CHANGELOG.md` entry, tag the commit `vX.Y.Z`.
 - The owner's clone is `C:\Users\micha\vsrepos\Hive-Hunger` (Windows). The Claude GitHub app has no write access to the repository, so pushes go out from his machine with his own git credentials.
 
-How an assistant working in a cloud workspace publishes (as done for 0.6.0–0.8.0):
+How an assistant working in a cloud workspace publishes (as done for 0.12.0):
 
 1. Commit and tag in the cloud workspace, then `git bundle create hh.bundle vPREV..main vNEW`.
-2. Move the bundle to the owner's machine (e.g. base64 through the Linux shell that is linked to his computer, where the clone is mounted at `~/mnt/Hive-Hunger`), then `git fetch ../hh.bundle main:refs/remotes/bundle/main 'refs/tags/vNEW:refs/tags/vNEW'` and fast-forward `main`.
-3. That Linux shell **cannot delete files** in the folder until the owner allows it (a permission prompt). Without it git leaves `.lock` files behind (`.git/index.lock`, `.git/objects/maintenance.lock`, `tmp_pack_*`) and can't replace changed files. Ask for delete permission first; remove leftover locks only if no git is running.
-4. The Windows clone has CRLF line endings. Run git in the Linux shell as `git -c core.autocrlf=true -c core.fileMode=false …`, otherwise every file looks modified (only line endings and file modes differ — not real changes).
-5. The Linux shell has **no GitHub credentials**. Push from Windows PowerShell on his machine: `git push origin main vNEW` (PowerShell prints git's progress on stderr as a red "NativeCommandError" — that is not a failure; check for `main -> main`).
+2. Copy the bundle into the owner's clone folder on his computer (a file transfer to the connected folder).
+3. In Windows PowerShell in `C:\Users\micha\vsrepos\Hive-Hunger`: `git fetch hh.bundle main:refs/remotes/bundle/main refs/tags/vNEW:refs/tags/vNEW`, then `git merge --ff-only bundle/main`, delete the bundle, and `git push origin main vNEW`. PowerShell prints git's progress on stderr as a red "NativeCommandError" — that is not a failure; check for `main -> main`.
+
+Older way (0.6.0–0.11.1), only as a fallback: fast-forwarding through the Linux shell linked to his computer (clone mounted at `~/mnt/Hive-Hunger`). That shell **cannot delete files** until the owner allows it (a permission prompt) — without it git leaves `.lock` files (`.git/index.lock`, `.git/objects/maintenance.lock`, `tmp_pack_*`) and can't replace changed files; remove leftover locks only if no git is running. Run git there as `git -c core.autocrlf=true -c core.fileMode=false …` (the clone has CRLF line endings, otherwise every file looks modified). It has no GitHub credentials, so the push still goes from PowerShell.
 
 ## Testing
 
@@ -74,7 +74,7 @@ Lessons from writing them:
 - **No `hp <= 0` guard in `VoxelPlanet.remove()`**: an early return there once stopped every voxel from being removed (scores went up, the planet never shrank).
 - **Ending at 100%:** never shatter the planet early (it used to shatter at 97%); units must be able to land on isolated scraps (`reachDistance`), or the last voxels are circled forever.
 - **Claims:** a voxel claimed by a unit must be released whenever the unit drops it (`dropAllBites`, new planet, player leaving), or other units will never eat it.
-- **Guests don't simulate.** Anything that changes the game must happen on the host and reach guests through `players` / `stats` / `notice` messages or snapshots.
+- **Guests don't simulate.** Anything that changes the game must happen on the host and reach guests through messages (`players`, `planet`, `stats`, `notice`, `summary`, `bolt`, `tree`) or snapshots.
 
 ## Version history (short)
 
@@ -95,13 +95,14 @@ Lessons from writing them:
 | 0.11.0 | tag `v0.11.0` | points, upgrade tree (Tab, pixel art), chain lightning, destruction animation |
 | 0.11.1 | tag `v0.11.1` | Atmosphere on/off switch in the settings panel |
 | 0.12.0 | tag `v0.12.0` | atmosphere removed, Esc instead of the Menu button, rooms start from scratch |
+| 0.12.1 | tag `v0.12.1` | documentation checked against the code and corrected |
 
 ## Known limitations
 
 - The host's tab must stay in the foreground (browsers pause animation in background tabs → the game pauses for everyone).
 - Multiplayer depends on the PeerJS public server for joining; strict NATs without TURN may fail to connect (no TURN server is configured).
 - With slow defaults (20 units, speed 0.05) a planet takes a long time; sliders change that live.
-- **Fast swarms can't finish a planet.** At high Speed a unit turns in a wide arc (radius ≈ `speed / turnRate`, e.g. 0.5 / 0.07 ≈ 7) and can circle an isolated last voxel forever without coming within `reachDistance`; the planet stays at a few dozen voxels. Found while testing 0.8.0 (3 swarms at speed 0.5); lowering Speed finishes it. Not fixed yet — waiting for the owner's decision.
+- **Fast swarms can't finish a planet.** At high Speed a unit turns in a wide arc (radius ≈ `speed / turnRate`, e.g. 0.5 / 0.07 ≈ 7) and can circle an isolated last voxel forever without coming within `reachDistance` + its speed; the planet stays at a few dozen voxels. Found while testing 0.8.0 (3 swarms at speed 0.5); lowering Speed finishes it. Not fixed yet — waiting for the owner's decision.
 
 ## Ideas proposed earlier but not done
 
@@ -111,4 +112,4 @@ Suggested during development; not built because the owner hasn't asked for them.
 - Planet types (desert, ice, gas, lava), a separate cloud layer, city lights on the night side.
 - Pinch-to-zoom on phones.
 - Swarm settings already in the waiting room.
-- Points and upgrades for the swarm; sound.
+- Sound.

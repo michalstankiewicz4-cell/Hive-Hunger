@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.12.1] — 2026-10-15
+
+### Changed
+- Documentation checked against the code and corrected: test list, run times and setup; co-op scoreboard wording; `docs/CONFIG.md` gets the missing values (`background`, planet strength/rock/light, leader steering), corrected `maxCount`, `reachDistance` and `color`, and sections for upgrade costs, the lightning's base values and constants outside `config.js`; voxel counts per level; what guests send; publishing steps in `CONTEXT.md` (push straight from Windows PowerShell). Three outdated code comments fixed. No change to the game.
+
 ## [0.12.0] — 2026-10-09
 
 ### Changed
@@ -127,6 +132,7 @@ All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https:
 ### Added
 - First release on GitHub Pages: a 3D swarm (boids, constant speed) that eats a voxel planet; deliberate feeding with one claimed voxel per unit; live sliders for units, speed, power, spacing and cohesion; space background with nebulae and stars; GitHub Pages deployment workflow.
 
+[0.12.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.10.0...v0.11.0

@@ -180,7 +180,7 @@ export class Game3D {
     return this.players.filter(Boolean);
   }
 
-  /** Switch from single player to hosting a room (keeps the current planet and swarm). */
+  /** Switch to hosting a room: starts from scratch (new planet 1 and host player), keeps the settings panel values. */
   becomeHost(mode) {
     this.role = 'host';
     this.mode = mode;
@@ -208,7 +208,7 @@ export class Game3D {
   }
 
   /**
-   * Size and graphics of planet `level`: CONFIG.levels repeats in a cycle (planet 5 looks like
+   * Size and graphics of planet `level`: CONFIG.levels repeats in a cycle (planet 7 looks like
    * planet 1, and so on). Every client builds the same planet from the level and the seed.
    */
   levelLook(level) {
