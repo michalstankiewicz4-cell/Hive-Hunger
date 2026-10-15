@@ -9,7 +9,7 @@
  *   surface  'sphere' | 'cube' | 'parts' | 'none' — how terrain colours are laid on (see VoxelPlanet)
  *   parts    ('parts' only) [{kind: 'sphere' | 'cube', center: [x, y, z], r}] — each part gets its own terrain
  *   fill(i, j, k) → 0 empty, otherwise a tag ≥ 1 (the text uses it for the letter's colour)
- *   colors   for tags (text only): [r, g, b] 0..255 per tag
+ *   colors   for tags (text, boxes): [r, g, b] 0..255 per tag
  *
  * To add a shape: add a case here and use its name as `shape` in CONFIG.levels.
  */
@@ -18,6 +18,7 @@ export function buildShape(look, s) {
   if (shape === 'cube') return cube(look.radius, s);
   if (shape === 'text') return text(look, s);
   if (shape === 'pair') return pair(look.radius, look.gap ?? 10, s);
+  if (shape === 'boxes') return boxes(look.max ?? 4, look.gap ?? 5, s);
   return sphere(look.radius, s);
 }
 
@@ -64,6 +65,55 @@ function pair(radius, gap, s) {
       return i >= cx0 && i < cx0 + 2 * Rv && Math.abs(j + 0.5 - mid) <= Rv && Math.abs(k + 0.5 - mid) <= Rv ? 1 : 0;
     },
   };
+}
+
+/**
+ * Every box shape from 1×1×1 to max×max×max voxels once — no rotated copies: each is placed as
+ * width ≥ height ≥ depth (x ≥ y ≥ z). One row per depth z = 1 … max (top → bottom), boxes in a
+ * row from the smallest, `gap` voxels apart and standing on the row's base line; the rows are
+ * `gap` apart too. Facing the starting camera; each box has its own colour.
+ */
+function boxes(max, gap, s) {
+  const rows = [];
+  for (let z = 1; z <= max; z++) {
+    const row = [];
+    for (let y = z; y <= max; y++) for (let x = y; x <= max; x++) row.push([x, y, z]);
+    rows.push(row);
+  }
+  const rowWidth = (row) => row.reduce((w, [x]) => w + x, 0) + (row.length - 1) * gap;
+  const W = Math.max(...rows.map(rowWidth));
+  const H = rows.length * max + (rows.length - 1) * gap;
+  const N = (Math.max(W, H) + 6) & ~1;
+  const mid = N >> 1, x0 = (N - W) >> 1, top = ((N + H) >> 1);
+  const tags = new Uint8Array(N * N * N);
+  const colors = [null];
+  const count = rows.reduce((n, r) => n + r.length, 0);
+  let tag = 0;
+  rows.forEach((row, r) => {
+    const base = top - r * (max + gap) - max; // the row's lowest voxel (y)
+    let i0 = x0 + ((W - rowWidth(row)) >> 1);
+    for (const [x, y, z] of row) {
+      tag++;
+      colors.push(hsl((tag - 1) / count, 0.7, 0.55));
+      const k0 = mid - 2;
+      for (let k = k0; k < k0 + z; k++) for (let j = base; j < base + y; j++) for (let i = i0; i < i0 + x; i++) {
+        tags[(k * N + j) * N + i] = tag;
+      }
+      i0 += x + gap;
+    }
+  });
+  return {
+    N, half: (N * s) / 2, radius: 2 * s, bound: (Math.hypot(W, H, max) * s) / 2, surface: 'none', colors,
+    fill: (i, j, k) => tags[(k * N + j) * N + i],
+  };
+}
+
+function hsl(h, sat, l) {
+  const f = (n) => {
+    const k = (n + h * 12) % 12, a = sat * Math.min(l, 1 - l);
+    return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
+  };
+  return [f(0), f(8), f(4)];
 }
 
 // 5 × 7 pixel letters, top row first. Pixels of a letter must touch by a side (not only by a

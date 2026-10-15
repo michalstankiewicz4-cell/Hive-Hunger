@@ -67,24 +67,26 @@ export const CONFIG = Object.freeze({
     },
   },
 
-  // Planets in a cycle: planet 1 uses the first entry, planet 5 the first again, …
+  // Planets in a cycle: planet 1 uses the first entry, planet 6 the first again, …
   // shape: 'sphere' (default), 'cube' (half-edge = radius), 'pair' (sphere + cube, `gap` voxels
-  // apart), 'text' (voxel letters) — see shapes.js.
+  // apart), 'boxes' (every box shape up to max×max×max once, `gap` apart), 'text' (voxel letters) — see shapes.js.
   // radiusScale × planet.radius = the radius (sphere) or half-edge (cube).
   // style = graphics only (physics and eating always use the voxels): 'cubes' — the voxels;
   // 'smooth' — a smooth surface over them; 'wedges' — cubes plus low-poly wedges in the steps.
   // Every level uses 'smooth' (the owner's choice); the other styles stay available.
   levels: [
-    // test board: a sphere and a cube the size of the old planet 1, 10 voxels apart
-    { shape: 'pair', radiusScale: 0.7, gap: 10, style: 'smooth' },
+    // test board: every box shape from 1×1×1 to 4×4×4 voxels once (20, no rotated copies), 5 voxels apart
+    { shape: 'boxes', max: 4, gap: 5, style: 'smooth' },
     { radiusScale: 1, style: 'smooth' },
-    { shape: 'cube', radiusScale: 0.7, style: 'smooth' }, // the size of planet 1's sphere
+    { shape: 'cube', radiusScale: 0.7, style: 'smooth' }, // edge = the diameter of a 0.7 sphere (the board's)
     {
       shape: 'text', text: 'TEST LVL', style: 'smooth',
       pixel: 3,  // voxels per font pixel
       depth: 10, // thickness in voxels
       colors: [[255, 84, 84], [255, 160, 60], [255, 220, 70], [110, 220, 90], [70, 200, 230], [90, 120, 255], [200, 100, 240]],
     },
+    // test board: a sphere and a cube the size of the old planet 1, 10 voxels apart
+    { shape: 'pair', radiusScale: 0.7, gap: 10, style: 'smooth' },
   ],
 
   // Flock (boids). Every unit flies at the same constant speed — only its direction changes.

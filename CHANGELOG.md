@@ -2,6 +2,14 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.15.0] — 2026-10-16
+
+### Added
+- **Level 1 is a box test board**: every box shape from 1×1×1 to 4×4×4 voxels once — 20 boxes, no rotated copies (each as width ≥ height ≥ depth), 5 voxels apart, one row per depth, each in its own colour (350 voxels). It shows how the smooth surface handles the smallest shapes.
+
+### Changed
+- The sphere + cube board moves from level 1 to the end of the cycle (level 5). The cycle now has five levels.
+
 ## [0.14.3] — 2026-10-16
 
 ### Removed
@@ -165,6 +173,7 @@ All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https:
 ### Added
 - First release on GitHub Pages: a 3D swarm (boids, constant speed) that eats a voxel planet; deliberate feeding with one claimed voxel per unit; live sliders for units, speed, power, spacing and cohesion; space background with nebulae and stars; GitHub Pages deployment workflow.
 
+[0.15.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.14.3...v0.15.0
 [0.14.3]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.14.2...v0.14.3
 [0.14.2]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.14.1...v0.14.2
 [0.14.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.14.0...v0.14.1

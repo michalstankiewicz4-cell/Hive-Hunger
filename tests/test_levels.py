@@ -53,7 +53,7 @@ async def main():
         await page.click('.menu-choice >> nth=0')
         levels = await page.evaluate('() => window.__dbg.cfg.levels')
         R = await page.evaluate('() => window.__dbg.cfg.planet.radius')
-        t.ok(len(levels) == 4 and all(l.get('style') == 'smooth' for l in levels), 'four levels in the cycle, all smooth', [l.get('shape', 'sphere') + '/' + l.get('style', 'cubes') for l in levels])
+        t.ok(len(levels) == 5 and all(l.get('style') == 'smooth' for l in levels), 'five levels in the cycle, all smooth', [l.get('shape', 'sphere') + '/' + l.get('style', 'cubes') for l in levels])
 
         for level in range(1, len(levels) + 2):
             want = levels[(level - 1) % len(levels)]
@@ -79,20 +79,43 @@ async def main():
                     await page.wait_for_timeout(600)
                     await page.screenshot(path=os.path.join(shots, f'level{level}-eaten.png'))
 
-        # planet 1: a sphere and a cube side by side — every voxel of both is still a voxel to eat
-        small = await page.evaluate(BUILD, 1)
+        # planet 1: every box shape from 1×1×1 to 4×4×4 once, 5 voxels apart
+        await page.evaluate(BUILD, 1)
+        bx = await page.evaluate('''() => { const pl = window.__dbg.planet, N = pl.N; const box = new Map();
+          for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) {
+            const t = pl.tags[idx], i = idx % N, j = ((idx / N) | 0) % N, k = (idx / (N * N)) | 0;
+            const b = box.get(t) || { n: 0, i0: 1e9, i1: -1, j0: 1e9, j1: -1, k0: 1e9, k1: -1 };
+            b.n++; b.i0 = Math.min(b.i0, i); b.i1 = Math.max(b.i1, i); b.j0 = Math.min(b.j0, j); b.j1 = Math.max(b.j1, j); b.k0 = Math.min(b.k0, k); b.k1 = Math.max(b.k1, k);
+            box.set(t, b);
+          }
+          const list = [...box.values()].map(b => ({ size: [b.i1 - b.i0 + 1, b.j1 - b.j0 + 1, b.k1 - b.k0 + 1], full: b.n === (b.i1 - b.i0 + 1) * (b.j1 - b.j0 + 1) * (b.k1 - b.k0 + 1), b }));
+          // smallest gap between two boxes that overlap in the other two directions
+          let gap = 1e9;
+          for (const p of list) for (const q of list) if (p !== q) {
+            const ov = (a0, a1, b0, b1) => a0 <= b1 && b0 <= a1;
+            if (ov(p.b.j0, p.b.j1, q.b.j0, q.b.j1) && ov(p.b.k0, p.b.k1, q.b.k0, q.b.k1) && q.b.i0 > p.b.i1) gap = Math.min(gap, q.b.i0 - p.b.i1 - 1);
+            if (ov(p.b.i0, p.b.i1, q.b.i0, q.b.i1) && ov(p.b.k0, p.b.k1, q.b.k0, q.b.k1) && q.b.j0 > p.b.j1) gap = Math.min(gap, q.b.j0 - p.b.j1 - 1);
+          }
+          return { boxes: list.length, total: pl.total, sizes: [...new Set(list.map(b => b.size.join('x')))].length, shapes: [...new Set(list.map(b => [...b.size].sort().join('x')))].length,
+            allFull: list.every(b => b.full), gap, colours: new Set(list.map((_, n) => pl.tagColors[n + 1].join(','))).size }; }''')
+        t.ok(bx['boxes'] == 20 and bx['shapes'] == 20 and bx['allFull'] and bx['total'] == 350,
+             'planet 1: every box shape from 1×1×1 to 4×4×4 once, no rotated copies (20 boxes, 350 voxels)', bx)
+        t.ok(bx['gap'] == 5 and bx['colours'] == 20, 'planet 1: boxes 5 voxels apart, each in its own colour', bx['gap'])
+
+        # planet 5: a sphere and a cube side by side — every voxel of both is still a voxel to eat
+        small = await page.evaluate(BUILD, 5)
         Rv = round(small['R'] / 0.5)
         pair = await page.evaluate('''() => { const pl = window.__dbg.planet; let sphere = 0, cube = 0;
           for (let i = 0; i < pl.hp.length; i++) if (pl.hp[i] > 0) { const c = pl.cellCenter(i, new window.THREE.Vector3()); if (c.x < 0) sphere++; else cube++; }
           return { sphere, cube, total: pl.total, style: pl.style }; }''')
         t.ok(pair['cube'] == (2 * Rv) ** 3 and pair['sphere'] > 0.5 * (2 * Rv) ** 3 and pair['sphere'] + pair['cube'] == pair['total']
-             and pair['style'] == 'smooth', 'planet 1: a sphere and a full cube, smooth; all their voxels count', pair)
+             and pair['style'] == 'smooth', 'planet 5: a sphere and a full cube, smooth; all their voxels count', pair)
         full = await page.evaluate(BUILD, 2)
-        t.ok(abs(small['R'] / full['R'] - 0.7) < 0.01, 'planet 1 radius is 30% smaller than planet 2')
+        t.ok(abs(small['R'] / full['R'] - 0.7) < 0.01, 'planet 5: sphere radius 30% smaller than planet 2')
         box = await page.evaluate(BUILD, 3)
         side = round(2 * box['half'] / 0.5)
         t.ok(box['total'] == side ** 3 and abs(box['half'] - small['R']) <= 0.25,
-             'planet 3: a full cube with the edge of planet 1\'s diameter', f"{side}³ = {box['total']}")
+             'planet 3: a full cube with the edge of the small sphere\'s diameter', f"{side}³ = {box['total']}")
 
         # planet 4: the text — every letter has its own colour, and the swarm can eat it
         txt = await page.evaluate(BUILD, 4)

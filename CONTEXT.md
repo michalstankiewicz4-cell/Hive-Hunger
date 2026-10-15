@@ -17,7 +17,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 
 - **3D only** (a 2D version existed early on and was removed on request).
 - **Points & upgrades:** 1 voxel = 1 point (counter at the top). Tab opens a pixel-art upgrade tree growing upwards: units, speed, power, chain lightning (+ jumps / voltage / capacitor). Upgrades add to the sliders (sliders stay). No saving — reset on reload; in multiplayer every player has their own. Lightning fires on its own every few seconds and only weakens voxels. Voxels have a destruction animation (on the smooth surface: it sinks in and darkens); they are still one bite for now (harder voxels planned later).
-- **Levels:** a cycle of four planets, repeated until more levels are designed — 1 a test board: a sphere and a cube (each the size of the old small planet, radius 17) 10 voxels apart; 2 the usual planet; 3 a cube with the edge of the small planet's diameter; 4 the text TEST LVL in coloured letters.
+- **Levels:** a cycle of five planets, repeated until more levels are designed — 1 a test board with every box shape from 1×1×1 to 4×4×4 once (20 boxes, no rotated copies — the owner's choice, 5 voxels apart, 350 voxels) to see how the smooth surface treats small shapes; 2 the usual planet; 3 a cube with the edge of the small sphere's diameter; 4 the text TEST LVL in coloured letters; 5 a test board: a sphere and a cube (radius 17) 10 voxels apart.
 - **Graphics:** the owner picked the **smooth surface** (slopes instead of steps) for every planet (0.13.0) after trying cubes, smooth and wedges as separate levels. Graphics only — physics and eating stay on voxels. The cube and wedge styles remain in the code. 0.14.0: level 1 tries `smoother` (no terraces) so the owner can judge it in play; points/voxel counts are unchanged by any style. 0.14.1: the owner saw units eating invisible bits in `smoother` — fixed: the blur only shapes slopes, every solid voxel is drawn. 0.14.2: the owner still preferred `smooth` (`smoother` left flat, sharp-edged faces) — every level is `smooth` again. 0.14.3: the `smoother` code removed on request.
 - **Planet:** voxel sphere with Earth-like terrain, clouds, ice caps; rock inside (no coloured layered interior — removed on request). Small voxels for a smooth look. Slowly spins.
 - **Swarm = flock (boids):** units keep spacing, align, stay together; **every unit has the same constant speed**; turning on screen is smoothed.
@@ -102,6 +102,7 @@ Lessons from writing them:
 | 0.14.1 | tag `v0.14.1` | extra-smooth style shows every voxel; seam after eating fixed |
 | 0.14.2 | tag `v0.14.2` | level 1 back to the smooth style (owner's choice) |
 | 0.14.3 | tag `v0.14.3` | extra-smooth style code removed |
+| 0.15.0 | tag `v0.15.0` | level 1: every box shape 1×1×1 … 4×4×4; the sphere + cube board moves to level 5 |
 
 ## Known limitations
 
