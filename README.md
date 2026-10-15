@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.12.1 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.13.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -10,13 +10,13 @@ The swarm moves like a flock of birds (boids): units keep their distance from ea
 
 Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), flies to it, lands on it and eats it, then picks the next one. One voxel is eaten by one unit only — bites are shared only when the planet has fewer exposed voxels left than there are units. Units never eat in passing. They don't bounce off matter or pass through it; they slide along the surface. The swarm target moves on once no free voxels are left nearby.
 
-Planets come in a cycle of levels: 1 — a smaller planet, 2 — the usual one, 3 — a smooth surface without steps, 4 — cubes with wedges in the steps, 5 — a cube the size of planet 1, 6 — the text TEST LVL in coloured letters; then it starts again. The smooth and wedge looks are graphics only — the swarm still eats voxels. New levels are used to try new looks.
+Planets come in a cycle of levels: 1 — a smaller planet, 2 — the usual one, 3 — a cube the size of planet 1, 4 — the text TEST LVL in coloured letters; then it starts again. Every planet is drawn as a smooth surface: no steps — slopes, rounded corners and craters. It is graphics only: underneath, the swarm still eats voxels.
 
 A planet counts as eaten only when its last voxel is gone. The swarm then flies back to its spawn point (the beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
 
 ## Points and upgrades
 
-Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the counter) opens the upgrade tree: Brood (+units), Wings (+speed), Jaws (+bite radius) and Chain lightning — a bolt that jumps between your drones every few seconds and weakens the voxels on its way — with upgrades for more jumps, stronger and more frequent bolts. Upgrades add to the settings panel. Voxels show damage as they are eaten: they shrink, darken and shake before breaking apart.
+Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the counter) opens the upgrade tree: Brood (+units), Wings (+speed), Jaws (+bite radius) and Chain lightning — a bolt that jumps between your drones every few seconds and weakens the voxels on its way — with upgrades for more jumps, stronger and more frequent bolts. Upgrades add to the settings panel. Voxels show damage as they are eaten: the surface sinks in and darkens before the voxel breaks apart.
 
 ## Controls
 

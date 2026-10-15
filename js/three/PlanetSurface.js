@@ -37,7 +37,7 @@ export class PlanetSurface {
     this.C = Math.ceil((planet.N + 1) / CHUNK);
     this.meshes = new Map(); // chunk key → mesh
     this.dirty = new Set();
-    this.buildPerFrame = 8;
+    this.budgetMs = 3; // time per frame for rebuilding chunks (at least one is rebuilt)
     for (let k = 0; k < this.C; k++) for (let j = 0; j < this.C; j++) for (let i = 0; i < this.C; i++) {
       this.rebuild(i, j, k);
     }
@@ -56,11 +56,12 @@ export class PlanetSurface {
     }
   }
 
-  /** Rebuilds up to `buildPerFrame` dirty chunks (all of them with `all`). */
+  /** Rebuilds dirty chunks for up to `budgetMs` this frame (all of them with `all`). */
   sync(all = false) {
+    const t0 = performance.now();
     let n = 0;
     for (const key of this.dirty) {
-      if (!all && n >= this.buildPerFrame) break;
+      if (!all && n > 0 && performance.now() - t0 > this.budgetMs) break;
       this.dirty.delete(key);
       const i = key % this.C, j = ((key / this.C) | 0) % this.C, k = (key / (this.C * this.C)) | 0;
       this.rebuild(i, j, k);
@@ -127,12 +128,25 @@ for (let a = 0; a < 8; a++) for (let b = a + 1; b < 8; b++) {
 
 function buildSmooth(planet, x0, y0, z0, size, out) {
   const { N, hp, s } = planet, R = planet.half;
-  const solid = (i, j, k) => (i >= 0 && j >= 0 && k >= 0 && i < N && j < N && k < N && hp[(k * N + j) * N + i] > 0 ? 1 : 0);
+  const strength = planet.cfg.strength;
+  // density of a voxel: 0 empty; 0.5 … 1 solid, by how much strength is left — so a voxel being
+  // eaten (or weakened by lightning) sinks smoothly into the surface before it disappears.
+  // Read once per chunk into a block covering voxels x0-1 … x0+size (what its cells and edges touch).
+  const B = size + 2;
+  const block = new Float32Array(B * B * B);
+  for (let k = 0; k < B; k++) for (let j = 0; j < B; j++) for (let i = 0; i < B; i++) {
+    const vi = x0 - 1 + i, vj = y0 - 1 + j, vk = z0 - 1 + k;
+    if (vi < 0 || vj < 0 || vk < 0 || vi >= N || vj >= N || vk >= N) continue;
+    const h = hp[(vk * N + vj) * N + vi];
+    if (h > 0) block[(k * B + j) * B + i] = 0.5 + 0.5 * Math.min(1, h / strength);
+  }
+  const density = (i, j, k) => block[((k - z0 + 1) * B + (j - y0 + 1)) * B + (i - x0 + 1)];
+  const solid = (i, j, k) => (density(i, j, k) > 0 ? 1 : 0);
   // cells (cubes between voxel centres) this chunk needs: its own plus one before on each axis
   const W = size + 1;
   const vert = new Int32Array(W * W * W).fill(-1);
   const cellKey = (ci, cj, ck) => ((ck - z0 + 1) * W + (cj - y0 + 1)) * W + (ci - x0 + 1);
-  const corner = new Uint8Array(8);
+  const corner = new Float32Array(8);
   const col = [0, 0, 0];
 
   const vertexAt = (ci, cj, ck) => {
@@ -141,31 +155,35 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
     let mask = 0;
     for (let c = 0; c < 8; c++) {
       const [a, b, d] = CORNERS[c];
-      corner[c] = solid(ci + a, cj + b, ck + d);
-      mask |= corner[c] << c;
+      corner[c] = density(ci + a, cj + b, ck + d);
+      if (corner[c] > 0) mask |= 1 << c;
     }
     if (mask === 0 || mask === 255) { vert[kk] = -2; return -2; }
-    // average of the edge crossings (midpoints, the field is 0/1)
+    // average of the edge crossings of the 0.5 level (the middle of the edge for full-strength voxels)
     let px = 0, py = 0, pz = 0, n = 0;
     for (const [a, b] of EDGES) {
-      if (corner[a] === corner[b]) continue;
-      px += (CORNERS[a][0] + CORNERS[b][0]) / 2;
-      py += (CORNERS[a][1] + CORNERS[b][1]) / 2;
-      pz += (CORNERS[a][2] + CORNERS[b][2]) / 2;
+      const fa = corner[a], fb = corner[b];
+      if ((fa > 0) === (fb > 0)) continue;
+      const t = (0.5 - fa) / (fb - fa);
+      px += CORNERS[a][0] + (CORNERS[b][0] - CORNERS[a][0]) * t;
+      py += CORNERS[a][1] + (CORNERS[b][1] - CORNERS[a][1]) * t;
+      pz += CORNERS[a][2] + (CORNERS[b][2] - CORNERS[a][2]) * t;
       n++;
     }
     px /= n; py /= n; pz /= n;
-    // normal from the field's gradient (empty side minus solid side), so chunks join without seams
+    // normal from the density's gradient (pointing to the empty side), so chunks join without seams;
+    // colour: the solid voxels around, darker the weaker they are
     let gx = 0, gy = 0, gz = 0;
     col[0] = col[1] = col[2] = 0;
     let solids = 0;
     for (let c = 0; c < 8; c++) {
       const [a, b, d] = CORNERS[c];
-      const w = corner[c] ? -1 : 1;
+      const w = 1 - 2 * corner[c];
       gx += w * (a ? 1 : -1); gy += w * (b ? 1 : -1); gz += w * (d ? 1 : -1);
-      if (corner[c]) {
+      if (corner[c] > 0) {
         const rgb = planet.voxelColor((ck + d) * N * N + (cj + b) * N + (ci + a));
-        col[0] += rgb[0]; col[1] += rgb[1]; col[2] += rgb[2];
+        const dark = 0.35 + 0.65 * (corner[c] - 0.5) * 2;
+        col[0] += rgb[0] * dark; col[1] += rgb[1] * dark; col[2] += rgb[2] * dark;
         solids++;
       }
     }
@@ -189,15 +207,18 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
       const b = axis === 0 ? solid(i + 1, j, k) : axis === 1 ? solid(i, j + 1, k) : solid(i, j, k + 1);
       if (a === b) continue;
       // the four cells around this edge
-      let q;
-      if (axis === 0) q = [[i, j - 1, k - 1], [i, j, k - 1], [i, j, k], [i, j - 1, k]];
-      else if (axis === 1) q = [[i - 1, j, k - 1], [i - 1, j, k], [i, j, k], [i, j, k - 1]];
-      else q = [[i - 1, j - 1, k], [i, j - 1, k], [i, j, k], [i - 1, j, k]];
-      const v = q.map(([ci, cj, ck]) => vertexAt(ci, cj, ck));
-      if (v.some((x) => x < 0)) continue;
+      let v0, v1, v2, v3;
+      if (axis === 0) {
+        v0 = vertexAt(i, j - 1, k - 1); v1 = vertexAt(i, j, k - 1); v2 = vertexAt(i, j, k); v3 = vertexAt(i, j - 1, k);
+      } else if (axis === 1) {
+        v0 = vertexAt(i - 1, j, k - 1); v1 = vertexAt(i - 1, j, k); v2 = vertexAt(i, j, k); v3 = vertexAt(i, j, k - 1);
+      } else {
+        v0 = vertexAt(i - 1, j - 1, k); v1 = vertexAt(i, j - 1, k); v2 = vertexAt(i, j, k); v3 = vertexAt(i - 1, j, k);
+      }
+      if (v0 < 0 || v1 < 0 || v2 < 0 || v3 < 0) continue;
       // face outwards (towards the empty side)
-      if (a) out.idx.push(v[0], v[1], v[2], v[0], v[2], v[3]);
-      else out.idx.push(v[0], v[2], v[1], v[0], v[3], v[2]);
+      if (a) out.idx.push(v0, v1, v2, v0, v2, v3);
+      else out.idx.push(v0, v2, v1, v0, v3, v2);
     }
   }
 }

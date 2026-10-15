@@ -272,6 +272,11 @@ export class VoxelPlanet {
    * out (when it reaches 0 it is removed and breaks into debris).
    */
   showDamage(idx) {
+    // the smooth surface shows damage too (the voxel sinks into it and darkens)
+    if (this.surface) {
+      const [i, j, k] = this.coords(idx);
+      this.surface.touch(i, j, k);
+    }
     const slot = this.slotOf[idx];
     if (slot < 0) return;
     const f = Math.max(0, Math.min(1, this.hp[idx] / this.cfg.strength));

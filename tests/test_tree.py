@@ -44,7 +44,7 @@ async def main():
         t.ok(pix[0] < 500 and pix[2] in ('pixelated', 'crisp-edges'), 'drawn small and scaled up without smoothing (pixel art)', pix)
 
         # buying: parents first, enough points
-        r = await page.evaluate("() => { const g = window.__dbg, p = g.localPlayer; p.score = 100;"
+        r = await page.evaluate("() => { const g = window.__dbg, p = g.localPlayer; g.stop(); p.score = 100;"
                                 " return [g.buyUpgrade('units2'), g.buyUpgrade('units1'), g.buyUpgrade('units1')]; }")
         t.ok(r == [False, True, False], 'a node needs its parent and is bought once', r)
         s = await page.evaluate(STATE)
@@ -79,10 +79,16 @@ async def main():
           let weak = 0; for (let i = 0; i < pl.hp.length; i++) if (pl.hp[i] > 0 && pl.hp[i] < 1) weak++;
           return { n, weak, sameLeft: pl.left === left }; }""")
         t.ok(hit['n'] > 0 and hit['weak'] > 0 and hit['sameLeft'], 'a bolt weakens the voxels on its way without destroying them', hit)
-        scale = await page.evaluate("""() => { const pl = window.__dbg.planet; const m = new window.THREE.Matrix4(), v = new window.THREE.Vector3();
-          for (let i = 0; i < pl.hp.length; i++) if (pl.hp[i] > 0 && pl.hp[i] < 0.9 && pl.slotOf[i] >= 0) {
-            pl.mesh.getMatrixAt(pl.slotOf[i], m); v.setFromMatrixScale(m); return v.x; } return 1; }""")
-        t.ok(scale < 1, 'destruction animation: a damaged voxel is drawn smaller', round(scale, 2))
+        dmg = await page.evaluate("""() => { const pl = window.__dbg.planet, sf = pl.surface;
+          const sum = () => { let c = 0, p = 0; for (const m of sf.meshes.values()) {
+            const a = m.geometry.attributes.color.array; for (let i = 0; i < a.length; i++) c += a[i];
+            const q = m.geometry.attributes.position.array; for (let i = 0; i < q.length; i++) p += Math.abs(q[i]); } return [c, p]; };
+          sf.sync(true); const [c0, p0] = sum();
+          const idx = pl.idxOfSlot[123]; pl.bite(idx, 0.6 * pl.cfg.strength);
+          const dirty = sf.dirty.size; sf.sync(true); const [c1, p1] = sum();
+          return { dirty, darker: c1 < c0, sank: p1 < p0, alive: pl.hp[idx] > 0 }; }""")
+        t.ok(dmg['dirty'] > 0 and dmg['darker'] and dmg['sank'] and dmg['alive'],
+             'destruction animation: a damaged voxel sinks into the smooth surface and darkens', dmg)
 
         if shots:
             await page.evaluate("""() => { const g = window.__dbg; g.orbit.distance = 50; g.updateCamera();

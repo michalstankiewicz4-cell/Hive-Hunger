@@ -41,16 +41,16 @@ The point the flock heads for.
 
 ## Levels (`levels`)
 
-A cycle of planets: planet 1 uses the first entry, planet 7 the first again.
+A cycle of planets: planet 1 uses the first entry, planet 5 the first again.
 
 | Field | What it does |
 | --- | --- |
 | `shape` | `sphere` (default), `cube` (half-edge = radius) or `text` (voxel letters) |
 | `radiusScale` | radius (sphere) or half-edge (cube) = `radiusScale × planet.radius` (0.7 = 30% smaller; voxel count grows with the cube of it) |
 | `text`, `pixel`, `depth`, `colors` | text only: the words (letters T, E, S, L, V and space so far), voxels per font pixel, thickness in voxels, letter colours in turn |
-| `style` | graphics only: `cubes`, `smooth` (smooth surface, cubes hidden) or `wedges` (cubes + ramps and corners in the steps) |
+| `style` | graphics only: `smooth` (smooth surface, cubes hidden — used by every level), `cubes` or `wedges` (cubes + ramps and corners in the steps) |
 
-Default: sphere 0.7 cubes, sphere 1 cubes, sphere 1 smooth, sphere 1 wedges, cube 0.7, text "TEST LVL".
+Default (all `smooth`): sphere 0.7, sphere 1, cube 0.7, text "TEST LVL".
 
 ## Flock (`swarm`)
 
@@ -136,5 +136,5 @@ Every node is bought once and needs its parent; effects add up on top of the sli
 
 ## Other constants outside `config.js`
 
-- `js/three/PlanetSurface.js`: `CHUNK = 16` (voxels per chunk edge of the smooth / wedge surfaces), `buildPerFrame = 8` (chunks rebuilt per frame).
+- `js/three/PlanetSurface.js`: `CHUNK = 16` (voxels per chunk edge of the smooth / wedge surfaces), `budgetMs = 3` (time per frame for rebuilding changed chunks; at least one is rebuilt).
 - `js/three/Lightning3D.js`: `life = 20` (frames a bolt stays visible), `jag` (how jagged it is), `pieces` (kinks per jump).

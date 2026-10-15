@@ -208,7 +208,7 @@ export class Game3D {
   }
 
   /**
-   * Size and graphics of planet `level`: CONFIG.levels repeats in a cycle (planet 7 looks like
+   * Size and graphics of planet `level`: CONFIG.levels repeats in a cycle (planet 5 looks like
    * planet 1, and so on). Every client builds the same planet from the level and the seed.
    */
   levelLook(level) {

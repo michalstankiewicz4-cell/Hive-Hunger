@@ -16,8 +16,9 @@ A recovery file: everything needed to pick the project up again — what it is, 
 These came from the owner's requests; keep them unless he asks otherwise.
 
 - **3D only** (a 2D version existed early on and was removed on request).
-- **Points & upgrades:** 1 voxel = 1 point (counter at the top). Tab opens a pixel-art upgrade tree growing upwards: units, speed, power, chain lightning (+ jumps / voltage / capacitor). Upgrades add to the sliders (sliders stay). No saving — reset on reload; in multiplayer every player has their own. Lightning fires on its own every few seconds and only weakens voxels. Voxels have a destruction animation; they are still one bite for now (harder voxels planned later).
-- **Levels:** a cycle of six planets, repeated until more levels are designed — 1 smaller (radius −30%), 2 the usual, 3 smooth surface, 4 cubes with wedges in the steps, 5 a cube with the edge of planet 1's diameter, 6 the text TEST LVL in coloured letters. Smooth/wedges are **graphics only** (owner's choice); new levels are meant to try new graphics approaches.
+- **Points & upgrades:** 1 voxel = 1 point (counter at the top). Tab opens a pixel-art upgrade tree growing upwards: units, speed, power, chain lightning (+ jumps / voltage / capacitor). Upgrades add to the sliders (sliders stay). No saving — reset on reload; in multiplayer every player has their own. Lightning fires on its own every few seconds and only weakens voxels. Voxels have a destruction animation (on the smooth surface: it sinks in and darkens); they are still one bite for now (harder voxels planned later).
+- **Levels:** a cycle of four planets, repeated until more levels are designed — 1 smaller (radius −30%), 2 the usual, 3 a cube with the edge of planet 1's diameter, 4 the text TEST LVL in coloured letters.
+- **Graphics:** the owner picked the **smooth surface** (slopes instead of steps) for every planet (0.13.0) after trying cubes, smooth and wedges as separate levels. Graphics only — physics and eating stay on voxels. The cube and wedge styles remain in the code.
 - **Planet:** voxel sphere with Earth-like terrain, clouds, ice caps; rock inside (no coloured layered interior — removed on request). Small voxels for a smooth look. Slowly spins.
 - **Swarm = flock (boids):** units keep spacing, align, stay together; **every unit has the same constant speed**; turning on screen is smoothed.
 - **Eating is deliberate:** a unit claims its own voxel, flies to it, lands and eats; **one voxel is eaten by one unit only** unless there are no more free voxels; **no eating in passing**; **no bouncing and no passing through voxels** (units slide along surfaces).
@@ -96,6 +97,7 @@ Lessons from writing them:
 | 0.11.1 | tag `v0.11.1` | Atmosphere on/off switch in the settings panel |
 | 0.12.0 | tag `v0.12.0` | atmosphere removed, Esc instead of the Menu button, rooms start from scratch |
 | 0.12.1 | tag `v0.12.1` | documentation checked against the code and corrected |
+| 0.13.0 | tag `v0.13.0` | smooth surface on every planet, 4-level cycle, damage shown on the surface |
 
 ## Known limitations
 

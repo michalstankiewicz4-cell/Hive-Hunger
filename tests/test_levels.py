@@ -1,5 +1,5 @@
-"""Planet levels: size and graphics of each level in the cycle (CONFIG.levels), the extra
-surfaces ('smooth', 'wedges') being built and updated when voxels are eaten.
+"""Planet levels: shape and size of each level in the cycle (CONFIG.levels), all drawn as a
+smooth surface that is built and updated when voxels are eaten.
 
 Run from the repository root:  python tests/test_levels.py
 Set SHOTS=<folder> to save a screenshot of every level there."""
@@ -53,7 +53,7 @@ async def main():
         await page.click('.menu-choice >> nth=0')
         levels = await page.evaluate('() => window.__dbg.cfg.levels')
         R = await page.evaluate('() => window.__dbg.cfg.planet.radius')
-        t.ok(len(levels) == 6, 'six levels in the cycle', [l.get('shape', 'sphere') + '/' + l.get('style', 'cubes') for l in levels])
+        t.ok(len(levels) == 4 and all(l.get('style') == 'smooth' for l in levels), 'four levels in the cycle, all smooth', [l.get('shape', 'sphere') + '/' + l.get('style', 'cubes') for l in levels])
 
         for level in range(1, len(levels) + 2):
             want = levels[(level - 1) % len(levels)]
@@ -82,25 +82,25 @@ async def main():
         small = await page.evaluate(BUILD, 1)
         full = await page.evaluate(BUILD, 2)
         t.ok(abs(small['R'] / full['R'] - 0.7) < 0.01, 'planet 1 radius is 30% smaller than planet 2')
-        box = await page.evaluate(BUILD, 5)
+        box = await page.evaluate(BUILD, 3)
         side = round(2 * box['half'] / 0.5)
         t.ok(box['total'] == side ** 3 and abs(box['half'] - small['R']) <= 0.25,
-             'planet 5: a full cube with the edge of planet 1\'s diameter', f"{side}³ = {box['total']}")
+             'planet 3: a full cube with the edge of planet 1\'s diameter', f"{side}³ = {box['total']}")
 
-        # planet 6: the text — every letter has its own colour, and the swarm can eat it
-        txt = await page.evaluate(BUILD, 6)
+        # planet 4: the text — every letter has its own colour, and the swarm can eat it
+        txt = await page.evaluate(BUILD, 4)
         info = await page.evaluate('''() => { const pl = window.__dbg.planet; const seen = new Set();
           for (let i = 0; i < pl.tags.length; i++) if (pl.tags[i]) seen.add(pl.tags[i]);
           const cols = [...seen].map(t => pl.tagColors[t].join(','));
           return { letters: seen.size, colours: new Set(cols).size, exposed: pl.count }; }''')
-        t.ok(info['letters'] == 7 and info['colours'] == 7, 'planet 6: "TEST LVL" — 7 letters in 7 colours', info)
+        t.ok(info['letters'] == 7 and info['colours'] == 7, 'planet 4: "TEST LVL" — 7 letters in 7 colours', info)
         await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
           p.onNewPlanet(); p.setSetting('count', 200); p.setSetting('speed', 0.3); p.setSetting('power', 1.5); g.stop(); }''')
         before = txt['total']
         await h.fast_forward(page, 1500)
         st = await page.evaluate('() => ({ level: window.__dbg.level, left: window.__dbg.planet.left })')
-        t.ok(st['level'] > 6 or st['left'] < before, 'the swarm eats the text',
-             'eaten whole, next planet' if st['level'] > 6 else f"{before} → {st['left']}")
+        t.ok(st['level'] > 4 or st['left'] < before, 'the swarm eats the text',
+             'eaten whole, next planet' if st['level'] > 4 else f"{before} → {st['left']}")
 
         await browser.close()
     return t.done(errors)
