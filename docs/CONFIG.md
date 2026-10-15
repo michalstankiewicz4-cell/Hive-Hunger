@@ -51,7 +51,7 @@ A cycle of planets: planet 1 uses the first entry, planet 5 the first again.
 | `text`, `pixel`, `depth`, `colors` | text only: the words (letters T, E, S, L, V and space so far), voxels per font pixel, thickness in voxels, letter colours in turn |
 | `style` | graphics only: `smooth` (smooth surface, cubes hidden), `smoother` (the same with slopes shaped by voxels averaged with their neighbours — no terraces; every voxel still shows), `cubes` or `wedges` (cubes + ramps and corners in the steps) |
 
-Default: pair 0.7 with gap 10 (`smoother`), sphere 1, cube 0.7, text "TEST LVL" (all `smooth`).
+Default (all `smooth`): pair 0.7 with gap 10, sphere 1, cube 0.7, text "TEST LVL".
 
 ## Flock (`swarm`)
 

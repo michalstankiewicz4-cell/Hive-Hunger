@@ -74,10 +74,10 @@ export const CONFIG = Object.freeze({
   // style = graphics only (physics and eating always use the voxels): 'cubes' — the voxels;
   // 'smooth' — a smooth surface over them; 'smoother' — the same over averaged voxels (no terraces,
   // but small details round off); 'wedges' — cubes plus low-poly wedges in the steps.
-  // Levels 2–4 use 'smooth' (the owner's choice); level 1 tries 'smoother'; 'cubes' and 'wedges' stay available.
+  // Every level uses 'smooth' (the owner's choice, also over 'smoother'); the other styles stay available.
   levels: [
-    // test board: a sphere and a cube the size of the old planet 1, 10 voxels apart, extra smooth
-    { shape: 'pair', radiusScale: 0.7, gap: 10, style: 'smoother' },
+    // test board: a sphere and a cube the size of the old planet 1, 10 voxels apart
+    { shape: 'pair', radiusScale: 0.7, gap: 10, style: 'smooth' },
     { radiusScale: 1, style: 'smooth' },
     { shape: 'cube', radiusScale: 0.7, style: 'smooth' }, // the size of planet 1's sphere
     {

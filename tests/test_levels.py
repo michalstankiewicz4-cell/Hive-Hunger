@@ -86,7 +86,7 @@ async def main():
           for (let i = 0; i < pl.hp.length; i++) if (pl.hp[i] > 0) { const c = pl.cellCenter(i, new window.THREE.Vector3()); if (c.x < 0) sphere++; else cube++; }
           return { sphere, cube, total: pl.total, style: pl.style }; }''')
         t.ok(pair['cube'] == (2 * Rv) ** 3 and pair['sphere'] > 0.5 * (2 * Rv) ** 3 and pair['sphere'] + pair['cube'] == pair['total']
-             and pair['style'] == 'smoother', 'planet 1: a sphere and a full cube, extra smooth; all their voxels count', pair)
+             and pair['style'] == 'smooth', 'planet 1: a sphere and a full cube, smooth; all their voxels count', pair)
         full = await page.evaluate(BUILD, 2)
         t.ok(abs(small['R'] / full['R'] - 0.7) < 0.01, 'planet 1 radius is 30% smaller than planet 2')
         box = await page.evaluate(BUILD, 3)
