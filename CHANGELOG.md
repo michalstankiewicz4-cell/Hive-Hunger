@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.14.1] — 2026-10-16
+
+### Fixed
+- Extra-smooth style (level 1): small bits — single voxels, thin edges — disappeared from view while the swarm could still eat them. The averaging now only shapes the slopes; whether there is a surface follows each voxel, so everything edible is drawn and nothing eaten stays drawn.
+- Extra-smooth style: a thin dark seam could appear next to fresh craters (a neighbouring piece of the surface wasn't rebuilt).
+
 ## [0.14.0] — 2026-10-16
 
 ### Added
@@ -149,6 +155,7 @@ All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https:
 ### Added
 - First release on GitHub Pages: a 3D swarm (boids, constant speed) that eats a voxel planet; deliberate feeding with one claimed voxel per unit; live sliders for units, speed, power, spacing and cohesion; space background with nebulae and stars; GitHub Pages deployment workflow.
 
+[0.14.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/michalstankiewicz4-cell/Hive-Hunger/compare/v0.12.0...v0.12.1

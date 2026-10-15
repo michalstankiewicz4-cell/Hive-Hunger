@@ -19,6 +19,8 @@ const THREE = window.THREE;
  */
 
 const CHUNK = 16;
+// 'smoother': how far a voxel's own state keeps the blurred field from the 0.5 level
+const KEEP = 0.04;
 
 export class PlanetSurface {
   /**
@@ -49,8 +51,11 @@ export class PlanetSurface {
 
   /** A voxel changed: its chunk and the neighbouring ones it touches need rebuilding. */
   touch(vi, vj, vk) {
-    const lo = (v) => Math.max(0, Math.floor(v / CHUNK));
-    const hi = (v) => Math.min(this.C - 1, Math.floor((v + 2) / CHUNK));
+    // chunk c draws cells c·CHUNK−1 … c·CHUNK+CHUNK−2. A voxel changes the cells around it:
+    // ±1 for 'smooth'; for 'smoother' the blur and the normals reach 3 voxels away
+    const reach = this.style === 'smoother' ? 3 : 1;
+    const lo = (v) => Math.max(0, Math.floor((v - reach + 1) / CHUNK));
+    const hi = (v) => Math.min(this.C - 1, Math.floor((v + reach + 1) / CHUNK));
     for (let k = lo(vk); k <= hi(vk); k++) for (let j = lo(vj); j <= hi(vj); j++) for (let i = lo(vi); i <= hi(vi); i++) {
       this.dirty.add(this.key(i, j, k));
     }
@@ -141,7 +146,8 @@ function buildSmooth(planet, x0, y0, z0, size, out, blur = false) {
     if (h > 0) block[(k * B + j) * B + i] = 0.5 + 0.5 * Math.min(1, h / strength);
   }
   // 'smoother': each voxel's (strength-weighted) occupancy averaged over its 3×3×3 neighbourhood,
-  // so the 0.5 level crosses the edges at varying points — slopes without the terraces
+  // so the 0.5 level crosses the edges at varying points — slopes without the terraces.
+  // Which side of the level a voxel is on still follows the voxel itself (see KEEP).
   // field read by the mesher: `F` voxels per axis starting at x0 - `off`
   let field = block, F = B, off = 1;
   if (blur) {
@@ -170,7 +176,12 @@ function buildSmooth(planet, x0, y0, z0, size, out, blur = false) {
         const row = ((k + c) * B3 + (j + b)) * B3 + i, w = W1[c] * W1[b];
         sum += w * (occ[row] + 2 * occ[row + 1] + occ[row + 2]);
       }
-      field[(k * F + j) * F + i] = sum / 64;
+      // the average only shapes the slopes; whether there is surface is still up to the voxel
+      // itself — a solid voxel stays inside (≥ 0.5 + KEEP), an empty one outside — so nothing the
+      // swarm can eat is hidden and nothing eaten stays drawn
+      const own = occ[((k + 1) * B3 + (j + 1)) * B3 + i + 1];
+      const v = sum / 64;
+      field[(k * F + j) * F + i] = own > 0 ? Math.max(v, 0.5 + KEEP) : Math.min(v, 0.5 - KEEP);
     }
   }
   const density = (i, j, k) => field[((k - z0 + off) * F + (j - y0 + off)) * F + (i - x0 + off)];
