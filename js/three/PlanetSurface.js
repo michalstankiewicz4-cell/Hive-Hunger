@@ -19,8 +19,6 @@ const THREE = window.THREE;
  */
 
 const CHUNK = 16;
-// 'smoother': how far a voxel's own state keeps the blurred field from the 0.5 level
-const KEEP = 0.04;
 
 export class PlanetSurface {
   /**
@@ -51,11 +49,8 @@ export class PlanetSurface {
 
   /** A voxel changed: its chunk and the neighbouring ones it touches need rebuilding. */
   touch(vi, vj, vk) {
-    // chunk c draws cells c·CHUNK−1 … c·CHUNK+CHUNK−2. A voxel changes the cells around it:
-    // ±1 for 'smooth'; for 'smoother' the blur and the normals reach 3 voxels away
-    const reach = this.style === 'smoother' ? 3 : 1;
-    const lo = (v) => Math.max(0, Math.floor((v - reach + 1) / CHUNK));
-    const hi = (v) => Math.min(this.C - 1, Math.floor((v + reach + 1) / CHUNK));
+    const lo = (v) => Math.max(0, Math.floor(v / CHUNK));
+    const hi = (v) => Math.min(this.C - 1, Math.floor((v + 2) / CHUNK));
     for (let k = lo(vk); k <= hi(vk); k++) for (let j = lo(vj); j <= hi(vj); j++) for (let i = lo(vi); i <= hi(vi); i++) {
       this.dirty.add(this.key(i, j, k));
     }
@@ -131,7 +126,7 @@ for (let a = 0; a < 8; a++) for (let b = a + 1; b < 8; b++) {
   if (d === 1 || d === 2 || d === 4) EDGES.push([a, b]);
 }
 
-function buildSmooth(planet, x0, y0, z0, size, out, blur = false) {
+function buildSmooth(planet, x0, y0, z0, size, out) {
   const { N, hp, s } = planet, R = planet.half;
   const strength = planet.cfg.strength;
   // density of a voxel: 0 empty; 0.5 … 1 solid, by how much strength is left — so a voxel being
@@ -145,47 +140,8 @@ function buildSmooth(planet, x0, y0, z0, size, out, blur = false) {
     const h = hp[(vk * N + vj) * N + vi];
     if (h > 0) block[(k * B + j) * B + i] = 0.5 + 0.5 * Math.min(1, h / strength);
   }
-  // 'smoother': each voxel's (strength-weighted) occupancy averaged over its 3×3×3 neighbourhood,
-  // so the 0.5 level crosses the edges at varying points — slopes without the terraces.
-  // Which side of the level a voxel is on still follows the voxel itself (see KEEP).
-  // field read by the mesher: `F` voxels per axis starting at x0 - `off`
-  let field = block, F = B, off = 1;
-  if (blur) {
-    // occupancy (strength-weighted) of voxels x0-3 … x0+size+2, read once
-    const B3 = size + 6;
-    const occ = new Float32Array(B3 * B3 * B3);
-    let any = false, all = true;
-    for (let k = 0; k < B3; k++) for (let j = 0; j < B3; j++) for (let i = 0; i < B3; i++) {
-      const vi = x0 - 3 + i, vj = y0 - 3 + j, vk = z0 - 3 + k;
-      let o = 0;
-      if (vi >= 0 && vj >= 0 && vk >= 0 && vi < N && vj < N && vk < N) {
-        const h = hp[(vk * N + vj) * N + vi];
-        if (h > 0) o = Math.min(1, h / strength);
-      }
-      occ[(k * B3 + j) * B3 + i] = o;
-      if (o > 0) any = true; else all = false;
-    }
-    if (!any || all) return; // all empty or all solid: no surface in this chunk
-    // blurred field for voxels x0-2 … x0+size+1 (one more than the cells need, for the normals)
-    F = size + 4; off = 2;
-    field = new Float32Array(F * F * F);
-    const W1 = [1, 2, 1];
-    for (let k = 0; k < F; k++) for (let j = 0; j < F; j++) for (let i = 0; i < F; i++) {
-      let sum = 0;
-      for (let c = 0; c < 3; c++) for (let b = 0; b < 3; b++) {
-        const row = ((k + c) * B3 + (j + b)) * B3 + i, w = W1[c] * W1[b];
-        sum += w * (occ[row] + 2 * occ[row + 1] + occ[row + 2]);
-      }
-      // the average only shapes the slopes; whether there is surface is still up to the voxel
-      // itself — a solid voxel stays inside (≥ 0.5 + KEEP), an empty one outside — so nothing the
-      // swarm can eat is hidden and nothing eaten stays drawn
-      const own = occ[((k + 1) * B3 + (j + 1)) * B3 + i + 1];
-      const v = sum / 64;
-      field[(k * F + j) * F + i] = own > 0 ? Math.max(v, 0.5 + KEEP) : Math.min(v, 0.5 - KEEP);
-    }
-  }
-  const density = (i, j, k) => field[((k - z0 + off) * F + (j - y0 + off)) * F + (i - x0 + off)];
-  const solid = (i, j, k) => (density(i, j, k) >= 0.5 ? 1 : 0);
+  const density = (i, j, k) => block[((k - z0 + 1) * B + (j - y0 + 1)) * B + (i - x0 + 1)];
+  const solid = (i, j, k) => (density(i, j, k) > 0 ? 1 : 0);
   // cells (cubes between voxel centres) this chunk needs: its own plus one before on each axis
   const W = size + 1;
   const vert = new Int32Array(W * W * W).fill(-1);
@@ -200,14 +156,14 @@ function buildSmooth(planet, x0, y0, z0, size, out, blur = false) {
     for (let c = 0; c < 8; c++) {
       const [a, b, d] = CORNERS[c];
       corner[c] = density(ci + a, cj + b, ck + d);
-      if (corner[c] >= 0.5) mask |= 1 << c;
+      if (corner[c] > 0) mask |= 1 << c;
     }
     if (mask === 0 || mask === 255) { vert[kk] = -2; return -2; }
     // average of the edge crossings of the 0.5 level (the middle of the edge for full-strength voxels)
     let px = 0, py = 0, pz = 0, n = 0;
     for (const [a, b] of EDGES) {
       const fa = corner[a], fb = corner[b];
-      if ((fa >= 0.5) === (fb >= 0.5)) continue;
+      if ((fa > 0) === (fb > 0)) continue;
       const t = (0.5 - fa) / (fb - fa);
       px += CORNERS[a][0] + (CORNERS[b][0] - CORNERS[a][0]) * t;
       py += CORNERS[a][1] + (CORNERS[b][1] - CORNERS[a][1]) * t;
@@ -222,24 +178,11 @@ function buildSmooth(planet, x0, y0, z0, size, out, blur = false) {
     let solids = 0;
     for (let c = 0; c < 8; c++) {
       const [a, b, d] = CORNERS[c];
-      if (blur) {
-        // smoother normals: the field's central-difference gradient at each corner, blended by
-        // where the vertex sits in the cell (no light banding on gentle slopes)
-        const vi = ci + a, vj = cj + b, vk = ck + d;
-        const w = (a ? px : 1 - px) * (b ? py : 1 - py) * (d ? pz : 1 - pz);
-        gx -= w * (density(vi + 1, vj, vk) - density(vi - 1, vj, vk));
-        gy -= w * (density(vi, vj + 1, vk) - density(vi, vj - 1, vk));
-        gz -= w * (density(vi, vj, vk + 1) - density(vi, vj, vk - 1));
-      } else {
-        const w = 1 - 2 * corner[c];
-        gx += w * (a ? 1 : -1); gy += w * (b ? 1 : -1); gz += w * (d ? 1 : -1);
-      }
-      if (corner[c] >= 0.5) {
-        const vIdx = (ck + d) * N * N + (cj + b) * N + (ci + a);
-        const rgb = planet.voxelColor(vIdx);
-        // weaker voxels are darker (blurred field: from the voxel's own strength)
-        const f = blur ? Math.min(1, Math.max(0, hp[vIdx] / strength)) : (corner[c] - 0.5) * 2;
-        const dark = 0.35 + 0.65 * f;
+      const w = 1 - 2 * corner[c];
+      gx += w * (a ? 1 : -1); gy += w * (b ? 1 : -1); gz += w * (d ? 1 : -1);
+      if (corner[c] > 0) {
+        const rgb = planet.voxelColor((ck + d) * N * N + (cj + b) * N + (ci + a));
+        const dark = 0.35 + 0.65 * (corner[c] - 0.5) * 2;
         col[0] += rgb[0] * dark; col[1] += rgb[1] * dark; col[2] += rgb[2] * dark;
         solids++;
       }
@@ -387,8 +330,4 @@ function buildWedges(planet, x0, y0, z0, size, out) {
   }
 }
 
-const BUILDERS = {
-  smooth: buildSmooth,
-  smoother: (planet, x0, y0, z0, size, out) => buildSmooth(planet, x0, y0, z0, size, out, true),
-  wedges: buildWedges,
-};
+const BUILDERS = { smooth: buildSmooth, wedges: buildWedges };

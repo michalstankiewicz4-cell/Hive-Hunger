@@ -91,7 +91,7 @@ export class VoxelPlanet {
       this.surfaceMaterial = this.createSurfaceMaterial();
       this.surface = new PlanetSurface(this, this.style, this.surfaceMaterial);
       // the smooth surface replaces the cubes; wedges are added to them
-      if (this.style === 'smooth' || this.style === 'smoother') this.mesh.visible = false;
+      if (this.style === 'smooth') this.mesh.visible = false;
     }
 
   }
