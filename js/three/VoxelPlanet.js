@@ -39,6 +39,8 @@ export class VoxelPlanet {
     this.bound = shape.bound;   // a sphere containing the whole shape
     this.surfaceKind = shape.surface;
     this.tagColors = shape.colors;
+    this.parts = shape.parts || null; // several objects (each with its own terrain)
+    this.fill = shape.fill;            // which voxels the planet started with (for eatenRuns)
     this.seed = seed ?? ((Math.random() * 1e6) | 0);
     this.alive = true;
     this.log = null; // multiplayer host: indices of removed voxels since the last network update
@@ -89,7 +91,7 @@ export class VoxelPlanet {
       this.surfaceMaterial = this.createSurfaceMaterial();
       this.surface = new PlanetSurface(this, this.style, this.surfaceMaterial);
       // the smooth surface replaces the cubes; wedges are added to them
-      if (this.style === 'smooth') this.mesh.visible = false;
+      if (this.style === 'smooth' || this.style === 'smoother') this.mesh.visible = false;
     }
 
   }
@@ -198,6 +200,17 @@ export class VoxelPlanet {
       const c = this.tagColors[this.tags[idx]] || this.cfg.rock;
       return [c[0] / 255, c[1] / 255, c[2] / 255];
     }
+    if (this.parts) {
+      // the nearest object's own terrain: direction and depth from its centre
+      const best = this.partAt(p.x, p.y, p.z);
+      const lx = p.x - best.center[0], ly = p.y - best.center[1], lz = p.z - best.center[2];
+      const ld = Math.hypot(lx, ly, lz) || 1;
+      const deep = best.kind === 'cube' ? best.r - Math.max(Math.abs(lx), Math.abs(ly), Math.abs(lz)) : best.r - ld;
+      rgb = deep < this.cfg.terrainDepth
+        ? terrainColor(lx / ld, -ly / ld, lz / ld, this.seed + (best.kind === 'cube' ? 1 : 0), this.cfg.surface)
+        : mix(this.cfg.rockCore, this.cfg.rock, Math.min(1, ld / best.r));
+      return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255];
+    }
     // depth under the surface: sphere — from the radius, cube — from the nearest face
     const depth = this.surfaceKind === 'cube'
       ? this.half - Math.max(Math.abs(p.x), Math.abs(p.y), Math.abs(p.z))
@@ -208,6 +221,16 @@ export class VoxelPlanet {
       rgb = mix(this.cfg.rockCore, this.cfg.rock, Math.min(1, d / this.R));
     }
     return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255];
+  }
+
+  /** Several objects ('pair'): the one whose centre is nearest to a point. */
+  partAt(x, y, z) {
+    let best = this.parts[0], bestD = Infinity;
+    for (const part of this.parts) {
+      const dd = (x - part.center[0]) ** 2 + (y - part.center[1]) ** 2 + (z - part.center[2]) ** 2;
+      if (dd < bestD) { bestD = dd; best = part; }
+    }
+    return best;
   }
 
   /** Colour of a voxel (0..1 RGB), cached — used by the extra surfaces. */
@@ -356,19 +379,40 @@ export class VoxelPlanet {
     }
   }
 
-  /** One bit per voxel: 1 = still solid. Sent to a guest that joins mid-planet. */
-  solidBits() {
-    const n = this.hp.length;
-    const bits = new Uint8Array((n + 7) >> 3);
-    for (let i = 0; i < n; i++) if (this.hp[i] > 0) bits[i >> 3] |= 1 << (i & 7);
-    return bits;
+  /**
+   * Which voxels have been eaten, for a guest who joins mid-planet (it builds the same planet
+   * from the seed, so only the eaten ones are needed): run lengths over all voxel indices,
+   * alternating "not eaten" / "eaten", starting with "not eaten", as varints. Eaten areas are
+   * craters, so this stays small — a plain bitset of a large grid would not fit a WebRTC message.
+   */
+  eatenRuns() {
+    const N = this.N, n = this.hp.length;
+    const out = [];
+    const put = (v) => { while (v >= 128) { out.push((v & 127) | 128); v >>>= 7; } out.push(v); };
+    let state = false, run = 0;
+    for (let idx = 0; idx < n; idx++) {
+      let eaten = false;
+      if (this.hp[idx] <= 0) {
+        const i = idx % N, j = ((idx / N) | 0) % N, k = (idx / (N * N)) | 0;
+        eaten = this.fill(i, j, k) > 0;
+      }
+      if (eaten !== state) { put(run); run = 0; state = eaten; }
+      run++;
+    }
+    put(run);
+    return new Uint8Array(out);
   }
 
-  /** Removes every voxel that is no longer solid in `bits` (from solidBits on the host). */
-  applySolidBits(bits) {
+  /** Removes the voxels listed as eaten in `runs` (from eatenRuns on the host). */
+  applyEatenRuns(runs) {
+    let p = 0, idx = 0, eaten = false;
     const n = this.hp.length;
-    for (let i = 0; i < n; i++) {
-      if (this.hp[i] > 0 && !(bits[i >> 3] & (1 << (i & 7)))) this.remove(i);
+    while (p < runs.length && idx < n) {
+      let v = 0, shift = 0, b;
+      do { b = runs[p++]; v |= (b & 127) << shift; shift += 7; } while (b & 128);
+      if (eaten) for (let i = idx; i < idx + v && i < n; i++) if (this.hp[i] > 0) this.remove(i);
+      idx += v;
+      eaten = !eaten;
     }
     this.surface?.sync(true);
   }

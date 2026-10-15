@@ -68,13 +68,16 @@ export const CONFIG = Object.freeze({
   },
 
   // Planets in a cycle: planet 1 uses the first entry, planet 5 the first again, …
-  // shape: 'sphere' (default), 'cube' (half-edge = radius), 'text' (voxel letters, see shapes.js).
+  // shape: 'sphere' (default), 'cube' (half-edge = radius), 'pair' (sphere + cube, `gap` voxels
+  // apart), 'text' (voxel letters) — see shapes.js.
   // radiusScale × planet.radius = the radius (sphere) or half-edge (cube).
   // style = graphics only (physics and eating always use the voxels): 'cubes' — the voxels;
-  // 'smooth' — a smooth surface over them; 'wedges' — cubes plus low-poly wedges in the steps.
-  // Every level uses 'smooth' (the owner's choice); 'cubes' and 'wedges' stay available.
+  // 'smooth' — a smooth surface over them; 'smoother' — the same over averaged voxels (no terraces,
+  // but small details round off); 'wedges' — cubes plus low-poly wedges in the steps.
+  // Levels 2–4 use 'smooth' (the owner's choice); level 1 tries 'smoother'; 'cubes' and 'wedges' stay available.
   levels: [
-    { radiusScale: 0.7, style: 'smooth' },
+    // test board: a sphere and a cube the size of the old planet 1, 10 voxels apart, extra smooth
+    { shape: 'pair', radiusScale: 0.7, gap: 10, style: 'smoother' },
     { radiusScale: 1, style: 'smooth' },
     { shape: 'cube', radiusScale: 0.7, style: 'smooth' }, // the size of planet 1's sphere
     {

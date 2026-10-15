@@ -53,7 +53,7 @@ async def main():
         await page.click('.menu-choice >> nth=0')
         levels = await page.evaluate('() => window.__dbg.cfg.levels')
         R = await page.evaluate('() => window.__dbg.cfg.planet.radius')
-        t.ok(len(levels) == 4 and all(l.get('style') == 'smooth' for l in levels), 'four levels in the cycle, all smooth', [l.get('shape', 'sphere') + '/' + l.get('style', 'cubes') for l in levels])
+        t.ok(len(levels) == 4 and all(l.get('style') in ('smooth', 'smoother') for l in levels), 'four levels in the cycle, all smooth', [l.get('shape', 'sphere') + '/' + l.get('style', 'cubes') for l in levels])
 
         for level in range(1, len(levels) + 2):
             want = levels[(level - 1) % len(levels)]
@@ -67,7 +67,7 @@ async def main():
                 t.ok(b['cubesVisible'] and b['triangles'] == 0, f'planet {level}: plain cubes')
             else:
                 t.ok(b['triangles'] > 1000, f"planet {level}: {want['style']} surface built", b['triangles'])
-                t.ok(b['cubesVisible'] == (want['style'] != 'smooth'), f'planet {level}: cubes shown only where wanted')
+                t.ok(b['cubesVisible'] == (want['style'] not in ('smooth', 'smoother')), f'planet {level}: cubes shown only where wanted')
             if shots:
                 await page.wait_for_timeout(600)
                 await page.screenshot(path=os.path.join(shots, f'level{level}.png'))
@@ -79,7 +79,14 @@ async def main():
                     await page.wait_for_timeout(600)
                     await page.screenshot(path=os.path.join(shots, f'level{level}-eaten.png'))
 
+        # planet 1: a sphere and a cube side by side — every voxel of both is still a voxel to eat
         small = await page.evaluate(BUILD, 1)
+        Rv = round(small['R'] / 0.5)
+        pair = await page.evaluate('''() => { const pl = window.__dbg.planet; let sphere = 0, cube = 0;
+          for (let i = 0; i < pl.hp.length; i++) if (pl.hp[i] > 0) { const c = pl.cellCenter(i, new window.THREE.Vector3()); if (c.x < 0) sphere++; else cube++; }
+          return { sphere, cube, total: pl.total, style: pl.style }; }''')
+        t.ok(pair['cube'] == (2 * Rv) ** 3 and pair['sphere'] > 0.5 * (2 * Rv) ** 3 and pair['sphere'] + pair['cube'] == pair['total']
+             and pair['style'] == 'smoother', 'planet 1: a sphere and a full cube, extra smooth; all their voxels count', pair)
         full = await page.evaluate(BUILD, 2)
         t.ok(abs(small['R'] / full['R'] - 0.7) < 0.01, 'planet 1 radius is 30% smaller than planet 2')
         box = await page.evaluate(BUILD, 3)

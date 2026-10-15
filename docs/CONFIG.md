@@ -45,12 +45,13 @@ A cycle of planets: planet 1 uses the first entry, planet 5 the first again.
 
 | Field | What it does |
 | --- | --- |
-| `shape` | `sphere` (default), `cube` (half-edge = radius) or `text` (voxel letters) |
+| `shape` | `sphere` (default), `cube` (half-edge = radius), `pair` (a sphere and a cube of `radius`, `gap` voxels apart) or `text` (voxel letters) |
+| `gap` | `pair` only: voxels between the sphere and the cube (10) |
 | `radiusScale` | radius (sphere) or half-edge (cube) = `radiusScale × planet.radius` (0.7 = 30% smaller; voxel count grows with the cube of it) |
 | `text`, `pixel`, `depth`, `colors` | text only: the words (letters T, E, S, L, V and space so far), voxels per font pixel, thickness in voxels, letter colours in turn |
-| `style` | graphics only: `smooth` (smooth surface, cubes hidden — used by every level), `cubes` or `wedges` (cubes + ramps and corners in the steps) |
+| `style` | graphics only: `smooth` (smooth surface, cubes hidden), `smoother` (the same over voxels averaged with their neighbours — no terraces, small details round off), `cubes` or `wedges` (cubes + ramps and corners in the steps) |
 
-Default (all `smooth`): sphere 0.7, sphere 1, cube 0.7, text "TEST LVL".
+Default: pair 0.7 with gap 10 (`smoother`), sphere 1, cube 0.7, text "TEST LVL" (all `smooth`).
 
 ## Flock (`swarm`)
 

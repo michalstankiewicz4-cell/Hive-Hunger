@@ -14,6 +14,44 @@
 
 export const SNAPSHOT = 1;
 export const PLANET = 2;
+export const PART = 3; // a piece of a binary message too large for one WebRTC message
+
+/** Largest binary message sent in one piece (WebRTC data channels reject much larger ones). */
+export const MAX_PART = 60000;
+
+/**
+ * Splits `buf` into PART messages: u8 type=3 | u32 id | u16 index | u16 count | bytes.
+ * The receiver joins them back (`joinPart`) and handles the result like the original message.
+ */
+let partId = 1;
+export function splitParts(buf) {
+  const count = Math.ceil(buf.byteLength / MAX_PART), id = partId++ >>> 0, out = [];
+  for (let n = 0; n < count; n++) {
+    const piece = new Uint8Array(buf, n * MAX_PART, Math.min(MAX_PART, buf.byteLength - n * MAX_PART));
+    const msg = new ArrayBuffer(9 + piece.length);
+    const v = new DataView(msg);
+    v.setUint8(0, PART); v.setUint32(1, id, true); v.setUint16(5, n, true); v.setUint16(7, count, true);
+    new Uint8Array(msg, 9).set(piece);
+    out.push(msg);
+  }
+  return out;
+}
+
+/** Collects PART messages in `pending` (a Map); returns the whole message once all parts are in. */
+export function joinPart(pending, buf) {
+  const v = new DataView(buf);
+  const id = v.getUint32(1, true), n = v.getUint16(5, true), count = v.getUint16(7, true);
+  let entry = pending.get(id);
+  if (!entry) { entry = { parts: new Array(count), got: 0 }; pending.set(id, entry); }
+  if (!entry.parts[n]) { entry.parts[n] = new Uint8Array(buf, 9); entry.got++; }
+  if (entry.got < count) return null;
+  pending.delete(id);
+  const size = entry.parts.reduce((s, p) => s + p.length, 0);
+  const whole = new Uint8Array(size);
+  let o = 0;
+  for (const p of entry.parts) { whole.set(p, o); o += p.length; }
+  return whole.buffer;
+}
 
 const POS_SCALE = 100; // positions as int16 → ±327 world units at 0.01 precision
 const DIR_SCALE = 127;
@@ -84,7 +122,8 @@ export function decodeSnapshot(buf) {
 }
 
 export function encodePlanet(planet, level, withBits) {
-  const bits = withBits ? planet.solidBits() : null;
+  // `bits`: the eaten voxels as run lengths (see VoxelPlanet.eatenRuns)
+  const bits = withBits ? planet.eatenRuns() : null;
   const buf = new ArrayBuffer(1 + 4 + 2 + 1 + (bits ? bits.length : 0));
   const v = new DataView(buf);
   v.setUint8(0, PLANET);

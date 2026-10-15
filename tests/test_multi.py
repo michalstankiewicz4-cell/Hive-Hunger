@@ -173,9 +173,15 @@ async def main():
             t.ok('Green: connection lost' in notes, 'a dropped connection shows "Green: connection lost"', notes)
 
             # the host closes the room: a guest who joins the running match is told the host left
+            await h.fast_forward(host, 400)  # some craters for the late guest to receive
             late = await h.open_page(browser, f'{url}?room={code}', errors, 'late', peer=True)
             await late.wait_for_function("document.getElementById('menu').hidden", timeout=40000)
             t.ok(await late.evaluate('() => window.__dbg.started'), 'joining a running match plays straight away')
+            await late.wait_for_timeout(1500)
+            hl = await host.evaluate('() => [window.__dbg.planet.left, window.__dbg.planet.total]')
+            ll = await late.evaluate('() => [window.__dbg.planet.left, window.__dbg.planet.total]')
+            t.ok(hl[1] == ll[1] and hl[0] < hl[1] and abs(hl[0] - ll[0]) < 3000,
+                 'a late guest gets the eaten voxels (compressed planet message)', f'host {hl} late {ll}')
             await host.evaluate('() => window.__dbg.net.close()')
             await late.wait_for_function("document.getElementById('menu').innerText.includes('host left')", timeout=20000)
             t.ok(True, 'guest sees "The host left the room"')

@@ -64,7 +64,13 @@ Binary messages (`js/net/Protocol.js`, little-endian):
 
 **PLANET** (type 2) — a new planet, or the current one for a guest who joins:
 ```
-u8 type=2 | u32 seed | u16 level | u8 hasBits | [bits: 1 bit per voxel, 1 = still solid]
+u8 type=2 | u32 seed | u16 level | u8 hasBits | [eaten voxels: run lengths as varints]
+```
+The guest builds the planet from the seed and level, then removes the eaten voxels. The run lengths go over all voxel indices, alternating "not eaten" / "eaten" (starting with "not eaten"), each as a little-endian base-128 varint (`VoxelPlanet.eatenRuns`). Eaten areas are craters, so this stays small (a bitset of the whole grid was too big for one WebRTC message on large levels).
+
+**PART** (type 3) — a piece of any binary message larger than 60 000 bytes (`MAX_PART`); the guest joins the pieces and handles the result as the original message:
+```
+u8 type=3 | u32 id | u16 index | u16 count | bytes
 ```
 
 **SNAPSHOT** (type 1) — every `net.snapshotEvery` frames (4 → about 15 per second):

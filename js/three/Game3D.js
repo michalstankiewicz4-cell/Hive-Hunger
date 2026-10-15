@@ -550,12 +550,12 @@ export class Game3D {
     for (let i = 0; i < this.players.length; i++) if (this.players[i] && !seen.has(i)) this.removePlayer(i);
   }
 
-  /** A planet from the host: same seed = same planet; `bits` = which voxels are still there. */
+  /** A planet from the host: same seed = same planet; `bits` = which voxels were eaten (run lengths). */
   onPlanet({ seed, level, bits }) {
     if (this.planet) this.planet.dispose();
     this.level = level - 1;
     this.spawnPlanet(seed);
-    if (bits) this.planet.applySolidBits(bits);
+    if (bits) this.planet.applyEatenRuns(bits);
     this.planet.sync();
     if (this.summary) this.setSummary(null);
   }

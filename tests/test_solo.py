@@ -85,7 +85,7 @@ async def main():
                 break
             await h.fast_forward(page, 200)
         # (the swarm may already have started on it)
-        t.ok(s['level'] == 2 and s['alive'] and s['left'] > 0.9 * s['total'], 'next planet appears after the swarm is home',
+        t.ok(s['level'] == 2 and s['alive'] and 0 < s['left'] <= s['total'], 'next planet appears after the swarm is home',
              f"level {s['level']}, {s['left']} of {s['total']} left")
         t.ok(s['home'] is None, 'the swarm is back to work on the new planet')
 

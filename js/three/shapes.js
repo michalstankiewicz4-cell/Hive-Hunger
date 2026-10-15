@@ -6,7 +6,8 @@
  *   half     half of the grid's edge in world units (voxel i's centre is (i + 0.5)·s − half)
  *   radius   the radius the swarm flies around on long trips (keeps paths off the shape)
  *   bound    radius of a sphere that contains the whole shape (clicks, ray casts)
- *   surface  'sphere' | 'cube' | 'none' — how terrain colours are laid on (see VoxelPlanet)
+ *   surface  'sphere' | 'cube' | 'parts' | 'none' — how terrain colours are laid on (see VoxelPlanet)
+ *   parts    ('parts' only) [{kind: 'sphere' | 'cube', center: [x, y, z], r}] — each part gets its own terrain
  *   fill(i, j, k) → 0 empty, otherwise a tag ≥ 1 (the text uses it for the letter's colour)
  *   colors   for tags (text only): [r, g, b] 0..255 per tag
  *
@@ -16,6 +17,7 @@ export function buildShape(look, s) {
   const shape = look.shape || 'sphere';
   if (shape === 'cube') return cube(look.radius, s);
   if (shape === 'text') return text(look, s);
+  if (shape === 'pair') return pair(look.radius, look.gap ?? 10, s);
   return sphere(look.radius, s);
 }
 
@@ -36,6 +38,32 @@ function cube(radius, s) {
   const Rv = Math.round(radius / s);
   const N = Rv * 2;
   return { N, half: Rv * s, radius, bound: radius * Math.sqrt(3), surface: 'cube', fill: () => 1 };
+}
+
+/**
+ * Two objects side by side along x: a sphere (left) and a cube (right), both of `radius`
+ * (the cube's half-edge), `gap` voxels apart.
+ */
+function pair(radius, gap, s) {
+  const Rv = Math.round(radius / s);
+  const W = 4 * Rv + gap;
+  const N = (W + 4) & ~1;
+  const x0 = (N - W) >> 1, mid = N >> 1;
+  const half = (N * s) / 2;
+  const sx = x0 + Rv;                 // sphere centre (voxel units)
+  const cx0 = x0 + 2 * Rv + gap;      // cube's first column
+  const parts = [
+    { kind: 'sphere', center: [sx * s - half, mid * s - half, mid * s - half], r: Rv * s },
+    { kind: 'cube', center: [(cx0 + Rv) * s - half, mid * s - half, mid * s - half], r: Rv * s },
+  ];
+  return {
+    N, half, radius: Rv * s, bound: (W * s) / 2 + Rv * s, surface: 'parts', parts,
+    fill(i, j, k) {
+      const x = i + 0.5 - sx, y = j + 0.5 - mid, z = k + 0.5 - mid;
+      if (x * x + y * y + z * z <= Rv * Rv) return 1;
+      return i >= cx0 && i < cx0 + 2 * Rv && Math.abs(j + 0.5 - mid) <= Rv && Math.abs(k + 0.5 - mid) <= Rv ? 1 : 0;
+    },
+  };
 }
 
 // 5 × 7 pixel letters, top row first. Pixels of a letter must touch by a side (not only by a

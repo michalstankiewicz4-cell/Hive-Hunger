@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { encodeSnapshot, decodeSnapshot, encodePlanet, decodePlanet, SNAPSHOT, PLANET } from './Protocol.js';
+import { encodeSnapshot, decodeSnapshot, encodePlanet, decodePlanet, SNAPSHOT, PLANET, PART, MAX_PART, splitParts, joinPart } from './Protocol.js';
 
 /**
  * Multiplayer over WebRTC with PeerJS. The host's browser runs the game; guests connect
@@ -60,7 +60,9 @@ export class NetHost {
 
   /** Sends to one guest and counts the bytes for the connection stats. */
   send(conn, data) {
-    conn.send(data);
+    // a large binary message goes in pieces
+    if (typeof data !== 'string' && data.byteLength > MAX_PART) for (const piece of splitParts(data)) conn.send(piece);
+    else conn.send(data);
     const link = this.links.get(conn);
     if (link) link.bytes += typeof data === 'string' ? data.length : data.byteLength;
   }
@@ -283,7 +285,8 @@ export class NetGuest {
 
   async receive(data) {
     this.lastSeen = performance.now();
-    const { json, bin } = await readData(data);
+    const { json, bin: raw } = await readData(data);
+    let bin = raw;
     const g = this.game;
     if (json) {
       if (json.t === 'welcome') {
@@ -308,7 +311,12 @@ export class NetGuest {
       return;
     }
     if (!bin) return;
-    const type = new DataView(bin).getUint8(0);
+    let type = new DataView(bin).getUint8(0);
+    if (type === PART) {
+      bin = joinPart(this.parts || (this.parts = new Map()), bin);
+      if (!bin) return;
+      type = new DataView(bin).getUint8(0);
+    }
     if (type === PLANET) g.onPlanet(decodePlanet(bin));
     else if (type === SNAPSHOT) g.onSnapshot(decodeSnapshot(bin));
   }
