@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.35.0] — 2026-10-16
+
+### Added
+- **Start screen picture** (the owner's): a voxel ship cutting into a voxel planet, full screen behind the start screen, the Ship guide and Settings opened from it. The title HIVE HUNGER glows orange above the menu, on the right where the sky is (on phones: the menu at the bottom).
+- **Loader**: shown at once while the start picture, the 3D engine, multiplayer and the game load — the title, a progress bar and what is loading, over a blurred picture; it fades out when everything is in.
+
 ## [0.34.0] — 2026-10-16
 
 ### Added

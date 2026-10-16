@@ -87,7 +87,7 @@ css/             one stylesheet per part of the page
 | `ShipTypes.js` | Ship types panel (bottom-right): linked sliders for eaters and every type in `SHIP_KINDS` (together all your units), each with arrows (one ship less / more) and a lock checkbox |
 | `LevelSwitch.js` | A level button per playable mission under the panel (single player only): `Game3D.jumpToLevel` builds that planet and lets the swarm out of its tunnel again |
 | `SolarMap.js` | The solar system map (`#map`, over the game): its own WebGL renderer and scene, made when first shown — the Sun (glow sprite, point light), orbit circles, bodies along them (moons round their planets, canvas textures: bands on the giants, land on Earth), rings, the belts as points, HTML labels; drag / wheel / pinch turn and zoom; a click (raycast on invisible hit spheres, belts by the orbit plane) opens the card: a 2D-painted picture, kind, text, task, Start / Coming soon; the next mission pulses |
-| `StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
+| `StartScreen.js` | Start screen over the start picture (`img/start.jpg`, class `is-splash`; also the Ship guide and Settings opened from it): the title and Single player / Co-op / PvP / Ship guide / Settings and the multiplayer waiting room (link, players, Start) |
 | `Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
 | `Lobby.js` | Room panel during a multiplayer match: room, link, leave |
 | `TreeView.js` | The tree view (Tab): drawn on a small canvas and scaled up without smoothing (pixel art); hover tooltip, click to buy |
@@ -95,7 +95,11 @@ css/             one stylesheet per part of the page
 | `SettingsView.js` | The Settings screen in the menu: Mouse (controls, camera turning, zoom speed), Keyboard (keys), Graphics (FPS counter, resolution, smooth edges, effects), Reset settings, Back |
 | `dom.js` | Small DOM helpers for the menus |
 | `js/utils/*` | Noise (fBm), terrain colours, nebula/star colours |
-| **`css/`** | Loaded in this order (later files may override earlier ones): `base.css` (colours, page, hidden helpers, version), `hud.css`, `panel.css` (settings, level switch, ship types; narrow screens), `lobby.css`, `menu.css` (start screen, waiting room), `map.css` (the solar system map), `summary.css`, `points.css`, `tree.css` |
+| **`css/`** | Loaded in this order (later files may override earlier ones): `base.css` (colours, page, hidden helpers, version), `hud.css`, `panel.css` (settings, level switch, ship types; narrow screens), `lobby.css`, `menu.css` (start screen and its picture, waiting room), `map.css` (the solar system map), `summary.css`, `points.css`, `tree.css` |
+
+## Loading
+
+`index.html` shows `#loader` at once (its styles inline, a tiny blurred copy of the start picture as a data URI): the title, a bar and what is loading. `window.HH_LOAD.done(step)` ticks off `image` (the start picture, preloaded), `three` and `peer` (the scripts' onload / onerror) and `game` (`main.js`, after `Game3D` is made, or when the 3D library is missing); when all four are done it fades out and is removed.
 
 ## Game states
 

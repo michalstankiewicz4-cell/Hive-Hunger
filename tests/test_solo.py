@@ -51,6 +51,12 @@ async def main():
         browser = await pw.chromium.launch(args=h.BROWSER_ARGS)
         page = await h.open_page(browser, url, errors, 'solo')
 
+        # the loader goes once everything is in; the start screen over the start picture, the title and the menu
+        await page.wait_for_function("() => !document.getElementById('loader')", timeout=10000)
+        sp0 = await page.evaluate("""() => { const m = document.getElementById('menu'); return { splash: m.classList.contains('is-splash'),
+          bg: getComputedStyle(m).backgroundImage, title: getComputedStyle(document.getElementById('menu-title')).textTransform,
+          img: performance.getEntriesByType('resource').some((r) => r.name.endsWith('img/start.jpg')) }; }""")
+        t.ok(sp0['splash'] and 'img/start.jpg' in sp0['bg'] and sp0['img'] and sp0['title'] == 'uppercase', 'the loader is gone; the start screen over the start picture, with the title', sp0)
         # start screen
         choices = await page.locator('.menu-choice:not(.menu-extra)').all_inner_texts()
         t.ok(len(choices) == 3 and 'Single player' in choices[0], 'start screen offers 3 modes', choices)
@@ -77,7 +83,7 @@ async def main():
              'graphics: FPS counter, resolution, effects and smooth edges apply at once', gr)
         t.ok(gr['saved'].get('rotateSpeed') == 2 and gr['saved'].get('resolution') == 0.5, 'settings are remembered in the browser', gr['saved'])
         await page.keyboard.press('Escape')
-        t.ok(await page.locator('.menu-choice >> nth=0').inner_text() != '' and (await page.inner_text('#menu-title')).startswith('Hive Hunger'), 'Esc goes back from Settings')
+        t.ok(await page.locator('.menu-choice >> nth=0').inner_text() != '' and (await page.text_content('#menu-title')).startswith('Hive Hunger'), 'Esc goes back from Settings')
         # Ship guide: every type on one screen, attack and support apart; pointing at one plays its shot
         await page.click('.menu-guide')
         gd = await page.evaluate("""() => ({ sections: [...document.querySelectorAll('.guide-section .settings-title')].map((e) => e.textContent),
@@ -95,7 +101,7 @@ async def main():
             frames.append(await pic())
         t.ok(len(set(frames)) > 1 and still not in frames[1:], 'pointing at a ship plays its shot', len(set(frames)))
         await page.keyboard.press('Escape')
-        t.ok((await page.inner_text('#menu-title')).startswith('Hive Hunger'), 'Esc goes back from the Ship guide')
+        t.ok((await page.text_content('#menu-title')).startswith('Hive Hunger'), 'Esc goes back from the Ship guide')
         order = await page.evaluate("() => [...document.querySelectorAll('#ships .ships-row, #ships .ships-sep')].map((e) => e.classList.contains('ships-sep') ? '|' : e.className.match(/ships-(\\w+)$/)[1])")
         t.ok(order == ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'snipers', '|', 'tugs', 'supports', 'cleaners', 'boosters'],
              'Ship types panel in the guide\'s order: attack ships, a line, support ships', order)
@@ -105,7 +111,7 @@ async def main():
         await page.click('.settings-buttons button >> nth=1')  # Back
         t.ok(rs['aa'] and rs['fps'] and rs['ratio'] == 1, 'Reset settings restores them (native resolution, smooth edges, no FPS counter)', rs)
         start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'].map((k) => +document.getElementById('ships-' + k).value)""")
-        title = await page.inner_text('#menu-title')
+        title = await page.text_content('#menu-title')
         version = await page.inner_text('#version')
         t.ok(title.startswith('Hive Hunger') and title.endswith(version) and version.startswith('v0.'), 'start screen shows the version next to the title', title)
         before = await page.evaluate(STATE)

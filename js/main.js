@@ -24,6 +24,7 @@ const roomCode = (new URLSearchParams(location.search).get('room') || '').toUppe
 
 if (!window.THREE) {
   hudEl.textContent = 'Could not load the 3D library. Check your connection and reload the page.';
+  window.HH_LOAD?.done('game');
 } else {
   const { Game3D } = await import('./three/game/Game3D.js');
   const { NetHost, NetGuest } = await import('./net/Net.js');
@@ -252,4 +253,5 @@ if (!window.THREE) {
   window.addEventListener('pagehide', () => game.net?.close());
 
   game.start();
+  window.HH_LOAD?.done('game'); // (the loader goes once the start picture is in too)
 }

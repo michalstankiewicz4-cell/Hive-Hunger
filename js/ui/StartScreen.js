@@ -20,10 +20,12 @@ export class StartScreen {
     this.root.appendChild(this.card);
   }
 
-  open(title) {
+  /** `splash`: over the start picture (the start screen and what opens from it) instead of the game. */
+  open(title, splash = false) {
     this.root.hidden = false;
+    this.root.classList.toggle('is-splash', splash);
     this.card.replaceChildren();
-    this.card.classList.remove('is-wide', 'is-guide');
+    this.card.classList.remove('is-wide', 'is-guide', 'is-start');
     this.onSettingsBack = null;
     const h = el('h2', 'menu-title', title);
     h.id = 'menu-title';
@@ -36,7 +38,8 @@ export class StartScreen {
 
   /** The first screen: game modes. */
   showStart() {
-    this.open('Hive Hunger');
+    this.open('Hive Hunger', true);
+    this.card.classList.add('is-start');
     // the version next to the title: shows at a glance whether the page is the latest one
     this.card.querySelector('.menu-title').append(' ', el('span', 'menu-version', `v${VERSION}`));
     this.card.appendChild(el('p', 'menu-tagline', 'A swarm that eats planets.'));
@@ -52,7 +55,7 @@ export class StartScreen {
       choice('Multiplayer · Co-op', 'Eat the planet together (up to 4 players).', () => onCreate('coop'), !available),
       choice('Multiplayer · PvP', 'Whoever eats more of the planet wins it (up to 4 players).', () => onCreate('pvp'), !available),
       choice('Ship guide', 'Every ship type: what it does, and its shot.', () => this.showGuide(), false, 'menu-choice menu-extra menu-guide'),
-      choice('Settings', 'Mouse, keyboard and graphics.', () => this.showSettings(() => this.showStart()), false, 'menu-choice menu-extra menu-settings'),
+      choice('Settings', 'Mouse, keyboard and graphics.', () => this.showSettings(() => this.showStart(), true), false, 'menu-choice menu-extra menu-settings'),
     );
     if (!available) this.card.appendChild(el('p', 'menu-note', 'Multiplayer is unavailable: the connection library could not be loaded.'));
     this.card.querySelector('.menu-choice')?.focus();
@@ -60,14 +63,14 @@ export class StartScreen {
 
   /** The Ship guide (from the start screen); Back (or Esc) returns to it. */
   showGuide() {
-    this.open('Ship guide');
+    this.open('Ship guide', true);
     this.onSettingsBack = () => this.showStart(); // (Esc goes back the same way as from Settings)
     fillGuide(this.card, () => this.closeSettings());
   }
 
   /** Settings (mouse, keyboard, graphics); Back calls `onBack`. */
-  showSettings(onBack) {
-    this.open('Settings');
+  showSettings(onBack, splash = false) {
+    this.open('Settings', splash);
     this.onSettingsBack = onBack; // (the waiting room may update it meanwhile, see showRoom)
     fillSettings(this.card, () => this.closeSettings());
   }

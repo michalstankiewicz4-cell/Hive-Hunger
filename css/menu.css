@@ -344,3 +344,66 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* The start screen over the start picture (img/start.jpg): the title and the menu on the right,
+   where the sky is; the picture darker behind them. Ship guide and Settings opened from it keep the picture */
+.menu.is-splash {
+  background: #05060c url(../img/start.jpg) center / cover no-repeat;
+}
+
+.menu.is-splash::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(5, 6, 12, 0) 35%, rgba(5, 6, 12, 0.72) 78%);
+  pointer-events: none;
+}
+
+.menu.is-splash > .menu-card {
+  position: relative;
+}
+
+.menu.is-splash:has(.is-start) {
+  place-items: center end;
+  padding-right: max(16px, 6vw);
+}
+
+.menu-card.is-start {
+  width: min(380px, 100%);
+  background: rgba(10, 12, 22, 0.58);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.menu-card.is-start .menu-title {
+  font-size: clamp(28px, 3.4vw, 40px);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: #ffd9a0;
+  text-shadow: 0 0 18px rgba(255, 140, 40, 0.85), 0 0 4px rgba(255, 210, 140, 0.9);
+}
+
+.menu-card.is-start .menu-version {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  text-shadow: none;
+}
+
+.menu-card.is-start .menu-tagline {
+  color: #ffe9c8;
+}
+
+/* narrow screens: the menu at the bottom, the picture above it */
+@media (max-width: 640px) {
+  .menu.is-splash:has(.is-start) {
+    place-items: end center;
+    padding: 16px;
+  }
+  .menu.is-splash::before {
+    background: linear-gradient(180deg, rgba(5, 6, 12, 0) 30%, rgba(5, 6, 12, 0.75) 70%);
+  }
+}

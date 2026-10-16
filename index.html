@@ -62,8 +62,48 @@
   <link rel="stylesheet" href="css/summary.css">
   <link rel="stylesheet" href="css/points.css">
   <link rel="stylesheet" href="css/tree.css">
+  <!-- the loader: shown at once (before any other file), gone when the picture, the 3D library and the game are ready -->
+  <style>
+    .loader { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: #05060c url(data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCAAgADADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDzyKeNIVUJh92SxGcj0qzb+RPKqv5Q3cEEYA981VtrSa5fZDGzn2FasGkRQ/Ne3KqR/wAs4zk/nVezbWge0SepHq2ljTpBFIcSlQwKfMjA9war2um3lz/qbeRh644/Ouv02SG9txp4jUTICbR5BuJ9V59e3vWfPeXcYKyLhlOMtkn8qilNL3ZvUurBu0oLQoxaBKP+Pi5t4fUF8kflW5o+j6Ksn+mXTzcH5Y1xmsSSd0k/fIwbOSuMGpRegJhLNQCPvHLGtZuLVkYw5k7sku7u3jh8m0Ypj+FPlUe59aoBGkR5WkXjsTy1aOoaWqwpLaLhVHzhm5x61kFFLFTkMORjtUOrfcfJZ7Fqyl2SK6khgcja3I96669tU1CxGo26q0rY81f9ofxVxEE3kYb5WJ7e1dBpHiNrOKVUgX96QHDEkHp2+lcWIpzb5onfh6sIxszOvlaADcRvJy4Ycn0FVHt3ckq6kj/a+7V/VbyO6uJZIodo3ZHmNuwDUiaQ0kCXilSZF3BC2DVwk1FX3M6yjKT5D//Z) center / cover no-repeat; transition: opacity 0.5s; font: 13px/1.45 monospace; color: #cfe8ff; }
+    .loader::before { content: ''; position: absolute; inset: 0; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); background: rgba(5, 6, 12, 0.55); }
+    .loader-box { position: relative; display: grid; gap: 14px; justify-items: center; width: min(360px, 86vw); }
+    .loader-title { margin: 0; font-size: clamp(26px, 8vw, 44px); letter-spacing: 0.08em; white-space: nowrap; text-align: center; color: #ffd9a0; text-shadow: 0 0 18px rgba(255, 140, 40, 0.85), 0 0 4px rgba(255, 210, 140, 0.9); }
+    .loader-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(143, 208, 255, 0.18); overflow: hidden; }
+    .loader-fill { width: 0; height: 100%; background: linear-gradient(90deg, #ff8a2a, #ffe08a); box-shadow: 0 0 10px rgba(255, 150, 50, 0.9); transition: width 0.3s; }
+    .loader-text { margin: 0; color: #7f93ad; }
+    .loader.is-done { opacity: 0; pointer-events: none; }
+  </style>
 </head>
 <body>
+  <div id="loader" class="loader" role="status" aria-live="polite">
+    <div class="loader-box">
+      <p class="loader-title">HIVE HUNGER</p>
+      <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+      <p class="loader-text" id="loader-text">Loading…</p>
+    </div>
+  </div>
+  <script>
+    // what is still loading: the start picture, the 3D library, the connection library, the game itself
+    window.HH_LOAD = (() => {
+      const steps = { image: 'the start picture', three: 'the 3D engine', peer: 'multiplayer', game: 'the game' };
+      const left = new Set(Object.keys(steps));
+      const show = () => {
+        const done = 4 - left.size;
+        document.getElementById('loader-fill').style.width = `${(done / 4) * 100}%`;
+        const next = Object.keys(steps).find((k) => left.has(k));
+        document.getElementById('loader-text').textContent = next ? `Loading ${steps[next]}…` : 'Ready';
+        if (!left.size) {
+          const el = document.getElementById('loader');
+          el.classList.add('is-done');
+          setTimeout(() => el.remove(), 600);
+        }
+      };
+      const img = new Image();
+      img.onload = img.onerror = () => { left.delete('image'); show(); };
+      img.src = 'img/start.jpg';
+      return { done(step) { left.delete(step); show(); } };
+    })();
+  </script>
   <!-- Text for search engines and screen readers; the game itself is a 3D canvas. -->
   <main class="sr-only">
     <h1>Hive Hunger — a 3D swarm game</h1>
@@ -89,8 +129,8 @@
   <div id="version" class="version"></div>
   <div id="fps" class="fps" hidden></div>
   <div id="pause-hint" class="pause-hint" hidden></div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onload="HH_LOAD.done('three')" onerror="HH_LOAD.done('three')"></script>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" onload="HH_LOAD.done('peer')" onerror="HH_LOAD.done('peer')"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
