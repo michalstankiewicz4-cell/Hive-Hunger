@@ -53,6 +53,8 @@ async def main():
             await host.wait_for_selector('.menu-card .lobby-link', timeout=20000)
             code = (await host.input_value('.menu-card .lobby-link')).split('room=')[1]
             t.ok(len(code) == 6, 'room created', code)
+            await host.wait_for_timeout(700)
+            t.ok(await host.locator('.control-levels').is_hidden(), 'no level switch in multiplayer')
             fresh = await host.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
               return { score: p.score, owned: [...p.tree.owned], level: g.level, left: g.planet.left, total: g.planet.total,
                 count: p.base.count, units: p.swarm.count }; }''')
@@ -170,6 +172,23 @@ async def main():
             dist = sum((a - b) ** 2 for a, b in zip(hf['pos'], gf['pos'])) ** 0.5
             t.ok(gf['count'] == hf['count'] == cut['count'] - 10 and dist < 0.5,
                  'voxels eaten off the piece disappear on the guests; it is in the same place', f"host {hf['count']} guest {gf['count']}, {dist:.2f} apart")
+
+            # bitten through, the piece breaks up on the guests too
+            sp = await host.evaluate('''(q) => { const g = window.__dbg, pl = g.planet, fr = pl.fragments, N = pl.N;
+              const f = fr.list[0], cells = fr.cellsOf(f), js = cells.map(c => ((c / N) | 0) % N).sort((a, b) => a - b);
+              const cut = js[Math.floor(js.length * q)], before = f.count, ids = fr.list.map(x => x.id);
+              const p0 = f.pos.clone(); if (g.update) {}
+              let eaten = 0; for (const c of cells) if (((c / N) | 0) % N === cut) { pl.remove(c); eaten++; }
+              g.update();
+              const kids = fr.list.filter(x => !ids.includes(x.id));
+              const k = kids[0];
+              return { before, eaten, parent: f.dead ? 0 : f.count, kids: kids.map(x => x.count), id: k ? k.id : null,
+                gap: k ? k.pos.distanceTo(f.pos) : 0, moved: f.pos.distanceTo(p0) }; }''', 0.3)
+            await host.wait_for_timeout(1500)
+            await guests[1].evaluate('() => { const g = window.__dbg; for (let f = 0; f < 3; f++) g.update(); }')
+            gk = await guests[1].evaluate('(id) => { const fr = window.__dbg.planet.fragments, k = fr.byId.get(id), f = fr.byId.get(1); return { kid: k ? k.count : null, parent: f ? f.count : null }; }', sp['id'])
+            t.ok(sp['id'] is not None and gk['kid'] == sp['kids'][0] and gk['parent'] == sp['parent'],
+                 'a piece bitten through on the host breaks up the same way on the guests', f'host {sp} guest {gk}')
 
             # connection stats: every guest has a measured ping, shown in the HUD and the room panel
             stats = await host.evaluate('() => window.__dbg.netStats')

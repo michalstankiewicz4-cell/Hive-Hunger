@@ -71,10 +71,10 @@ The guest builds the planet from the seed and level, then removes the eaten voxe
 
 **FRAG** (type 4) — a piece bitten off the planet (sent when it comes loose, and to a guest who joins for every piece drifting at that moment):
 ```
-u8 type=4 | u32 id | 16 × f32: original centre (3), position (3), rotation quaternion (4), velocity (3), spin (3)
+u8 type=4 | u32 id | 19 × f32: original centre (3), position (3), rotation quaternion (4), velocity (3), spin (3), origin (3: where it came off)
 | u32 count | count × varint: voxel indices, sorted, each as the gap from the previous one
 ```
-The guest takes those voxels out of its grid into a fragment with the same id and motion. Voxels eaten off a piece arrive in snapshots like any other eaten voxel. Large pieces go in PART messages.
+The guest takes those voxels out of its grid — or out of the piece they belonged to, when a piece broke up — into a fragment with the same id and motion. Voxels eaten off a piece arrive in snapshots like any other eaten voxel. Large pieces go in PART messages.
 
 **PART** (type 3) — a piece of any binary message larger than 60 000 bytes (`MAX_PART`); the guest joins the pieces and handles the result as the original message:
 ```

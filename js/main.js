@@ -2,6 +2,7 @@ import { CONFIG } from './config.js';
 import { VERSION } from './version.js';
 import { Hud } from './ui/Hud.js';
 import { ControlPanel } from './ui/ControlPanel.js';
+import { LevelSwitch } from './ui/LevelSwitch.js';
 import { Lobby } from './ui/Lobby.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { Summary } from './ui/Summary.js';
@@ -38,6 +39,13 @@ if (!window.THREE) {
   });
   new ControlPanel(document.getElementById('controls'), CONFIG.controls,
     Object.fromEntries(['count', 'speed', 'power', 'spacing', 'cohesion', 'nearest'].map((k) => [k, bind(k)])));
+  // single player: jump straight to any level (the swarm starts again from its beacon)
+  const levels = new LevelSwitch(document.getElementById('controls'), CONFIG.levels, {
+    isSolo: () => game.role === 'solo',
+    current: () => game.level,
+    onPick: (n) => game.jumpToLevel(n),
+  });
+  setInterval(() => levels.sync(), 500); // hides it once a room is created; follows the planet number
 
   // start screen → (multiplayer) waiting room → match; the room panel stays during the match
   let soloPlayed = false; // single player has been started (Esc can return to it)

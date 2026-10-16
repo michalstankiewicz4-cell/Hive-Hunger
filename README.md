@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.16.2 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.17.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -12,7 +12,7 @@ Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), fli
 
 Planets come in a cycle of levels: 1 — a test board with every box shape from 1×1×1 to 4×4×4 voxels once (20 boxes, 5 voxels apart), 2 — the usual planet, 3 — a cube, 4 — the text TEST LVL in coloured letters, 5 — a test board with a sphere and a cube side by side (10 voxels apart); then it starts again. Every planet is drawn as a smooth surface: no steps — slopes, rounded corners and craters. It is graphics only: underneath, the swarm still eats voxels — every voxel is still 1 point.
 
-When eating cuts a piece off — a part no longer connected to the rest — it comes loose: every part smaller than the rest gently drifts away and turns (parts of equal size all stay). It stops at most 4 units from where it came off, and big pieces turn slowly. The swarm can chase it and eat it like any other voxel, for the same points; a drone that hasn't eaten anything for 10 s stops for half a second and takes another bite (or the same one, if there is no other). A planet counts as eaten only when its last voxel is gone, drifting pieces included. The swarm then flies back to its spawn point (the beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
+When eating cuts a piece off — a part no longer connected to the rest — it comes loose: every part smaller than the rest gently drifts away and turns (parts of equal size all stay). It stops at most 4 units from where it came off, and big pieces turn slowly. A piece bitten through breaks up again the same way, and so on until it is eaten. The swarm can chase it and eat it like any other voxel, for the same points; a drone that hasn't eaten anything for 10 s stops for half a second and takes another bite (or the same one, if there is no other). A planet counts as eaten only when its last voxel is gone, drifting pieces included. The swarm then flies back to its spawn point (the beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
 
 ## Points and upgrades
 
@@ -34,6 +34,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Cohesion** — how strongly units stay with the group
   - **Eat nearest block** (test mechanic) — when on, every unit flies straight from the voxel it just ate to the nearest uneaten, unclaimed voxel; no free flying, only spacing between units is kept
   - **Reset to default** — restore all settings to their starting values
+  - **Level 1–5** (single player) — jump straight to that level; the swarm starts again from its beacon
 
 ## Multiplayer
 
@@ -106,6 +107,7 @@ js/
   net/Protocol.js       binary network messages
   ui/Hud.js             planet counter, points counter, hints, notices, scoreboard
   ui/ControlPanel.js    sliders, toggle and reset button
+  ui/LevelSwitch.js     level buttons in the panel (single player)
   ui/StartScreen.js     start screen and multiplayer waiting room
   ui/Lobby.js           room panel during a multiplayer match
   ui/Summary.js         multiplayer summary after each planet

@@ -30,6 +30,7 @@ export class Fragments {
     this.byId = new Map();
     this.fragOf = new Int32Array(planet.hp.length).fill(-1); // voxel → fragment id (-1: none)
     this.removed = [];           // static voxels eaten since the last check
+    this.cut = new Set();        // fragments something was eaten off since the last check
     this.detect = true;          // host / single player; guests receive fragments
     this.nextId = 1;
     this.onCreate = null;        // (fragment) => void — the host sends it to the guests
@@ -116,6 +117,9 @@ export class Fragments {
    * bodies that were apart from the start (the boxes, the letters) never are.
    */
   findSplits() {
+    // pieces bitten through break up the same way (the smaller part comes loose from the piece)
+    for (const f of this.cut) if (!f.dead) this.splitFragment(f);
+    this.cut.clear();
     if (this.removed.length === 0) return;
     const pl = this.planet, hp = pl.hp;
     const left = new Set(this.removed);
@@ -132,21 +136,48 @@ export class Fragments {
           if (left.has(n)) { left.delete(n); cluster.push(n); } else if (hp[n] > 0) cands.add(n);
         }
       }
-      this.splitFrom(cands);
+      for (const part of this.splitGrid(hp, pl.N, cands)) this.create(part);
+    }
+  }
+
+  /** Voxels eaten off fragment f since the last check: the same search in its own small grid. */
+  splitFragment(f) {
+    const M = f.M, hp = f.local.hp;
+    const left = new Set(f.removed);
+    f.removed.length = 0;
+    for (const start of [...left]) {
+      if (!left.has(start)) continue;
+      left.delete(start);
+      const cluster = [start], cands = new Set();
+      for (let q = 0; q < cluster.length; q++) {
+        const v = cluster[q];
+        const i = v % M, j = ((v / M) | 0) % M, k = (v / (M * M)) | 0;
+        for (const [a, b, c] of NEIGHBORS) {
+          const ni = i + a, nj = j + b, nk = k + c;
+          if (ni < 0 || nj < 0 || nk < 0 || ni >= M || nj >= M || nk >= M) continue;
+          const n = (nk * M + nj) * M + ni;
+          if (left.has(n)) { left.delete(n); cluster.push(n); } else if (hp[n] > 0) cands.add(n);
+        }
+      }
+      for (const part of this.splitGrid(hp, M, cands)) {
+        if (f.dead) return;
+        this.create(part.map((li) => f.local.orig[li]), undefined, null, f);
+      }
     }
   }
 
   /**
-   * Flood fills from every candidate at once, one voxel per fill in turn; fills that touch
+   * In grid `hp` (edge N), from candidate cells `cands`: flood fills from every candidate at once, one voxel per fill in turn; fills that touch
    * merge. When at most one fill is still growing, every fill that ran out is a closed part
    * smaller than the rest — it comes loose. If all of them ran out, the biggest stays (and
    * parts of equal biggest size all stay). Gives up after `cfg.maxSteps` voxels (no split).
+   * Returns the parts that come loose (arrays of cell indices).
    */
-  splitFrom(cands) {
-    if (cands.size < 2) return;
-    const pl = this.planet, hp = pl.hp, N = pl.N;
+  splitGrid(hp, N, cands) {
+    if (cands.size < 2) return [];
+    if (this.mark.length < hp.length) { this.mark = new Int32Array(hp.length); this.groupOf = null; }
     const stamp = ++this.stamp, mark = this.mark;
-    this.groupOf ||= new Int32Array(hp.length);
+    if (!this.groupOf || this.groupOf.length < hp.length) this.groupOf = new Int32Array(this.mark.length);
     const groupOf = this.groupOf;
     const groups = []; // { cells, pending, head, parent, done }
     const root = (g) => { while (groups[g].parent !== g) g = groups[g].parent; return g; };
@@ -182,7 +213,7 @@ export class Fragments {
           R.parent = g; R.cells = null; R.pending = null;
           active--;
         }
-        if (++steps > this.cfg.maxSteps) return;
+        if (++steps > this.cfg.maxSteps) return [];
       }
     }
     let closed = groups.filter((G, g) => G.parent === g && (G.done || G.head >= G.pending.length));
@@ -191,19 +222,22 @@ export class Fragments {
       const biggest = Math.max(...closed.map((G) => G.cells.length));
       closed = closed.filter((G) => G.cells.length < biggest);
     }
-    for (const G of closed) this.create(G.cells);
+    return closed.map((G) => G.cells);
   }
 
   // --- fragments ---
 
   /**
-   * Turns `cells` (static voxel indices) into a drifting fragment. On a guest `id` and the
-   * motion come from the host.
+   * Turns `cells` (voxel indices — in the planet's grid, or part of another fragment) into a
+   * drifting fragment. A part of a fragment (`parent`) starts with its parent's motion. On a
+   * guest `id` and the motion come from the host.
    */
-  create(cells, id = this.nextId++, motion = null) {
+  create(cells, id = this.nextId++, motion = null, parent = null) {
     const pl = this.planet, N = pl.N, s = pl.s;
-    cells = Array.from(cells).filter((c) => pl.hp[c] > 0 && this.fragOf[c] < 0);
+    cells = Array.from(cells).filter((c) => pl.hp[c] > 0 || (this.fragOf[c] >= 0 && this.hpOf(c) > 0));
     if (cells.length === 0) return null;
+    // strength of every voxel, from wherever it is now
+    const strength = cells.map((c) => (pl.hp[c] > 0 ? pl.hp[c] : this.hpOf(c)));
     this.nextId = Math.max(this.nextId, id + 1);
     // bounding box in grid coordinates, the original centre
     let i0 = N, j0 = N, k0 = N, i1 = 0, j1 = 0, k1 = 0, cx = 0, cy = 0, cz = 0;
@@ -226,36 +260,53 @@ export class Fragments {
       scene: null,
     };
     let radius = 0;
-    for (const c of cells) {
+    // out of the static grid or the fragment it was part of (not eaten)
+    cells.forEach((c, n) => {
+      if (pl.hp[c] > 0) pl.detach(c);
+      else this.takeOut(this.byId.get(this.fragOf[c]), c);
       const [i, j, k] = pl.coords(c);
       const li = ((k - g0[2]) * M + (j - g0[1])) * M + (i - g0[0]);
-      pl.voxelColor(c); // cache the colour while the voxel is still in place
-      local.hp[li] = pl.hp[c];
+      pl.voxelColor(c); // cache the colour
+      local.hp[li] = strength[n];
       local.orig[li] = c;
       this.fragOf[c] = id;
       pl.gridCenter(c, v);
       radius = Math.max(radius, v.distanceTo(pivot));
-    }
-    for (const c of cells) pl.detach(c); // out of the static grid (not eaten)
+    });
 
     const f = {
       id, cells, count: cells.length, local, g0, M, pivot, radius: radius + s,
       pos: pivot.clone(), quat: new THREE.Quaternion(), vel: new THREE.Vector3(), spin: new THREE.Vector3(),
-      exposed: [], exposedDirty: false, exp: new Uint8Array(M * M * M),
+      origin: pivot.clone(), // where it came off (it never drifts further than maxDistance from here)
+      removed: [], exposed: [], exposedDirty: false, exp: new Uint8Array(M * M * M),
       group: new THREE.Group(), inner: new THREE.Group(),
     };
     // reachable voxels (an empty neighbour): a flag per local cell and a list, kept up to date as it is eaten
     for (let li = 0; li < local.hp.length; li++) {
       if (local.hp[li] > 0 && this.isOpen(f, li)) { f.exp[li] = 1; f.exposed.push(local.orig[li]); }
     }
+    const rnd = () => (Math.random() - 0.5) * 2;
     if (motion) {
       f.pos.fromArray(motion.pos); f.quat.fromArray(motion.quat); f.vel.fromArray(motion.vel); f.spin.fromArray(motion.spin);
+      f.origin.fromArray(motion.origin);
+    } else if (parent) {
+      // a part of a piece: where it is in its parent, moving with it (turning included), pushed a
+      // little away from the parent's centre, with a slightly different turn
+      const rel = pivot.clone().sub(parent.pivot).applyQuaternion(parent.quat);
+      f.pos.copy(parent.pos).add(rel);
+      f.quat.copy(parent.quat);
+      f.vel.copy(parent.vel).add(new THREE.Vector3().crossVectors(parent.spin, rel));
+      const out = rel.lengthSq() > 1e-6 ? rel.clone().normalize() : new THREE.Vector3(rnd(), rnd(), rnd()).normalize();
+      f.vel.addScaledVector(out, this.cfg.drift * 0.5);
+      f.spin.copy(parent.spin).add(new THREE.Vector3(rnd(), rnd(), rnd()).multiplyScalar(this.cfg.spin * 0.3));
+      const maxSpin = this.cfg.maxRimSpeed / f.radius;
+      if (f.spin.length() > maxSpin) f.spin.setLength(maxSpin);
+      f.origin.copy(f.pos);
     } else {
       // a gentle push away from the planet's centre, a little sideways, and a slow turn
       const out = pivot.clone();
       if (out.lengthSq() < 1e-6) out.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
       out.normalize();
-      const rnd = () => (Math.random() - 0.5) * 2;
       f.vel.copy(out).multiplyScalar(this.cfg.drift).add(new THREE.Vector3(rnd(), rnd(), rnd()).multiplyScalar(this.cfg.drift * 0.4));
       f.spin.set(rnd(), rnd(), rnd()).normalize().multiplyScalar(this.cfg.spin * (0.5 + Math.random()));
       // a big piece turns slower: its edge never moves faster than maxRimSpeed (drones must keep up)
@@ -319,6 +370,13 @@ export class Fragments {
     // remember where it was, so the debris of an eaten voxel appears there (see VoxelPlanet.cellCenter)
     this.worldCenter(idx, this.lastPos);
     this.lastIdx = idx;
+    // the piece may now be in pieces itself (checked once per frame)
+    if (this.detect && f.count > 1) { f.removed.push(li); this.cut.add(f); }
+    this.takeOut(f, idx, li);
+  }
+
+  /** Takes voxel idx out of fragment f (eaten, or moved to a part that came loose). */
+  takeOut(f, idx, li = this.localIndex(f, idx)) {
     f.local.hp[li] = 0;
     this.fragOf[idx] = -1;
     f.count--;
@@ -409,9 +467,9 @@ export class Fragments {
         f.pos.add(f.vel);
         f.vel.multiplyScalar(c.damping);
         // never further than maxDistance from where it came off: there it stops (and keeps turning)
-        const away = axis.subVectors(f.pos, f.pivot), d = away.length();
+        const away = axis.subVectors(f.pos, f.origin), d = away.length();
         if (d > c.maxDistance) {
-          f.pos.copy(f.pivot).addScaledVector(away, c.maxDistance / d);
+          f.pos.copy(f.origin).addScaledVector(away, c.maxDistance / d);
           f.vel.set(0, 0, 0);
         }
         const a = f.spin.length();
@@ -462,6 +520,7 @@ export class Fragments {
   clear() {
     for (const f of [...this.list]) this.dispose(f);
     this.removed.length = 0;
+    this.cut.clear();
   }
 
   disposeAll() {

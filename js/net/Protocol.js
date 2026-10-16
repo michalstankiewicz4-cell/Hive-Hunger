@@ -12,7 +12,8 @@
  *   u8 type | u32 seed | u16 level | u8 hasEaten | [eaten voxels: varint run lengths, see VoxelPlanet.eatenRuns]
  *
  * FRAG (type 4), host → guest(s): a piece bitten off the planet that now drifts (see Fragments.js)
- *   u8 type | u32 id | 16 × f32: pivot (3), position (3), rotation quaternion (4), velocity (3), spin (3)
+ *   u8 type | u32 id | 19 × f32: pivot (3), position (3), rotation quaternion (4), velocity (3), spin (3),
+ *   origin (3: where it came off)
  *   | u32 count | count × varint: voxel indices, sorted, each as the gap from the previous one
  */
 
@@ -147,6 +148,8 @@ export function decodePlanet(buf) {
   return { seed, level, bits };
 }
 
+const FLOATS = 19; // a fragment's motion in a FRAG message
+
 /** A drifting fragment (Fragments.js) for the guests; `cells` = its voxels still there. */
 export function encodeFragment(f, cells) {
   const sorted = Int32Array.from(cells).sort();
@@ -158,12 +161,12 @@ export function encodeFragment(f, cells) {
     while (d >= 128) { bytes.push((d & 127) | 128); d >>>= 7; }
     bytes.push(d);
   }
-  const head = 1 + 4 + 16 * 4 + 4;
+  const head = 1 + 4 + FLOATS * 4 + 4;
   const buf = new ArrayBuffer(head + bytes.length);
   const v = new DataView(buf);
   v.setUint8(0, FRAG);
   v.setUint32(1, f.id, true);
-  const nums = [...f.pivot.toArray(), ...f.pos.toArray(), ...f.quat.toArray(), ...f.vel.toArray(), ...f.spin.toArray()];
+  const nums = [...f.pivot.toArray(), ...f.pos.toArray(), ...f.quat.toArray(), ...f.vel.toArray(), ...f.spin.toArray(), ...f.origin.toArray()];
   nums.forEach((x, n) => v.setFloat32(5 + n * 4, x, true));
   v.setUint32(head - 4, sorted.length, true);
   new Uint8Array(buf, head).set(bytes);
@@ -174,8 +177,8 @@ export function decodeFragment(buf) {
   const v = new DataView(buf);
   const id = v.getUint32(1, true);
   const f = [];
-  for (let n = 0; n < 16; n++) f.push(v.getFloat32(5 + n * 4, true));
-  const head = 1 + 4 + 16 * 4 + 4;
+  for (let n = 0; n < FLOATS; n++) f.push(v.getFloat32(5 + n * 4, true));
+  const head = 1 + 4 + FLOATS * 4 + 4;
   const count = v.getUint32(head - 4, true);
   const bytes = new Uint8Array(buf, head);
   const cells = new Array(count);
@@ -186,5 +189,5 @@ export function decodeFragment(buf) {
     prev += d;
     cells[n] = prev;
   }
-  return { id, cells, motion: { pivot: f.slice(0, 3), pos: f.slice(3, 6), quat: f.slice(6, 10), vel: f.slice(10, 13), spin: f.slice(13, 16) } };
+  return { id, cells, motion: { pivot: f.slice(0, 3), pos: f.slice(3, 6), quat: f.slice(6, 10), vel: f.slice(10, 13), spin: f.slice(13, 16), origin: f.slice(16, 19) } };
 }

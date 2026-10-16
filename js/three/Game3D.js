@@ -199,6 +199,23 @@ export class Game3D {
     this.planet.log = [];
   }
 
+  /**
+   * Single player: build level `n` of the cycle right away (the level switch in the panel).
+   * The swarm starts again from its beacon, so it can't end up inside the new shape.
+   */
+  jumpToLevel(n) {
+    if (this.role !== 'solo') return;
+    this.planet.dispose();
+    this.level = n - 1;
+    this.spawnPlanet();
+    this.returnFrames = 0;
+    for (const p of this.activePlayers()) {
+      p.swarm.hungry.fill(0);
+      p.swarm.pause.fill(0);
+      p.placeAtSpawn();
+    }
+  }
+
   spawnPlanet(seed) {
     this.level++;
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level), this.cfg.fragments);

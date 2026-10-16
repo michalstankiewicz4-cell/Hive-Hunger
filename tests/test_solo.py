@@ -66,6 +66,26 @@ async def main():
         t.ok(await page.evaluate("() => !document.querySelector('[id*=menu-button]') && !window.__dbg.planet.atmosphere"),
              'no Menu button and no atmosphere')
 
+        # level switch (single player): a planet right away, the swarm starts again from its beacon
+        levels = await page.locator('.control-levels button').all_inner_texts()
+        t.ok(levels == ['1', '2', '3', '4', '5'] and await page.locator('.control-levels').is_visible(), 'level switch in the panel', levels)
+        await page.click('.control-levels button >> nth=2')
+        await page.wait_for_timeout(300)
+        jump = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet;
+          const c = s.center(), home = p.spawnWorld(); let inside = 0;
+          for (let i = 0; i < s.count; i++) { const idx = pl.cellAt({ x: s.pos[i * 3], y: s.pos[i * 3 + 1], z: s.pos[i * 3 + 2] }); if (idx >= 0 && pl.hp[idx] > 0) inside++; }
+          return { level: g.level, shape: pl.shape, home: Math.hypot(c.x - home.x, c.y - home.y, c.z - home.z), inside, left: pl.left, total: pl.total,
+            pressed: document.querySelector('.control-levels button[aria-pressed=true]').textContent }; }""")
+        t.ok(jump['level'] == 3 and jump['shape'] == 'cube' and jump['pressed'] == '3', 'level 3 (the cube) right away', jump)
+        t.ok(jump['home'] < 5 and jump['inside'] == 0, 'the swarm starts again from its beacon, not inside the planet', jump)
+        await page.evaluate("() => window.__dbg.localPlayer.setSetting('speed', 0.3)")
+        await h.fast_forward(page, 400)
+        after_jump = await page.evaluate('() => window.__dbg.planet.left')
+        t.ok(after_jump < jump['total'], 'and starts eating the new planet', f"{jump['total']} → {after_jump}")
+        await page.click('.control-levels button >> nth=0')
+        await page.wait_for_timeout(300)
+        t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'boxes'], 'back to level 1')
+
         # eat the whole planet with a big, fast swarm
         await page.evaluate("""() => { const p = window.__dbg.localPlayer;
           p.setSetting('count', 300); p.setSetting('speed', 0.5); p.setSetting('power', 2.5); }""")

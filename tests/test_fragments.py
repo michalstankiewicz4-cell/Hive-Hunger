@@ -94,6 +94,30 @@ async def main():
         t.ok(lim['rim'] <= lim['max'] + 1e-6, 'a big piece\'s edge moves no faster than maxRimSpeed', lim)
         t.ok(lim['away'] <= lim['maxDistance'] + 1e-6, 'a piece stays within maxDistance of where it came off', lim)
 
+        # a piece bitten through breaks up too: the smaller part comes loose from it, and so on
+        sp = await page.evaluate('''(q) => { const g = window.__dbg, pl = g.planet, fr = pl.fragments, N = pl.N;
+              const f = fr.list[0], cells = fr.cellsOf(f), js = cells.map(c => ((c / N) | 0) % N).sort((a, b) => a - b);
+              const cut = js[Math.floor(js.length * q)], before = f.count, ids = fr.list.map(x => x.id);
+              const p0 = f.pos.clone();
+              let eaten = 0; for (const c of cells) if (((c / N) | 0) % N === cut) { pl.remove(c); eaten++; }
+              fr.step(true);
+              const kids = fr.list.filter(x => !ids.includes(x.id));
+              const k = kids[0];
+              return { before, eaten, parent: f.dead ? 0 : f.count, kids: kids.map(x => x.count), id: k ? k.id : null,
+                gap: k ? k.pos.distanceTo(f.pos) : 0, moved: f.pos.distanceTo(p0) }; }''', 0.3)
+        t.ok(len(sp['kids']) == 1 and sp['kids'][0] < sp['parent'] and sp['kids'][0] + sp['parent'] == sp['before'] - sp['eaten'],
+             'a piece cut through: the smaller part comes loose as a new piece', sp)
+        sp2 = await page.evaluate('''() => { const fr = window.__dbg.planet.fragments; const f = fr.list[fr.list.length - 1];
+          const p0 = f.pos.clone(); for (let n = 0; n < 60; n++) fr.step(true); return { moved: f.pos.distanceTo(p0), count: f.count }; }''')
+        t.ok(sp2['moved'] > 0.05, 'the new piece drifts on its own', sp2)
+        sp3 = await page.evaluate('''() => { const g = window.__dbg, pl = g.planet, fr = pl.fragments, f = fr.list[fr.list.length - 1], N = pl.N;
+          const cells = fr.cellsOf(f), ks = cells.map(c => (c / (N * N)) | 0).sort((a, b) => a - b), cut = ks[Math.floor(ks.length * 0.6)];
+          const n0 = fr.list.length, before = f.count; let eaten = 0;
+          for (const c of cells) if (((c / (N * N)) | 0) === cut) { pl.remove(c); eaten++; }
+          fr.step(true);
+          return { pieces: fr.list.length - n0, before, eaten, left: f.dead ? 0 : f.count }; }''')
+        t.ok(sp3['pieces'] == 1, '…and breaks up again when it is cut through', sp3)
+
         # a drone that hasn't eaten for 10 s stops for 0.5 s, then takes another bite
         rt = await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet, c = g.cfg.swarm.retarget;
           p.onNewPlanet(); p.setSetting('count', 20);

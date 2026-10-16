@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.17.0] — 2026-10-16
+
+### Added
+- **Pieces break up again.** When a drifting piece is bitten through, the smaller part comes loose from it as a new piece (equal parts both stay) — and so on, until everything is eaten. A new piece starts where it was in its parent, moving and turning with it, with a small push away from it; it can drift up to 4 units from there. In multiplayer the guests get the new pieces from the host (the FRAG message now also carries where a piece came off).
+- **Level switch** in the settings panel (single player only): buttons 1–5 build that level right away, and the swarm starts again from its beacon, so it can't end up inside the new shape.
+
 ## [0.16.2] — 2026-10-16
 
 ### Added
