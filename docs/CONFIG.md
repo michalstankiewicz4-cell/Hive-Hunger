@@ -58,7 +58,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 
 | Value | Default | What it does | More / less |
 | --- | --- | --- | --- |
-| `count` | 22 | *slider Units* (`START_UNITS` = 2 × 11 types) | |
+| `count` | 24 | *slider Units* (`START_UNITS` = 2 × 12 types) | |
 | `maxCount` | 100 | most units a swarm can have (slider + Brood bonuses together); the slider's own range (10–100) is in `controls` | |
 | `speed` | 0.05 | *slider Speed* — identical constant speed of every unit | |
 | `perception` | 3 | how far a unit sees neighbours (at least 1.3 × `separationDistance`) | larger = smoother flock, slower |
@@ -81,7 +81,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count` | 22, 2 each | units at the start and how many of each type — `START_EACH` (2) of every type; `count` = `START_UNITS` = 2 × 9 (the rest, 2, are eaters) | |
+| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count`, `splasher.count` | 24, 2 each | units at the start and how many of each type — `START_EACH` (2) of every type; `count` = `START_UNITS` = 2 × 12 (the rest, 2, are eaters) | |
 | `bomber.radius` | 5 | a bomber destroys everything within this (10 voxels) | |
 | `bomber.color`, `bomber.debris` | purple, 300 | colour; most debris pieces thrown by a blast | |
 | `orb.range`, `orb.speed`, `orb.blast` | 5, 0.045, 1 | firing distance (10 voxels), orb speed per frame, burst radius (2 voxels) | |
@@ -109,6 +109,11 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `sniper.shotSize`, `shotColor` | 0.07 × 0.07 × 0.5, white-cyan | the shot (a thin streak, a little smaller than an eater) | |
 | `sniper.shockRadius`, `shockLength`, `shockColor`, `shockCore`, `wake` | 0.14, 0.45, orange, near white, 0.6 | the rounded glowing bow round the front, swept back `shockLength` (both grow with the speed); the wake behind (× the speed-up) | |
 | `sniper.flashFrames`, `flashSize` | 10, 1.6 | the flash at the hit | |
+| `splasher.count`, `splasher.color` | 2, blue | splashers at the start; hull colour | |
+| `splasher.range`, `splasher.speed` | 5, 0.07 | firing distance (10 voxels); bubble speed per frame | |
+| `splasher.size`, `splasher.wobble` | 1.5, 0.08 | the bubble's diameter (3 voxels); how fast its edge wobbles | |
+| `splasher.soakFrames`, `splasher.area` | 180, [3, 3, 2] | how long the block soaks before it is gone (3 s); the block: 3 × 3 across the surface, 2 deep | |
+| `splasher.splash`, `splasher.splashColor` | 10, light blue | debris per voxel at the landing and as voxels go; its colour | |
 | `minCount` | 0 | fewest units (the Units slider starts at 10; bombers that blew up can take the swarm lower) | |
 | `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
 | `tug.pull` | 0.9 | a towed piece's speed × the swarm speed | |
@@ -250,4 +255,4 @@ Not game rules: each player's own, remembered in the browser (`localStorage`, ke
 
 ## Ship groups (`SHIP_GROUPS` in `config.js`)
 
-How the types are shown in the Ship types panel and the Ship guide: `Attack` (eaters, lasers, storms, orbs, bombers, drills, piercers, snipers), then below a line `Support` (tugs, support, cleaners). Only for showing — the order of the units in the swarm is `SHIP_KINDS`.
+How the types are shown in the Ship types panel and the Ship guide: `Attack` (eaters, lasers, storms, orbs, splashers, bombers, drills, piercers, snipers), then below a line `Support` (tugs, support, cleaners). Only for showing — the order of the units in the swarm is `SHIP_KINDS`.

@@ -7,6 +7,7 @@ import { Lightning3D } from '../effects/Lightning3D.js';
 import { BlackHoles } from '../effects/BlackHoles.js';
 import { Orbs } from '../effects/Orbs.js';
 import { Shots } from '../effects/Shots.js';
+import { Bubbles } from '../effects/Bubbles.js';
 import { Zaps } from '../effects/Zaps.js';
 import { Player } from './Player.js';
 import { PLAYERS } from './players.js';
@@ -92,6 +93,8 @@ export class Game3D {
     this.holes = new BlackHoles(this.cfg.holes);
     this.orbs = new Orbs(this.scene, this.cfg.swarm.orb, this.cfg.planet.voxelSize);
     this.shots = new Shots(this.scene, this.cfg.swarm.sniper, this.cfg.planet.voxelSize);
+    this.bubbles = new Bubbles(this.cfg.swarm.splasher);
+    this.soaks = []; // blocks soaking where a splasher's bubble landed (host), see splash()
     this.zaps = new Zaps(this.scene, this.cfg.swarm.support);
     this.debris.scale = this.orbs.scale = this.effectsScale; // Settings → Graphics → Effects
     settings.onChange((key) => this.applyGraphics(key));
@@ -239,6 +242,8 @@ export class Game3D {
     // orbs, bolts and black holes belonged to the old planet
     this.orbs?.clear();
     this.shots?.clear();
+    this.bubbles?.clear();
+    if (this.soaks) this.soaks.length = 0;
     this.zaps?.clear();
     this.holes?.clear();
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level), this.cfg.fragments);
@@ -333,6 +338,9 @@ export class Game3D {
     if (this.started) this.orbs.update((o) => this.orbBurst(o), (o, out) => { if (this.planet.solid(o.target)) this.planet.cellCenter(o.target, out); });
     // snipers' shots fly (speeding up, following a target on a drifting piece) and hit
     if (this.started) this.shots.update((sh) => this.shotHit(sh), (sh, out) => { if (this.planet.solid(sh.target)) this.planet.cellCenter(sh.target, out); });
+    // splashers' bubbles fly and land; the blocks they hit soak (and go)
+    if (this.started) this.bubbles.update((bb) => this.splash(bb), (bb, out) => { if (this.planet.solid(bb.target)) this.planet.cellCenter(bb.target, out); });
+    if (this.started && this.planet.alive) this.updateSoaks();
     // black holes pull in debris and pieces (and swallow them)
     if (this.started) this.holes.update(this.debris, this.planet.alive ? this.planet.fragments : null, (f, owner) => this.swallow(f, owner));
     // bitten-off pieces drift and turn; new splits are found
@@ -372,10 +380,23 @@ export class Game3D {
       this.countFrame(now);
       this.update();
       for (const p of this.activePlayers()) p.swarm.render(this.camera);
-      this.holes.render(this.renderer, this.scene, this.camera);
+      this.holes.render(this.renderer, this.scene, this.camera, this.bubbles.lenses(), (p) => this.behindPlanet(p));
       this.frame = requestAnimationFrame(loop);
     };
     this.frame = requestAnimationFrame(loop);
+  }
+
+  /** Is the planet between the camera and point p (a bubble behind it isn't drawn)? */
+  behindPlanet(p) {
+    const pl = this.planet;
+    if (!pl?.alive) return false;
+    const cam = this.camera.position, R = pl.R * 0.92;
+    const dx = p.x - cam.x, dy = p.y - cam.y, dz = p.z - cam.z, len = Math.hypot(dx, dy, dz) || 1;
+    // the closest point of the line of sight to the centre, if it lies before p
+    const t = -(cam.x * dx + cam.y * dy + cam.z * dz) / len;
+    if (t <= 0 || t >= len) return false;
+    const cx = cam.x + (dx / len) * t, cy = cam.y + (dy / len) * t, cz = cam.z + (dz / len) * t;
+    return cx * cx + cy * cy + cz * cz < R * R && Math.hypot(p.x, p.y, p.z) > R * 0.5;
   }
 
   stop() {

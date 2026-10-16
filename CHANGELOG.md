@@ -2,6 +2,13 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.32.0] — 2026-10-16
+
+### Added
+- **Splashers** (blue): a twelfth ship type, an attack ship. From 10 voxels away a splasher fires a bubble of liquid 3 voxels across — irregular and wobbling, and inside it the view behind is bent like through a lens (a drop of water). One bubble at a time. Where it lands, a block of 3 × 3 voxels across the surface and 2 deep soaks for 3 seconds — weakening — and is then destroyed (points for every voxel). On a drifting piece only that piece's voxels soak. Guests see the same bubbles.
+- The Ship guide has the splasher with its picture (a wobbling bubble, then the soaking block).
+- Every player starts with 2 of each type: 24 units.
+
 ## [0.31.1] — 2026-10-16
 
 ### Changed

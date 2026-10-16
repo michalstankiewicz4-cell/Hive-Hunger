@@ -71,6 +71,10 @@ export class Swarm3D {
     // their bite (one at a time) that bursts there; orbOut = the id of the orb a ship has in flight
     this.orbs = 0;
     this.orbOut = new Int32Array(this.max);
+    // the next … `splashers` units (see SHIP_KINDS) are blue splashers: one bubble of liquid at a time
+    // (Bubbles.js), splashOut = the id of the one in flight
+    this.splashers = 0;
+    this.splashOut = new Int32Array(this.max);
     // the last `snipers` units are teal snipers: from any distance they fire an accelerating shot at
     // their bite (Shots.js) that destroys the voxel it hits; snipePhase 1 = stopped and charging,
     // snipeT counts the charge down (or, after a shot, the second it flies on)
@@ -422,6 +426,12 @@ export class Swarm3D {
           foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
           // every ship first turns to face its bite and eats (a laser ship: fires) only then
           if (!this.aim(i)) continue;
+          if (this.isSplasher(i)) {
+            // a splasher fires one bubble at a time and waits for it to land
+            if (!this.splashOut[i]) this.splashOut[i] = world.fireBubble(i, food[i], pos[i3], pos[i3 + 1], pos[i3 + 2]);
+            this.hungry[i] = 0;
+            continue;
+          }
           if (this.isOrb(i)) {
             // an orb ship fires one orb at a time and waits for it to burst
             if (!this.orbOut[i]) this.orbOut[i] = world.fireOrb(i, food[i], pos[i3], pos[i3 + 1], pos[i3 + 2]);
@@ -457,9 +467,9 @@ export class Swarm3D {
 
       const px = pos[i3], py = pos[i3 + 1], pz = pos[i3 + 2];
       const laser = i < this.lasers;
-      const orb = this.isOrb(i), sniper = this.isSniper(i);
+      const orb = this.isOrb(i), sniper = this.isSniper(i), splasher = this.isSplasher(i);
       const piercer = this.isPiercer(i);
-      const ranged = laser || orb || piercer || sniper || this.isStorm(i); // laser, storm, orb ships, piercers and snipers eat from a distance
+      const ranged = laser || orb || piercer || sniper || splasher || this.isStorm(i); // laser, storm, orb ships, piercers and snipers eat from a distance
       const speed = laser ? this.speed * c.laser.speedFactor : this.speed;
       let sx = 0, sy = 0, sz = 0;   // separation
       let ax = 0, ay = 0, az = 0;   // alignment
@@ -549,7 +559,7 @@ export class Swarm3D {
         const fx0 = foodPos[i3] - px, fy0 = foodPos[i3 + 1] - py, fz0 = foodPos[i3 + 2] - pz;
         // a laser ship stops at laser range and eats from there
         // (a sniper doesn't land: it stops wherever its move ends — see above)
-        const reach = sniper ? 0 : (orb ? c.orb.range : piercer ? c.piercer.reach : ranged ? c.laser.reach : c.reachDistance) + speed;
+        const reach = sniper ? 0 : (orb ? c.orb.range : splasher ? c.splasher.range : piercer ? c.piercer.reach : ranged ? c.laser.reach : c.reachDistance) + speed;
         if (fx0 * fx0 + fy0 * fy0 + fz0 * fz0 < reach * reach) {
           landed[i] = 1;
           this.aimed[i] = 0; // a new bite: it must turn to it first

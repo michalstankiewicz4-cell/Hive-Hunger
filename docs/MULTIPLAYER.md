@@ -47,7 +47,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'ready', ready}` | I pressed Start (`true`) or Not ready (`false`) |
 | guest → host | `{t:'cmd', kind:'click', p:{x,y,z}}` | send my swarm to this point (planet frame) |
 | guest → host | `{t:'cmd', kind:'recall'}` | call my swarm back to its tunnel |
-| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `turn`, or a ship type (`lasers`, `storms`, `tugs`, `bombers`, `orbs`, `supports`, `cleaners`, `drills`, `piercers`, `snipers`) |
+| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `turn`, or a ship type (`lasers`, `storms`, `tugs`, `bombers`, `orbs`, `supports`, `cleaners`, `drills`, `piercers`, `snipers`, `splashers`) |
 | host → guest | `{t:'ping', ts}` | every `net.pingMs` (2 s); `ts` = host time |
 | guest → host | `{t:'pong', ts}` | answer to a ping; the host's round trip `now − ts` is the guest's **ping** |
 | guest → host | `{t:'ping'}` | "still here", every `net.pingMs` |
@@ -58,6 +58,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | host → guest | `{t:'tree', tree:{owned, spent}}` | your upgrade tree after a purchase |
 | host → guest | `{t:'bolt', index, p:[x,y,z,…]}` | a chain-lightning bolt of player `index` to draw |
 | host → guest | `{t:'frags', list:[[id, px, py, pz, qx, qy, qz, qw, vx, vy, vz, towed], …]}` | where the drifting pieces are and how they move, every `fragments.syncEvery` frames (30; `towSyncEvery` = 6 while one is towed); guests move them with the same physics in between |
+| host → guest | `{t:'bubble', a:[x,y,z], b:[x,y,z]}` | a splasher fired from a at b: the guest flies the same bubble (the voxels it soaks away arrive in snapshots) |
 | host → guest | `{t:'shot', a:[x,y,z], b:[x,y,z]}` | a sniper fired from a at b: the guest flies the same shot (the voxel it destroys arrives in snapshots) |
 | host → guest | `{t:'orb', a:[x,y,z], b:[x,y,z]}` | an orb ship fired from a at b: the guest flies the same orb (its burst's voxels arrive in snapshots) |
 | host → guest | `{t:'zap', index, chain:[units…], seed}` | a support ship of player `index` fired: the guest draws the same bolt through the same ships (the destroyed voxels arrive in snapshots) |
@@ -99,7 +100,7 @@ per player: u8 index | u8 home (0 none, 1 recall, 2 jump) | u32 score | u32 plan
             | u16 tugs (the next `tugs` units are tugs) | u16 tows | tows × (u16 unit | u32 piece id)
             | u16 bombers (the next `bombers` units are bombers) | u16 orbs (the next `orbs` units are orb ships) | u16 supports | u16 cleaners
             | u16 drills | u16 drilling | drilling × u16 unit (drills drilling now: the guest draws their bits)
-            | u16 piercers (their beams are in the beam list with the lasers'; the unit says which) | u16 snipers
+            | u16 piercers (their beams are in the beam list with the lasers'; the unit says which) | u16 snipers | u16 splashers
             | u8 portal (1 = the tunnel is open) | ceil(count / 8) bytes hidden (bit per unit: not out of the tunnel yet / gone to hyperspace)
 u32 removed | removed × u32 voxel index (eaten since the last snapshot)
 ```

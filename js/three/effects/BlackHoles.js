@@ -1,5 +1,6 @@
 const THREE = window.THREE;
 const MAX = 8; // holes drawn at once
+const MAX_DROPS = 16; // liquid bubbles (splashers' shots) drawn at once
 
 /**
  * Black holes left by bombers: for `grow + hold + shrink` frames (1 s + 2 s + 1 s) a hole bends
@@ -10,6 +11,10 @@ const MAX = 8; // holes drawn at once
  * The lensing is a pass over the whole frame: when a hole is up, the scene is drawn into a
  * texture first, then onto the screen through a shader that moves every pixel's sample point the
  * way a point lens does (β = θ − θE² / θ), with a black disc inside the horizon.
+ *
+ * The same pass draws the splashers' liquid bubbles (`render(…, drops)`): inside an irregular,
+ * wobbling outline the picture behind is seen through a drop — upside down and magnified, tinted
+ * a little — with a bright rim and a highlight.
  */
 export class BlackHoles {
   constructor(cfg) {
@@ -87,9 +92,12 @@ export class BlackHoles {
     this.target = null;
   }
 
-  /** Draws the frame — through the lens pass when a hole is up. */
-  render(renderer, scene, camera) {
-    if (!this.any) {
+  /**
+   * Draws the frame — through the lens pass when a hole or a liquid bubble is up. `drops`:
+   * [{ pos, radius, phase }] (world); `hidden(pos)` → true when the planet is in front of it.
+   */
+  render(renderer, scene, camera, drops = [], hidden = null) {
+    if (!this.any && !drops.length) {
       renderer.render(scene, camera);
       return;
     }
@@ -114,11 +122,21 @@ export class BlackHoles {
       u.holes.value[n].set((p.x + 1) / 2, (p.y + 1) / 2, re, s);
       n++;
     }
-    if (n === 0) {
+    let m = 0;
+    for (const d of drops) {
+      if (m >= MAX_DROPS || hidden?.(d.pos)) continue;
+      const p = this._p.copy(d.pos).project(camera);
+      const dist = this._v.copy(d.pos).applyMatrix4(camera.matrixWorldInverse).z;
+      if (dist >= 0) continue;
+      u.drops.value[m].set((p.x + 1) / 2, (p.y + 1) / 2, d.radius / (-dist * tanHalf * 2), d.phase);
+      m++;
+    }
+    if (n === 0 && m === 0) {
       renderer.render(scene, camera);
       return;
     }
     u.count.value = n;
+    u.dropCount.value = m;
     u.aspect.value = aspect;
     u.tDiffuse.value = this.target.texture;
     u.ring.value.set(this.cfg.ringColor);
@@ -137,6 +155,9 @@ function makeLensPass() {
       count: { value: 0 },
       holes: { value: Array.from({ length: MAX }, () => new THREE.Vector4()) },
       ring: { value: new THREE.Color() },
+      dropCount: { value: 0 },
+      drops: { value: Array.from({ length: MAX_DROPS }, () => new THREE.Vector4()) },
+      tint: { value: new THREE.Color(0x9fd6ff) },
     },
     vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
@@ -145,6 +166,9 @@ function makeLensPass() {
       uniform int count;
       uniform vec4 holes[${MAX}];
       uniform vec3 ring;
+      uniform int dropCount;
+      uniform vec4 drops[${MAX_DROPS}];
+      uniform vec3 tint;
       varying vec2 vUv;
       void main() {
         vec2 uv = vUv;
@@ -163,8 +187,30 @@ function makeLensPass() {
           dark = max(dark, 1.0 - smoothstep(horizon * 0.92, horizon, r));
           glow += h.w * exp(-pow((r - horizon * 1.08) / (re * 0.06 + 1e-4), 2.0)) * 0.6;
         }
+        // liquid bubbles: an irregular wobbling drop, the picture behind seen through it upside down
+        float inDrop = 0.0, rim = 0.0, shine = 0.0;
+        for (int i = 0; i < ${MAX_DROPS}; i++) {
+          if (i >= dropCount) break;
+          vec4 b = drops[i];
+          vec2 d = (vUv - b.xy) * vec2(aspect, 1.0);
+          float r = length(d), a = atan(d.y, d.x), ph = b.w;
+          float R = b.z * (1.0 + 0.10 * sin(3.0 * a + ph) + 0.06 * sin(5.0 * a - 1.7 * ph) + 0.04 * sin(2.0 * a + 2.3 * ph));
+          if (r < R * 1.08) {
+            float e = r / R;
+            if (e < 1.0) {
+              // a drop as a lens: the image inverted and magnified, stronger towards the edge
+              float k = 0.55 + 0.25 * e * e;
+              uv = b.xy - (d * k) / vec2(aspect, 1.0);
+              inDrop = 1.0;
+              rim = max(rim, smoothstep(0.72, 1.0, e));
+              vec2 hl = d / R - vec2(-0.35, 0.38);
+              shine = max(shine, exp(-dot(hl, hl) * 40.0));
+            } else rim = max(rim, 1.0 - smoothstep(1.0, 1.08, e));
+          }
+        }
         vec3 col = texture2D(tDiffuse, clamp(uv, 0.0, 1.0)).rgb;
         col = col * (1.0 - dark) + ring * glow;
+        col = mix(col, col * tint + tint * 0.08, inDrop * 0.6) + tint * rim * 0.55 + vec3(shine);
         gl_FragColor = vec4(col, 1.0);
       }`,
     depthTest: false,

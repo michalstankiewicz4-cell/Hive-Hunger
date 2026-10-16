@@ -16,6 +16,7 @@ export const SHIP_INFO = {
   lasers: ['Lasers', 'Eat from 5 voxels away with a red beam; 10% slower.'],
   storms: ['Storms', 'Lightning from laser range that forks into three: the bite and its two nearest voxels.'],
   orbs: ['Orbs', 'A slow plasma orb with a fiery tail from 10 voxels; it bursts and destroys everything within 2 voxels.'],
+  splashers: ['Splashers', 'A wobbling bubble of liquid from 10 voxels that bends the view like a lens; where it lands, 3 × 3 × 2 voxels soak for 3 s and are gone.'],
   bombers: ['Bombers', 'Blow up everything within 10 voxels on contact — and are gone. A black hole stays for 4 s.'],
   drills: ['Drills', 'Drill a straight tunnel towards the centre with a spiral bit, until through.'],
   piercers: ['Piercers', 'Lock a line from 20 voxels and fire along it until through: an orange beam with a spiral bolt, 3 voxels at once.'],
@@ -215,6 +216,40 @@ const PICTURES = {
       }
       glowDot(g, x, 31.5, 6 + Math.sin(t * 40) * 1.2, 'rgba(255,90,230,0.8)');
     } else if (burst < 1) glowDot(g, 87, 31.5, 6 + burst * 14, `rgba(255,90,230,${1 - burst})`);
+  },
+
+  splashers(g, t, c) {
+    // a wobbling bubble flies to the block; where it lands the voxels soak, darken and are gone
+    const fly = ease(t / 0.4), soak = ease((t - 0.42) / 0.5);
+    const hitZone = (cx, r) => cx <= 1 && r >= 1 && r <= 3;
+    block(g, 84, 14, 4, 5, (cx, r) => (hitZone(cx, r) && t > 0.42 ? 1 - soak : 1));
+    if (t > 0.42 && soak < 1) {
+      g.fillStyle = `rgba(90,170,255,${0.35 * (1 - soak)})`;
+      g.fillRect(84, 14 + VOX, VOX * 2, VOX * 3);
+    }
+    ship(g, 22, 31.5, c);
+    if (t < 0.42) {
+      const x = 30 + (86 - 30) * fly, y = 31.5, R = 7;
+      g.save();
+      g.beginPath();
+      for (let k = 0; k <= 24; k++) {
+        const a = (k / 24) * Math.PI * 2, r = R * (1 + 0.1 * Math.sin(3 * a + t * 30) + 0.06 * Math.sin(5 * a - t * 20));
+        if (k === 0) g.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r); else g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      }
+      g.closePath();
+      g.fillStyle = 'rgba(120,190,255,0.25)';
+      g.fill();
+      g.strokeStyle = 'rgba(170,220,255,0.9)';
+      g.lineWidth = 1.2;
+      g.stroke();
+      g.clip();
+      // inside, the view turned upside down: a few stars and the ground line flipped
+      g.fillStyle = 'rgba(111,164,82,0.6)';
+      g.fillRect(x - R, y - 2, R * 2, 2);
+      g.restore();
+      g.fillStyle = 'rgba(255,255,255,0.9)';
+      g.beginPath(); g.arc(x - 2.5, y - 2.5, 1.3, 0, Math.PI * 2); g.fill();
+    }
   },
 
   bombers(g, t, c) {

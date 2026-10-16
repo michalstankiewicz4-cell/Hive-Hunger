@@ -34,6 +34,7 @@ export const ShipTypes = {
   isDrill(i) { return this.isKind(i, 'drills'); },
   isPiercer(i) { return this.isKind(i, 'piercers'); },
   isSniper(i) { return this.isKind(i, 'snipers'); },
+  isSplasher(i) { return this.isKind(i, 'splashers'); },
 
   /** Every unit in its type's colour (set again only when the split or the count changed). */
   updateColors() {
@@ -58,7 +59,7 @@ export const ShipTypes = {
     for (const arr of [this.pos, this.dir, this.look, this.foodPos, this.beamTo, this.tugGoal, this.drillDir, this.pierceDir, this.pierceEnd]) swap(arr, 3);
     swap(this.stormSides, 6);
     for (const arr of [this.food, this.landed, this.redirect, this.best, this.stuck, this.lastBlock, this.blockAge,
-      this.hungry, this.pause, this.firing, this.aimed, this.stormSideN, this.tugHas, this.orbOut, this.snipePhase, this.snipeT, this.zapWait, this.hidden, this.warpDelay, this.warpT,
+      this.hungry, this.pause, this.firing, this.aimed, this.stormSideN, this.tugHas, this.orbOut, this.splashOut, this.snipePhase, this.snipeT, this.zapWait, this.hidden, this.warpDelay, this.warpT,
       this.drillLeft, this.drillIdle, this.drillHit, this.drillAim, this.pierceOn, this.pierceAfter]) swap(arr, 1);
     swap(this.warpDir, 3);
     swap(this.warpFrom, 3);

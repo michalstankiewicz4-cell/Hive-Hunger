@@ -123,6 +123,7 @@ export class Player {
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
       fireOrb: (i, idx, x, y, z) => game.fireOrb(this, i, idx, x, y, z),
       fireShot: (i, idx, x, y, z) => game.fireShot(this, i, idx, x, y, z),
+      fireBubble: (i, idx, x, y, z) => game.fireBubble(this, i, idx, x, y, z),
       // drills: everything around the bit at (x, y, z) is gone; returns how many voxels
       drill: (i, x, y, z) => game.destroySphere(x, y, z, this.drillRadius, this, CONFIG.swarm.drill.debris),
       drillRadius: () => this.drillRadius,
@@ -187,6 +188,7 @@ export class Player {
   onNewPlanet() {
     this.towing.clear(); // the pieces belonged to the old planet
     this.swarm.orbOut.fill(0); // orbs in flight are gone with the old planet
+    this.swarm.splashOut.fill(0); // … and splashers' bubbles
     this.swarm.snipePhase.fill(0); // snipers charge again on the new planet
     this.swarm.snipeT.fill(0);
     this.swarm.tugHas.fill(0);

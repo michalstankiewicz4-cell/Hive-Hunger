@@ -158,6 +158,12 @@ export const ShipRoles = {
     }
   },
 
+  /** A splasher's bubble landed: the ship that fired it may fire again. */
+  splashDone(id) {
+    const s = this.swarm;
+    for (let i = 0; i < s.count; i++) if (s.splashOut[i] === id) s.splashOut[i] = 0;
+  },
+
   /** An orb burst: the ship that fired it may fire again. */
   orbDone(id) {
     const s = this.swarm;

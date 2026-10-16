@@ -246,6 +246,13 @@ export class NetHost {
     for (const conn of this.guests.keys()) this.send(conn, msg);
   }
 
+  /** A splasher fired: the guests fly the same bubble. */
+  broadcastBubble(a, b) {
+    const r = (p) => p.map((v) => Math.round(v * 100) / 100);
+    const msg = JSON.stringify({ t: 'bubble', a: r(a), b: r(b) });
+    for (const conn of this.guests.keys()) this.send(conn, msg);
+  }
+
   /** A sniper fired: the guests fly the same shot. */
   broadcastShot(a, b) {
     const r = (p) => p.map((v) => Math.round(v * 100) / 100);
@@ -359,6 +366,7 @@ export class NetGuest {
       else if (json.t === 'hole') g.onHole(json.p);
       else if (json.t === 'orb') g.onOrb(json.a, json.b);
       else if (json.t === 'shot') g.onShot(json.a, json.b);
+      else if (json.t === 'bubble') g.onBubble(json.a, json.b);
       else if (json.t === 'zap') g.onZap(json);
       else if (json.t === 'warp') g.onWarp(json);
       else if (json.t === 'settings') g.onSettings?.(json.values);

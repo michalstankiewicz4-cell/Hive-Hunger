@@ -197,6 +197,66 @@ export const Destruction = {
     }
   },
 
+  /** A splasher of `player` (unit i) fires a bubble at voxel `idx` from (x, y, z); returns its id. */
+  fireBubble(player, i, idx, x, y, z) {
+    const to = this.planet.cellCenter(idx, this.tmp);
+    const b = this.bubbles.fire({ x, y, z }, to, { target: idx, owner: player, unit: i });
+    if (this.role === 'host') this.net?.broadcastBubble([x, y, z], [to.x, to.y, to.z]);
+    return b.id;
+  },
+
+  /**
+   * A bubble landed on voxel `b.target` (or where it is, if that went): a block of `splasher.area`
+   * voxels — 3 × 3 across the surface there and 2 deep, the hit one on top — starts soaking: for
+   * `splasher.soakFrames` (3 s) every one of them loses strength a little each frame and whatever
+   * is left of them is gone at the end (a point each for the splasher's owner). On a drifting piece
+   * only that piece's voxels in the block soak.
+   */
+  splash(b) {
+    const pl = this.planet, c = this.cfg.swarm.splasher;
+    // a splash of liquid (blue debris) where it landed
+    this.debris.emit(b.pos, c.splashColor, c.splash);
+    if (!b.owner) return; // (a guest's copy: the host sends what is gone)
+    b.owner.splashDone(b.id);
+    const fr = pl.fragments;
+    let idx = pl.solid(b.target) ? b.target : -1;
+    if (idx < 0) { const n = pl.cellAt(b.pos); if (n >= 0 && pl.hp[n] > 0) idx = n; }
+    if (idx < 0) return;
+    const frag = fr && fr.has(idx) ? fr.fragOf[idx] : -1;
+    // across the surface: the two axes other than the one pointing most out of the planet; deep: inwards
+    const [ci, cj, ck] = pl.coords(idx);
+    const g = pl.gridCenter(idx, this.tmp), ax = [Math.abs(g.x), Math.abs(g.y), Math.abs(g.z)];
+    const up = ax[0] >= ax[1] && ax[0] >= ax[2] ? 0 : ax[1] >= ax[2] ? 1 : 2;
+    const inward = [g.x, g.y, g.z][up] >= 0 ? -1 : 1;
+    const [a1, a2] = [0, 1, 2].filter((n) => n !== up);
+    const [w1, w2, deep] = c.area, cells = [];
+    for (let d = 0; d < deep; d++) for (let u = -((w1 - 1) >> 1); u <= w1 >> 1; u++) for (let v = -((w2 - 1) >> 1); v <= w2 >> 1; v++) {
+      const at = [ci, cj, ck];
+      at[a1] += u; at[a2] += v; at[up] += inward * d;
+      const n = pl.index(at[0], at[1], at[2]);
+      if (n < 0) continue;
+      if (frag >= 0 ? fr.fragOf[n] === frag : pl.hp[n] > 0) cells.push(n);
+    }
+    this.soaks.push({ cells, left: c.soakFrames, owner: b.owner, amount: this.cfg.planet.strength / c.soakFrames });
+  },
+
+  /** Soaking blocks: every frame a little weaker; at the end whatever is left is gone. */
+  updateSoaks() {
+    const pl = this.planet;
+    for (const s of this.soaks) {
+      s.left--;
+      for (const n of s.cells) {
+        if (!pl.solid(n)) continue;
+        const gone = s.left <= 0 ? (pl.remove(n), true) : pl.bite(n, s.amount) === BITE.REMOVED;
+        if (!gone) continue;
+        s.owner.score++;
+        s.owner.planetScore++;
+        this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), 1);
+      }
+    }
+    this.soaks = this.soaks.filter((s) => s.left > 0);
+  },
+
   /** An orb ship of `player` (unit i) fires at voxel `idx` from (x, y, z); returns the orb's id. */
   fireOrb(player, i, idx, x, y, z) {
     const to = this.planet.cellCenter(idx, this.tmp);

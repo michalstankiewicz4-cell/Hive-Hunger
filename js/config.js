@@ -1,21 +1,21 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
 // at the start every player has START_EACH ships of every type (eaters, laser ships, storm ships,
-// tugs, bombers, orb ships, support ships, cleaners, drills, piercers, snipers): 2 × 11 = 22 units
+// tugs, bombers, orb ships, support ships, cleaners, drills, piercers, snipers, splashers): 2 × 12 = 24 units
 const START_EACH = 2;
-const START_UNITS = START_EACH * 11;
+const START_UNITS = START_EACH * 12;
 
 /**
  * Ship types other than eaters, in the order their units come in the swarm: units 0 … lasers−1 are
  * laser ships, then storm ships, and so on; the rest are eaters. Each key is also the setting (and
  * the Ship types slider) with how many there are.
  */
-export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers'];
+export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers'];
 /**
  * How the ship types are shown (Ship types panel, Ship guide): attack ships, then — below a line —
  * support ships. (The order of the units in the swarm is SHIP_KINDS above; this is only for showing.)
  */
 export const SHIP_GROUPS = Object.freeze([
-  { name: 'Attack', kinds: ['eaters', 'lasers', 'storms', 'orbs', 'bombers', 'drills', 'piercers', 'snipers'] },
+  { name: 'Attack', kinds: ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'snipers'] },
   { name: 'Support', kinds: ['tugs', 'supports', 'cleaners'] },
 ]);
 /** The CONFIG.swarm entry of a ship type: 'lasers' → 'laser', 'supports' → 'support', … */
@@ -198,6 +198,12 @@ export const CONFIG = Object.freeze({
     sniper: { count: START_EACH, chargeFrames: 300, moveFrames: 60, speed: 0.05, accel: 1.05, color: 0x2fe0c0,
       shotSize: [0.07, 0.07, 0.5], shotColor: 0xeaffff, shockRadius: 0.14, shockLength: 0.45, shockColor: 0xff9a3c, shockCore: 0xfff4d8, wake: 0.6,
       flashFrames: 10, flashSize: 1.6 },
+    // blue splashers: from `range` (10 voxels) fire a bubble of liquid (`size`, 3 voxels across: an
+    // irregular, wobbling drop that bends the picture like a lens) at `speed`, one at a time; where it
+    // hits, a block of `area` voxels (3 × 3 across the surface, 2 deep) soaks for `soakFrames` (3 s),
+    // weakening all the while, and is gone at the end (a point each); `splash` drops of debris
+    splasher: { count: START_EACH, range: 5, speed: 0.07, size: 1.5, wobble: 0.08, soakFrames: 180, area: [3, 3, 2],
+      splash: 10, color: 0x3f7dff, splashColor: [0.55, 0.8, 1] },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
     // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames

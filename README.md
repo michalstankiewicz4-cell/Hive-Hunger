@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.31.1 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.32.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -36,12 +36,13 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Turning** — how fast ships turn their nose; a ship eats only once it faces its bite
   - **Reset to default** — restore all settings to their starting values
   - **Level 1–5** (single player) — jump straight to that level; the swarm comes out of its tunnel again
-- **Ship types panel in the bottom-right corner** — how many of your units are yellow **Eaters**, red **Lasers**, blue **Storms**, green **Tugs**, purple **Bombers**, magenta **Orbs**, white **Support** ships, grey **Cleaners**, orange **Drills**, copper **Piercers** and teal **Snipers** — a slider each (linked: together they are all your units; at the start 2 of each type — 22 units). Attack ships are listed first, support ships (Tugs, Support, Cleaners) below a line, in the same order as the Ship guide. The arrows on both sides of a slider move it by one ship. The checkbox in front of a slider locks it: it can't be moved, and moving the others never changes it. Every ship eats only once it faces its bite.
+- **Ship types panel in the bottom-right corner** — how many of your units are yellow **Eaters**, red **Lasers**, blue **Storms**, green **Tugs**, purple **Bombers**, magenta **Orbs**, blue **Splashers**, white **Support** ships, grey **Cleaners**, orange **Drills**, copper **Piercers** and teal **Snipers** — a slider each (linked: together they are all your units; at the start 2 of each type — 24 units). Attack ships are listed first, support ships (Tugs, Support, Cleaners) below a line, in the same order as the Ship guide. The arrows on both sides of a slider move it by one ship. The checkbox in front of a slider locks it: it can't be moved, and moving the others never changes it. Every ship eats only once it faces its bite.
   - **Laser** ships eat their bite from 5 voxels away with a glowing red beam, but fly 10% slower.
   - **Storm** ships fire lightning from the same distance: it forks at 70% of the way into three — the bite gets 40% of a laser's damage, the two nearest voxels 30% each. When the bite is gone, the ship picks its next one like any other.
   - **Tugs** don't eat: they fly only to drifting pieces. From 10 voxels away a green tractor beam takes in the whole piece and the tug tows it home to your tunnel. There the piece is gone and you get **5 ×** the points of what is left of it — other ships (yours or other players') may eat it on the way.
   - **Bombers** fly to the nearest voxel and, touching it, blow up everything within 10 voxels (a point each) — and are gone for good (one unit fewer). The blast leaves a black hole for about 4 seconds that bends the picture around it and gently pulls in debris and drifting pieces within 15 voxels; what falls in is gone (the pieces' voxels count for the bomber's owner).
   - **Orb** ships fire, from 10 voxels away, a voxel-sized plasma orb with a pulsing glow and a fiery tail — one at a time. It flies slowly to the bite and bursts there: everything within 2 voxels is gone (a point each).
+  - **Splashers** fire, from 10 voxels away, a wobbling, irregular bubble of liquid 3 voxels across that bends the view behind it like a lens — one at a time. Where it lands, a block of 3 × 3 voxels across the surface and 2 deep soaks: it weakens over 3 seconds and is then gone (points for every voxel).
   - **Support** ships don't eat: every 3 seconds each fires a white lightning bolt at your own ships — it jumps between them in a random order (up to 6 jumps) over 1.5 s and is gone after the last one; every voxel on its way is destroyed (a point each). The bolt is irregularly bent, with energy flowing along it and small branches.
   - **Cleaners** eat only drifting pieces of 1, 2 or 3 voxels, the nearest first — never the planet or bigger pieces. With no such piece about they fly with the swarm.
   - **Drills** fly to the nearest voxel, turn their nose towards the planet's centre (a little off it, at random) and drill a straight tunnel in, with a turning orange spiral bit: everything around the bit is gone — 0.75 × your Power (about 0.75 voxels at the default Power), a point each. Once through (or after 60 units) they fly on to their next bite. Tunnels often cut pieces loose for the tugs and cleaners. On a drifting piece a drill eats like an eater.
