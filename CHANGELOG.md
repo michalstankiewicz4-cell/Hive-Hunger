@@ -2,6 +2,21 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.26.0] — 2026-10-16
+
+### Added
+- **Cleaners** (grey): an eighth ship type. They eat only drifting pieces of 1, 2 or 3 voxels — the nearest first, never the planet or a bigger piece; with no such piece about they fly with the swarm. Guests see them grey too.
+- **Arrows** on both sides of every Ship types slider: one ship less / more per click.
+- The Ship types panel has an eighth slider, **Cleaners**. At the start the 20 units are split as evenly as possible: 3 eaters, lasers, storms and tugs, 2 bombers, orb ships, support ships and cleaners.
+
+### Changed
+- **At most 100 units** in a swarm: the Units slider goes from 10 to 100, and upgrades can't take it past 100.
+- When a bomber blows up, the ships after it keep their types (an orb or support ship could change type before).
+- Ship types are one list in the code (`SHIP_KINDS` in `config.js`): settings, the panel, colours and the swarm's order all follow it.
+
+### Fixed
+- Ships added while the swarm was jumping to hyperspace (a higher Units slider, an upgrade) stayed behind, and the next planet came only after 25 s. Now they jump too.
+
 ## [0.25.2] — 2026-10-16
 
 No change to how the game plays or looks.

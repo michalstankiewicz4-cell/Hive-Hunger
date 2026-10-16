@@ -29,7 +29,7 @@ async def main():
         browser = await pw.chromium.launch(args=h.BROWSER_ARGS)
         page = await h.open_page(browser, url, errors, 'tree')
         await page.click('.menu-choice >> nth=0')
-        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 100); p.setSetting('speed', 0.3); }")
+        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 80); p.setSetting('speed', 0.3); }")
         await h.fast_forward(page, 600)
         await page.evaluate('() => window.__dbg.updateHud()')
         s = await page.evaluate(STATE)

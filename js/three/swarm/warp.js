@@ -15,7 +15,8 @@ export const Hyperspace = {
   jumpAll() {
     const w = this.cfg.warp;
     for (let i = 0; i < this.count; i++) {
-      if (this.hidden[i]) continue;
+      // gone already, jumping, or waiting for its turn
+      if (this.hidden[i] || this.warpT[i] > 0 || this.warpDelay[i] >= 0) continue;
       this.warpDelay[i] = Math.floor(Math.random() * w.window);
     }
   },

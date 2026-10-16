@@ -1,4 +1,4 @@
-import { CONFIG } from '../../config.js';
+import { CONFIG, SHIP_KINDS } from '../../config.js';
 import { VoxelPlanet } from '../planet/VoxelPlanet.js';
 import { Debris3D } from '../effects/Debris3D.js';
 import { Space3D } from '../scene/Space3D.js';
@@ -199,7 +199,7 @@ export class Game3D {
     // a room starts from scratch — nothing carries over from single player (planet, points,
     // upgrades, swarm), so co-op and PvP are fair; only the settings panel values stay
     const old = this.localPlayer;
-    const keep = ['count', 'speed', 'power', 'turn', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].map((k) => [k, old.getSetting(k)]);
+    const keep = ['count', 'speed', 'power', 'turn', ...SHIP_KINDS].map((k) => [k, old.getSetting(k)]);
     this.removePlayer(0);
     this.planet.dispose();
     this.level = 0;

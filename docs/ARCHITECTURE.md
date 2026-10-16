@@ -78,7 +78,7 @@ css/             one stylesheet per part of the page
 | **`js/ui/`** | |
 | `Hud.js` | Planet counter, points counter, hints, notices, multiplayer scoreboard and banner |
 | `ControlPanel.js` | Sliders (Units, Speed, Power, Turning), "Reset to default" |
-| `ShipTypes.js` | Ship types panel (bottom-right): linked Eaters / Lasers / Storms / Tugs / Bombers / Orbs / Support sliders (together all your units), each with a lock checkbox |
+| `ShipTypes.js` | Ship types panel (bottom-right): linked sliders for eaters and every type in `SHIP_KINDS` (together all your units), each with arrows (one ship less / more) and a lock checkbox |
 | `LevelSwitch.js` | Level buttons 1–5 under the panel (single player only): `Game3D.jumpToLevel` builds that planet and lets the swarm out of its tunnel again |
 | `StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
 | `Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
@@ -168,7 +168,9 @@ Until the match has started (`game.started`: Single player chosen, or every play
 - **Black holes** (`BlackHoles.js`): per hole a strength 0 → 1 → 0 over `grow` / `hold` / `shrink` frames. Each frame it pulls debris and (host) drifting pieces within `range`, gently (`pullDebris`, `pullPieces`, `maxPieceSpeed`); debris within `core` is gone, a piece is swallowed (`Game3D.swallow`). Drawing: while a hole is up the scene is rendered into a texture and then drawn through a full-screen shader that moves each pixel's sample point like a point lens (β = θ − θE²/θ, θE = `size` × strength projected on screen), with a black disc inside 0.55 θE and a thin ring.
 - **Orb ships:** the next `orbs` units after the bombers. They land at `orb.range` from their bite and, aimed, call `world.fireOrb` → `Game3D.fireOrb` (`Orbs.js`) unless their orb is still flying (`Swarm3D.orbOut` = its id). The orb flies at `orb.speed`, following its target voxel (on the host), leaving tail sparks; at the target `Game3D.orbBurst` → `destroySphere(orb.blast)` and `Player.orbDone` lets the ship fire again. Guests get `{t:'orb'}` and fly the same orb (the burst's voxels arrive in snapshots).
 - **Support ships:** the next `supports` units after the orb ships; they never pick bites. `Player.updateSupport` counts down `Swarm3D.zapWait` per support ship; at 0 it builds a chain (the ship, then up to `support.jumps` random other ships, each within `support.jumpRange` of the last) and calls `Game3D.zap`, which hands it to `Zaps.add` with a random seed (sent to guests). `Zaps` makes the shape from the seed — per jump a smooth random bend across it (zero at the ships) plus a little jag, and short forked branches — relative to the ships, so it follows them; the bolt's head runs along the chain over `support.life` frames and each finished jump calls back with its world points, where the host destroys every voxel on the way (grid and pieces). Drawn as 1-px cores with vertex colours (energy pulses moving along) and camera-facing glow ribbons (4 px main, 2 px branches).
-- **Colours:** by ship type for every player (`eaterColor`, `laser.color`, `storm.color`, `tug.color`, `bomber.color`, `orb.color`, `support.color`).
+- **Cleaners:** the next `cleaners` units after the support ships. Instead of `pickFood` they call `world.pickScrap`: the nearest unclaimed voxel of a drifting piece with at most `cleaner.maxPiece` voxels (the player lists those pieces once a frame, `Player.scraps`); with none, they have no bite and fly with the swarm. They land and bite-through-when-stuck only on such voxels (`world.isScrap`), so they never eat the planet or a bigger piece; a bite that stops being one (a slider moved the unit to another type) is let go.
+- **Ship types in one list:** `SHIP_KINDS` in `config.js` is the order of the types in the swarm (`lasers`, `storms`, `tugs`, `bombers`, `orbs`, `supports`, `cleaners`; the rest eat). Each key is a `Player` setting, a `Swarm3D` count and a Ship types slider; its `CONFIG.swarm` entry is the key without the last letter (`kindConfig`: `cleaners` → `cleaner`, with `count` and `color`). `Swarm3D.kindStart(kind)` / `isKind(i, kind)` find a type's units; `Player.splitKinds` fills them in order. A new type: add its key there (and its config entry), then its behaviour; the snapshot carries one u16 per type.
+- **Colours:** by ship type for every player (`eaterColor`, then each type's `color`).
 - **Giving up on a bite:** a unit with a bite that hasn't eaten for `retarget.frames` (600 = 10 s) stops for `retarget.pauseFrames` (30 = 0.5 s), then `retarget()` picks another free bite while still holding the old one (so the old one isn't picked again); with no other, it keeps the old one.
 - **Getting unstuck:** no progress for `stuck.frames` while touching a wall → bite through the blocking voxel (if unclaimed) or turn in a random direction.
 
@@ -187,7 +189,7 @@ Until the match has started (`game.started`: Single player chosen, or every play
 
 ## Performance
 
-Where the time goes, measured in headless Chromium (software WebGL, so drawing is far slower than on a real GPU) on planet 2 with Speed 0.2 and Power 1.5:
+Where the time goes, measured in headless Chromium (software WebGL, so drawing is far slower than on a real GPU) on planet 2 with Speed 0.2 and Power 1.5 (measured with up to 1500 units, before swarms were limited to 100 in 0.26.0):
 
 | Units | Simulation per frame | Biggest parts |
 | --- | --- | --- |

@@ -54,7 +54,7 @@ async def main():
         # start screen
         choices = await page.locator('.menu-choice').all_inner_texts()
         t.ok(len(choices) == 3 and 'Single player' in choices[0], 'start screen offers 3 modes', choices)
-        start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].map((k) => +document.getElementById('ships-' + k).value)""")
+        start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners'].map((k) => +document.getElementById('ships-' + k).value)""")
         title = await page.inner_text('#menu-title')
         version = await page.inner_text('#version')
         t.ok(title.startswith('Hive Hunger') and title.endswith(version) and version.startswith('v0.'), 'start screen shows the version next to the title', title)
@@ -109,32 +109,40 @@ async def main():
         t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'boxes'], 'back to level 1')
 
         # ship types (bottom-right): 1 red laser ship by default; lasers eat from 5 voxels away, 10% slower
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].map((k) => +document.getElementById('ships-' + k).value)""")
-        t.ok(start_ships == [3, 3, 3, 3, 3, 3, 2], 'ship types at the start, as even as possible: 3 of each, 2 support ships', start_ships)
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners'].map((k) => +document.getElementById('ships-' + k).value)""")
+        t.ok(start_ships == [3, 3, 3, 3, 2, 2, 2, 2], 'ship types at the start, as even as possible: 3 eaters, lasers, storms and tugs, 2 of the rest', start_ships)
         # (no bombers for the next checks: they would blow up meanwhile)
-        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('bombers', 0); p.setSetting('orbs', 0); p.setSetting('supports', 0); }")
+        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('bombers', 0); p.setSetting('orbs', 0); p.setSetting('supports', 0); p.setSetting('cleaners', 0); }")
         await page.wait_for_timeout(400)
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].map((k) => +document.getElementById('ships-' + k).value)""")
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners'].map((k) => +document.getElementById('ships-' + k).value)""")
         await page.click('.control-levels button >> nth=1')
         await page.evaluate("""() => { const e = document.getElementById('ships-lasers'); e.value = 8; e.dispatchEvent(new Event('input'));
           window.__dbg.localPlayer.setSetting('speed', 0.3); }""")
         await page.wait_for_timeout(400)
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].map((k) => +document.getElementById('ships-' + k).value)""")
-        t.ok(ui == [6, 8, 3, 3, 0, 0, 0], 'the sliders are linked: 8 lasers take 5 eaters', ui)
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners'].map((k) => +document.getElementById('ships-' + k).value)""")
+        t.ok(ui == [6, 8, 3, 3, 0, 0, 0, 0], 'the sliders are linked: 8 lasers take 5 eaters', ui)
         ui2 = await page.evaluate("""() => { const e = document.getElementById('ships-eaters'); e.value = 15; e.dispatchEvent(new Event('input')); return 0; }""")
-        ui2 = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].map((k) => +document.getElementById('ships-' + k).value)""")
-        t.ok(ui2 == [15, 5, 0, 0, 0, 0, 0], '15 eaters take the last types first (orbs, bombers, tugs, storm ships), then lasers', ui2)
+        ui2 = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners'].map((k) => +document.getElementById('ships-' + k).value)""")
+        t.ok(ui2 == [15, 5, 0, 0, 0, 0, 0, 0], '15 eaters take the last types first (orbs, bombers, tugs, storm ships), then lasers', ui2)
         # a locked slider stays put: lock Eaters and Lasers, move Storms up — it takes only from the unlocked ones
         lk = await page.evaluate("""() => { const set = (k, v) => { const e = document.getElementById('ships-' + k); e.value = v; e.dispatchEvent(new Event('input')); };
           set('lasers', 5); set('storms', 3); set('tugs', 3); set('bombers', 2); // 7 eaters
           for (const k of ['eaters', 'lasers']) { const b = document.getElementById('ships-lock-' + k); b.checked = true; b.dispatchEvent(new Event('change')); }
           set('storms', 6); // +3: from bombers (2), then tugs (1) — not the locked eaters or lasers
-          const r = ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].map((k) => +document.getElementById('ships-' + k).value);
+          const r = ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners'].map((k) => +document.getElementById('ships-' + k).value);
           const disabled = document.getElementById('ships-eaters').disabled;
           for (const k of ['eaters', 'lasers']) { const b = document.getElementById('ships-lock-' + k); b.checked = false; b.dispatchEvent(new Event('change')); }
           set('tugs', 0); set('bombers', 0); set('storms', 0); set('lasers', 5);
           return { r, disabled }; }""")
-        t.ok(lk['r'] == [7, 5, 6, 2, 0, 0, 0] and lk['disabled'], 'a locked slider stays put (moving another takes from the unlocked ones)', lk)
+        t.ok(lk['r'] == [7, 5, 6, 2, 0, 0, 0, 0] and lk['disabled'], 'a locked slider stays put (moving another takes from the unlocked ones)', lk)
+        # the arrows next to a slider: one ship more / fewer (from / to the eaters)
+        ar = await page.evaluate("""() => { const v = () => ['eaters', 'lasers'].map((k) => +document.getElementById('ships-' + k).value);
+          const row = document.querySelector('.ships-lasers'), before = v();
+          row.querySelector('.ships-more').click(); row.querySelector('.ships-more').click(); const up = v();
+          row.querySelector('.ships-less').click(); const down = v();
+          return { before, up, down, setting: window.__dbg.localPlayer.getSetting('lasers') }; }""")
+        t.ok(ar['up'] == [ar['before'][0] - 2, ar['before'][1] + 2] and ar['down'] == [ar['before'][0] - 1, ar['before'][1] + 1] and ar['setting'] == ar['before'][1] + 1,
+             'the arrows move a ship-type slider by one', ar)
         await page.evaluate("""() => { const e = document.getElementById('ships-lasers'); e.value = 8; e.dispatchEvent(new Event('input'));
           const st = document.getElementById('ships-storms'); st.value = 1; st.dispatchEvent(new Event('input')); }""")
         sp = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm;
@@ -277,7 +285,7 @@ async def main():
 
         # eat the whole planet with a big, fast swarm
         await page.evaluate("""() => { const p = window.__dbg.localPlayer;
-          p.setSetting('count', 300); p.setSetting('speed', 0.5); p.setSetting('power', 2.5); }""")
+          p.setSetting('count', 100); p.setSetting('speed', 0.5); p.setSetting('power', 2.5); }""")
         worst_inside = worst_shared = 0
         for _ in range(60):
             await h.fast_forward(page, 400)
@@ -314,8 +322,10 @@ async def main():
           for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) pl.remove(idx);
           for (const f of [...(pl.fragments?.list || [])]) for (const c of pl.fragments.cellsOf(f)) pl.remove(c);
           let most = 0, frames = 0, streaks = 0, firstGone = -1;
+          p.setSetting('count', 60);
           g.update();
           const mode = p.homeMode;
+          p.setSetting('count', 70); // ships added while the others jump go too
           while (!p.departed() && frames < 400) {
             g.update(); frames++;
             let w = 0, h = 0; for (let i = 0; i < s.count; i++) { if (s.warpT[i] > 0) w++; h += s.hidden[i]; }

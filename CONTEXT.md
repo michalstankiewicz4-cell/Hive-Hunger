@@ -33,6 +33,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Orb ships (0.23.0, owner):** magenta; from 10 voxels fire a voxel-sized orb with a pulsing glow (+ a fiery tail, owner) that flies slowly to the target and destroys everything within 2 voxels. One orb at a time per ship (assistant's choice). Normal speed. Start: 4/4/3/3/3/3.
 - **Support ships (0.24.0, owner):** white; a lightning bolt jumping randomly between own ships, destroying the voxels on its way, gone after the last ship; white core with a 4 px glow, flowing energy, irregularly bent, small branches with a 2 px glow; 1.5 s. Assistant's choices: every 3 s, up to 6 jumps within 10 units, voxels destroyed as the bolt passes each jump.
 - **Tunnel and hyperspace (0.25.0, owner, from two reference pictures — a blue wormhole and blue hyperspace streaks):** the spawn point is a subspace tunnel that opens, lets the ships out and closes; after closing a small swirl stays (owner's choice), clickable for recall, and it opens briefly to take in a towed piece. When everything is eaten the ships escape into hyperspace one after another at random moments, several at once when there are many, each leaving a tail "like a tractor beam but not the same" (owner). Assistant's choices: jumps within 2.5 s, a blue band with lighter streak lines; ships come out over 1.5 s.
+- **Cleaners (0.26.0, owner):** grey; eat only drifting pieces of 1, 2 or 3 voxels (owner's limit; the assistant had proposed a ship for the last isolated voxels). Assistant's choices: nearest small piece first, otherwise they fly with the swarm; normal speed and bite. Same release: **at most 100 units** (owner; the Units slider and upgrades together), **arrows** next to the ship-type sliders (one ship per click, owner).
 - **Level switch (0.17.0):** single player only, buttons 1–5 in the settings panel; the swarm restarts from its beacon (owner: so it never gets stuck inside a shape). Hidden in multiplayer.
 - **100% means every voxel is gone.** Then the ships jump to hyperspace and only then does the next planet appear (0.25.0; before that they flew home).
 - **Defaults:** units 20, speed 0.05, power 0.5, turning 0.12. "Reset to default" restores them.
@@ -131,13 +132,14 @@ Lessons from writing them:
 | 0.25.0 | tag `v0.25.0` | subspace tunnel at the spawn point; ships escape into hyperspace after a planet |
 | 0.25.1 | tag `v0.25.1` | code split into folders and files, CSS per panel; faster smooth-surface rebuilds, shared textures, fewer per-frame allocations (no gameplay change) |
 | 0.25.2 | tag `v0.25.2` | `Player` and `VoxelPlanet` split into files too (no gameplay change) |
+| 0.26.0 | tag `v0.26.0` | cleaners (eat only pieces of 1–3 voxels); at most 100 units; arrows by the ship-type sliders |
 
 ## Known limitations
 
 - The host's tab must stay in the foreground (browsers pause animation in background tabs → the game pauses for everyone).
 - Multiplayer depends on the PeerJS public server for joining; strict NATs without TURN may fail to connect (no TURN server is configured).
 - With slow defaults (20 units, speed 0.05) a planet takes a long time; sliders change that live.
-- A huge, fast swarm crumbles a planet into thousands of small drifting pieces (each its own small mesh); with 1500 units at full power the frame time roughly doubles while it lasts. Normal swarms add about 1–2 ms per frame.
+- A huge, fast swarm crumbles a planet into thousands of small drifting pieces (each its own small mesh); with 1500 units at full power (before 0.26.0 limited swarms to 100) the frame time roughly doubled while it lasted. Normal swarms add about 1–2 ms per frame.
 - **Fast swarms can't finish a planet.** At high Speed a unit turns in a wide arc (radius ≈ `speed / turnRate`, e.g. 0.5 / 0.07 ≈ 7) and can circle an isolated last voxel forever without coming within `reachDistance` + its speed; the planet stays at a few dozen voxels. Found while testing 0.8.0 (3 swarms at speed 0.5); lowering Speed finishes it. Not fixed yet — waiting for the owner's decision.
 
 ## The owner's ideas for later (not built yet — wait for him to ask)

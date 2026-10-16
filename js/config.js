@@ -1,9 +1,18 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
-// units at the start, split as evenly as possible between the seven ship types
-// (eaters, laser ships, storm ships, tugs, bombers, orb ships, support ships; what doesn't divide
-// goes to eaters, then lasers, …)
+// units at the start, split as evenly as possible between the eight ship types
+// (eaters, laser ships, storm ships, tugs, bombers, orb ships, support ships, cleaners; what doesn't
+// divide goes to eaters, then lasers, …)
 const START_UNITS = 20;
-const SHARE = Math.floor(START_UNITS / 7), REST = START_UNITS % 7;
+const SHARE = Math.floor(START_UNITS / 8), REST = START_UNITS % 8;
+
+/**
+ * Ship types other than eaters, in the order their units come in the swarm: units 0 … lasers−1 are
+ * laser ships, then storm ships, and so on; the rest are eaters. Each key is also the setting (and
+ * the Ship types slider) with how many there are.
+ */
+export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners'];
+/** The CONFIG.swarm entry of a ship type: 'lasers' → 'laser', 'supports' → 'support', … */
+export const kindConfig = (kind) => kind.slice(0, -1);
 
 export const CONFIG = Object.freeze({
   background: 0x0b0c14,
@@ -99,7 +108,7 @@ export const CONFIG = Object.freeze({
   swarm: {
     count: START_UNITS,
     minCount: 0,             // (the Units slider starts at 10; bombers that blew up can take the swarm lower)
-    maxCount: 1500,
+    maxCount: 100,           // most ships a swarm can have (Units slider and upgrades together)
     speed: 0.05,             // units per frame, identical for all
     perception: 3,           // how far a unit sees its neighbours
     separationDistance: 1.5, // distance below which units push each other away
@@ -148,9 +157,12 @@ export const CONFIG = Object.freeze({
     // destroys every voxel on its way. The bolt lives `life` frames (1.5 s): a white core with a
     // `glowPx` glow and energy flowing along it, bent (`bend`, `jag`), with `branches` forked side
     // bolts per jump (`branchGlowPx` glow) that do nothing
-    support: { count: SHARE, every: 180, jumps: 6, jumpRange: 10, color: 0xffffff, glowColor: 0xdfe8ff,
+    support: { count: SHARE + (REST > 6 ? 1 : 0), every: 180, jumps: 6, jumpRange: 10, color: 0xffffff, glowColor: 0xdfe8ff,
       life: 90, fadeOut: 25, points: 24, bend: 0.09, jag: 0.025, glowPx: 4, branchGlowPx: 2,
       branches: 3, branchLength: 1.6, branchBrightness: 0.6, flowWaves: 3, flowSpeed: 0.05 },
+    // grey cleaners: eat only drifting pieces of at most `maxPiece` (3) voxels, the nearest first;
+    // with none about they fly with the swarm
+    cleaner: { count: SHARE, maxPiece: 3, color: 0x9aa3ad },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
     // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames
@@ -170,7 +182,7 @@ export const CONFIG = Object.freeze({
 
   // Panel sliders (changes apply live)
   controls: [
-    { id: 'count',  label: 'Units',    min: 10,   max: 1500, step: 10,   decimals: 0 },
+    { id: 'count',  label: 'Units',    min: 10,   max: 100,  step: 10,   decimals: 0 },
     { id: 'speed',  label: 'Speed',    min: 0.05, max: 0.6,  step: 0.01, decimals: 2 },
     { id: 'power',  label: 'Power',    min: 0.5,  max: 3,    step: 0.1,  decimals: 1 },
     { id: 'turn',   label: 'Turning',  min: 0.02, max: 0.3,  step: 0.01, decimals: 2 }, // how fast ships turn their nose (turnSmoothing)

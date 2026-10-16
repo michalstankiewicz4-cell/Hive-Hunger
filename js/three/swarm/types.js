@@ -1,42 +1,49 @@
+import { SHIP_KINDS, kindConfig } from '../../config.js';
+
+const THREE = window.THREE;
+
 /**
- * Ship types by unit index (Swarm3D): units 0 … lasers−1 are laser ships, then storm ships, tugs,
- * bombers, orb ships and support ships; the rest are eaters. Their colours, and swapping two units
- * (a bomber that blew up is moved to the end to be removed).
+ * Ship types by unit index (Swarm3D): the types in SHIP_KINDS come one after another — units
+ * 0 … lasers−1 are laser ships, then storm ships, tugs, bombers, orb ships, support ships and
+ * cleaners; the rest are eaters. `this.lasers`, `this.storms`, … say how many of each. Their
+ * colours, and swapping two units (a bomber that blew up is moved to the end to be removed).
  */
 export const ShipTypes = {
-  /** Units in red (lasers) and in the swarm's colour (eaters). */
-  updateColors() {
-    const n = Math.min(this.lasers, this.count), m = Math.min(n + this.storms, this.count), t = Math.min(m + this.tugs, this.count);
-    const b = Math.min(t + this.bombers, this.count), o = Math.min(b + this.orbs, this.count), u = Math.min(o + this.supports, this.count);
-    if (n === this.coloredLasers && m === this.coloredStorms && t === this.coloredTugs && b === this.coloredBombers
-      && o === this.coloredOrbs && u === this.coloredSupports && this.colorsFor === this.count) return;
-    this.coloredSupports = u;
-    this.coloredBombers = b;
-    this.coloredOrbs = o;
-    this.coloredLasers = n;
-    this.coloredStorms = m;
-    this.coloredTugs = t;
-    this.colorsFor = this.count;
-    for (let i = 0; i < this.count; i++) {
-      this.mesh.setColorAt(i, i < n ? this.laserColor : i < m ? this.stormColor : i < t ? this.tugColor : i < b ? this.bomberColor : i < o ? this.orbColor : i < u ? this.supportColor : this.baseColor);
+  /** First unit of ship type `kind` (they come in SHIP_KINDS order). */
+  kindStart(kind) {
+    let a = 0;
+    for (const k of SHIP_KINDS) {
+      if (k === kind) return a;
+      a += this[k];
     }
+    return a;
+  },
+
+  /** Is unit i of ship type `kind`? */
+  isKind(i, kind) {
+    const a = this.kindStart(kind);
+    return i >= a && i < a + this[kind];
+  },
+
+  isStorm(i) { return this.isKind(i, 'storms'); },
+  isTug(i) { return this.isKind(i, 'tugs'); },
+  isBomber(i) { return this.isKind(i, 'bombers'); },
+  isOrb(i) { return this.isKind(i, 'orbs'); },
+  isSupport(i) { return this.isKind(i, 'supports'); },
+  isCleaner(i) { return this.isKind(i, 'cleaners'); },
+
+  /** Every unit in its type's colour (set again only when the split or the count changed). */
+  updateColors() {
+    const key = SHIP_KINDS.map((k) => this[k]).join(',') + '/' + this.count;
+    if (key === this.colorsFor) return;
+    this.colorsFor = key;
+    this.kindColors ||= SHIP_KINDS.map((k) => new THREE.Color(this.cfg[kindConfig(k)].color));
+    let i = 0;
+    SHIP_KINDS.forEach((k, n) => {
+      for (const end = Math.min(this.count, i + this[k]); i < end; i++) this.mesh.setColorAt(i, this.kindColors[n]);
+    });
+    for (; i < this.count; i++) this.mesh.setColorAt(i, this.baseColor);
     this.mesh.instanceColor.needsUpdate = true;
-  },
-
-  /** Support ships among the units (after the orb ships). */
-  isSupport(i) {
-    const a = this.lasers + this.storms + this.tugs + this.bombers + this.orbs;
-    return i >= a && i < a + this.supports;
-  },
-
-  isOrb(i) {
-    const a = this.lasers + this.storms + this.tugs + this.bombers;
-    return i >= a && i < a + this.orbs;
-  },
-
-  isBomber(i) {
-    const a = this.lasers + this.storms + this.tugs;
-    return i >= a && i < a + this.bombers;
   },
 
   /** Swaps everything about units a and b (a bomber that blew up is moved to the end to be removed). */
@@ -52,15 +59,5 @@ export const ShipTypes = {
     swap(this.warpDir, 3);
     swap(this.warpFrom, 3);
     if (this.remotePos) swap(this.remotePos, 3);
-  },
-
-  isTug(i) {
-    const a = this.lasers + this.storms;
-    return i >= a && i < a + this.tugs;
-  },
-
-  /** Storm ships among the units (after the laser ships). */
-  isStorm(i) {
-    return i >= this.lasers && i < this.lasers + this.storms;
   },
 };

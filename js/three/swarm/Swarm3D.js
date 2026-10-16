@@ -74,6 +74,9 @@ export class Swarm3D {
     // frames one fires a lightning bolt that jumps between ships of its swarm (Player.updateSupport)
     this.supports = 0;
     this.zapWait = new Uint16Array(this.max);
+    // the next `cleaners` units are grey cleaners: they eat only drifting pieces of at most
+    // `cleaner.maxPiece` voxels (world.pickScrap / isScrap); with none about they fly with the swarm
+    this.cleaners = 0;
     // arrival and departure: `hidden` ships are not out of the tunnel yet / gone to hyperspace
     // (not simulated, not drawn); a ship jumping to hyperspace waits `warpDelay` frames, then
     // speeds up along `warpDir` for `warp.frames` frames (warpT counts them) and is gone, leaving a streak
@@ -113,24 +116,14 @@ export class Swarm3D {
     this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(this.max * 3), 3);
     this.mesh.frustumCulled = false;
     scene.add(this.mesh);
-    // colours by ship type, the same for every player: eaters, laser ships, storm ships
+    // colours by ship type, the same for every player (see types.js): eaters yellow, the others
+    // from their CONFIG.swarm entries
     this.baseColor = new THREE.Color(cfg.eaterColor);
-    this.laserColor = new THREE.Color(cfg.laser.color);
-    this.stormColor = new THREE.Color(cfg.storm.color);
-    this.tugColor = new THREE.Color(cfg.tug.color);
-    this.coloredTugs = -1;
-    this.bomberColor = new THREE.Color(cfg.bomber.color);
-    this.coloredBombers = -1;
-    this.orbColor = new THREE.Color(cfg.orb.color);
-    this.coloredOrbs = -1;
-    this.supportColor = new THREE.Color(cfg.support.color);
-    this.coloredSupports = -1;
+    this.colorsFor = null; // the split the colours were set for
     this.scene = scene;
-    this.coloredStorms = -1;
     // the storm ships' lightning (the chain-lightning look, short-lived flashes)
     this.stormBolts = new Lightning3D(scene, { life: cfg.storm.flashFrames, jag: 0.25, pieces: 4 });
     this.stormClock = 0;
-    this.coloredLasers = -1; // lasers shown in red last time (colours are set again when it changes)
 
     // laser beams: a glowing band per firing laser ship (a quad turned towards the camera, a
     // white-hot core fading to red at the edges) and a glow where it hits
@@ -260,6 +253,7 @@ export class Swarm3D {
    * @param {{x:number,y:number,z:number}} target the swarm target
    * @param {object} world
    *   pickFood(p): index of the nearest free voxel to p (every unit eats the nearest one to itself), or -1,
+   *   pickScrap(p) / isScrap(idx): the same for cleaners — only voxels of small drifting pieces,
    *   cellCenter(idx): voxel centre (where it is now), cellAt(p), isSolidCell(idx): a voxel in
    *   its place in the grid (collisions), isFood(idx): still there to eat (also on a drifting
    *   fragment), floatingAt(p): fragment voxel at a point or -1, bite(idx)
@@ -359,10 +353,15 @@ export class Swarm3D {
       }
       const tug = this.isTug(i);
       const passive = tug || this.isSupport(i); // tugs and support ships don't eat
-      if (passive && food[i] >= 0) { world.release(food[i]); food[i] = -1; } // was an eater a moment ago
+      // a cleaner eats only small drifting pieces (at most `cleaner.maxPiece` voxels)
+      const cleaner = this.isCleaner(i);
+      // was another type a moment ago (a slider moved): its bite isn't one for it any more
+      if (food[i] >= 0 && (passive || (cleaner && !world.isScrap(food[i])))) { world.release(food[i]); food[i] = -1; }
       if (food[i] < 0 && !passive && !world.holding) {
         p.x = px; p.y = py; p.z = pz;
-        if (this.redirect[i] && world.clickPoint) {
+        if (cleaner) {
+          food[i] = world.pickScrap(p);
+        } else if (this.redirect[i] && world.clickPoint) {
           food[i] = world.pickFood(world.clickPoint);
         } else {
           food[i] = world.pickFood(p);
@@ -424,7 +423,7 @@ export class Swarm3D {
       if (stuck[i] > c.stuck.frames) {
         const b = lastBlock[i];
         if (blockAge[i] < c.stuck.recentContact && world.isFood(b)) {
-          if (!world.holding && !passive && world.canBite(b, food[i])) {
+          if (!world.holding && !passive && world.canBite(b, food[i]) && (!cleaner || world.isScrap(b))) {
             if (b !== food[i]) {
               world.release(food[i]);
               world.claim(b);
@@ -487,7 +486,7 @@ export class Swarm3D {
           p[ax2] = old;
           // land on its own bite or a free voxel. Only next to its own bite —
           // touching the planet on the way somewhere else is not a reason to stop there
-          if (food[i] >= 0 && world.canBite(idx, food[i]) &&
+          if (food[i] >= 0 && world.canBite(idx, food[i]) && (!cleaner || idx === food[i] || world.isScrap(idx)) &&
               (idx === food[i] || nearOwnBite(world.cellCenter(idx), foodPos, i3, c.landSwapDistance))) {
             if (idx !== food[i]) {
               world.release(food[i]);
@@ -525,7 +524,8 @@ export class Swarm3D {
     const old = this.food[i];
     if (old < 0 || !world.isFood(old)) return; // gone meanwhile: a new one is picked as usual
     const i3 = i * 3;
-    const idx = world.pickFood({ x: this.pos[i3], y: this.pos[i3 + 1], z: this.pos[i3 + 2] });
+    const at = { x: this.pos[i3], y: this.pos[i3 + 1], z: this.pos[i3 + 2] };
+    const idx = this.isCleaner(i) ? world.pickScrap(at) : world.pickFood(at);
     if (idx < 0) return; // nothing else: keep the old one
     world.release(old);  // the old bite, or the extra claim when the same one came back
     if (idx === old) return;

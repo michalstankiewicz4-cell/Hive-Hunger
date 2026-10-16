@@ -4,14 +4,14 @@
  *
  * SNAPSHOT (type 1), host → guests, several times a second
  *   u8 type | f32 spin | u32 left | u8 bannerLen | banner (utf-8) | u8 players
- *   per player: u8 index | u8 home (0 none, 1 recall, 2 return) | u32 score | u32 planetScore
+ *   per player: u8 index | u8 home (0 none, 1 recall, 2 jump) | u32 score | u32 planetScore
  *               | u16 wins | u16 count | count × (3 × i16 position) | count × (3 × i8 heading)
  *               | u16 lasers (units 0 … lasers−1 are laser ships) | u16 beams | beams × (u16 unit | 3 × i16 point hit)
  *               | u16 storms (the next `storms` units are storm ships) | u16 bolts
  *               | bolts × (u16 unit | u8 sides | 3 × i16 bite | sides × 3 × i16 side voxel)
  *               | u16 tugs (the next `tugs` units are tugs) | u16 tows | tows × (u16 unit | u32 piece id)
  *               | u16 bombers (the next `bombers` units are bombers) | u16 orbs (the next `orbs` units are orb ships)
- *               | u16 supports (the next `supports` units are support ships)
+ *               | u16 supports (the next `supports` units are support ships) | u16 cleaners (then the cleaners)
  *               | u8 portal (1: the tunnel is open / opening) | ceil(count / 8) × u8 hidden ships (bit per unit)
  *   u32 removed | removed × u32 voxel index
  *
@@ -78,7 +78,7 @@ export function encodeSnapshot(game, removed) {
   const beams = players.map((p) => p.swarm.beamList());
   const bolts = players.map((p) => p.swarm.stormList());
   players.forEach((p, n) => {
-    size += 1 + 1 + 4 + 4 + 2 + 2 + p.swarm.count * 9 + 2 + 2 + beams[n].length * 8 + 2 + 2 + 2 + 2 + p.swarm.tows.length * 6 + 2 + 2 + 2 + 1 + Math.ceil(p.swarm.count / 8);
+    size += 1 + 1 + 4 + 4 + 2 + 2 + p.swarm.count * 9 + 2 + 2 + beams[n].length * 8 + 2 + 2 + 2 + 2 + p.swarm.tows.length * 6 + 2 + 2 + 2 + 2 + 1 + Math.ceil(p.swarm.count / 8);
     for (const b of bolts[n]) size += 2 + 1 + 6 + b[4].length * 2;
   });
   const i16 = (x) => Math.max(-32767, Math.min(32767, Math.round(x * POS_SCALE)));
@@ -125,6 +125,7 @@ export function encodeSnapshot(game, removed) {
     v.setUint16(o, Math.min(s.bombers, Math.max(0, s.count - s.lasers - s.storms - s.tugs)), true); o += 2;
     v.setUint16(o, Math.min(s.orbs, Math.max(0, s.count - s.lasers - s.storms - s.tugs - s.bombers)), true); o += 2;
     v.setUint16(o, Math.min(s.supports, Math.max(0, s.count - s.lasers - s.storms - s.tugs - s.bombers - s.orbs)), true); o += 2;
+    v.setUint16(o, Math.min(s.cleaners, Math.max(0, s.count - s.lasers - s.storms - s.tugs - s.bombers - s.orbs - s.supports)), true); o += 2;
     v.setUint8(o, p.beacon.wantOpen ? 1 : 0); o += 1;
     for (let b = 0; b < Math.ceil(s.count / 8); b++) {
       let byte = 0;
@@ -184,9 +185,10 @@ export function decodeSnapshot(buf) {
     const bombers = v.getUint16(o, true); o += 2;
     const orbs = v.getUint16(o, true); o += 2;
     const supports = v.getUint16(o, true); o += 2;
+    const cleaners = v.getUint16(o, true); o += 2;
     const portal = v.getUint8(o) === 1; o += 1;
     const hidden = new Uint8Array(buf, o, Math.ceil(count / 8)).slice(); o += Math.ceil(count / 8);
-    players.push({ portal, hidden, index, home, score, planetScore, wins, count, pos, dir, lasers, beams, storms, bolts, tugs, tows, bombers, orbs, supports });
+    players.push({ portal, hidden, index, home, score, planetScore, wins, count, pos, dir, lasers, beams, storms, bolts, tugs, tows, bombers, orbs, supports, cleaners });
   }
   const nr = v.getUint32(o, true); o += 4;
   const removed = new Uint32Array(nr);

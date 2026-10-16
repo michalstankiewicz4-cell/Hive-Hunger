@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js';
+import { CONFIG, SHIP_KINDS, kindConfig } from './config.js';
 import { VERSION } from './version.js';
 import { Hud } from './ui/Hud.js';
 import { ControlPanel } from './ui/ControlPanel.js';
@@ -30,7 +30,8 @@ if (!window.THREE) {
 
   // the panel controls your own swarm; a guest's settings are sent to the host
   const S = CONFIG.swarm;
-  const guestSettings = { count: S.count, speed: S.speed, power: S.biteRadius, lasers: S.laser.count, storms: S.storm.count, tugs: S.tug.count, bombers: S.bomber.count, orbs: S.orb.count, supports: S.support.count, turn: S.turnSmoothing };
+  const guestSettings = { count: S.count, speed: S.speed, power: S.biteRadius, turn: S.turnSmoothing,
+    ...Object.fromEntries(SHIP_KINDS.map((k) => [k, S[kindConfig(k)].count])) };
   const bind = (key) => ({
     get: () => (game.role === 'guest' ? guestSettings[key] : game.localPlayer.getSetting(key)),
     set: (v) => {
@@ -48,7 +49,7 @@ if (!window.THREE) {
   });
   setInterval(() => levels.sync(), 500); // hides it once a room is created; follows the planet number
 
-  // ship types (bottom-right): yellow eaters / red laser ships / blue storm ships / green tugs / purple bombers / magenta orb ships / white support ships, together all your units
+  // ship types (bottom-right): yellow eaters / red laser ships / blue storm ships / green tugs / purple bombers / magenta orb ships / white support ships / grey cleaners, together all your units
   const ships = new ShipTypes(document.getElementById('ships'), {
     total: () => game.localPlayer?.swarm.count ?? guestSettings.count,
     get: (key) => bind(key).get(),

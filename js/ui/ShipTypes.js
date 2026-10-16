@@ -1,16 +1,20 @@
+import { SHIP_KINDS } from '../config.js';
+
 /**
  * Ship types panel (bottom-right): how many of your units are yellow eaters, red laser ships,
- * blue storm ships, green tugs, purple bombers, magenta orb ships and white support ships — a slider each, linked: together they are
- * always all your units (the Units slider plus upgrades). A checkbox in front of a slider locks
- * it: it can't be moved, and moving the others never changes it.
+ * blue storm ships, green tugs, purple bombers, magenta orb ships, white support ships and grey
+ * cleaners — a slider each, linked: together they are always all your units (the Units slider plus
+ * upgrades). The arrows on both sides of a slider move it by one ship. A checkbox in front of a
+ * slider locks it: it can't be moved, and moving the others never changes it.
  *  - Moving a slider up takes the ships from the eaters first, then from the other types, the
- *    last one first (support, orbs, bombers, tugs, storms, lasers); moving it down gives them to the eaters
- *    (if the eaters are locked: to the other types, the last one first).
+ *    last one first (cleaners, support, orbs, bombers, tugs, storms, lasers); moving it down gives
+ *    them to the eaters (if the eaters are locked: to the other types, the last one first).
  *  - Eaters are the rest: moving Eaters up takes from the other types, the last one first.
  */
-const TYPES = [['eaters', 'Eaters'], ['lasers', 'Lasers'], ['storms', 'Storms'], ['tugs', 'Tugs'], ['bombers', 'Bombers'], ['orbs', 'Orbs'], ['supports', 'Support']];
-const OTHERS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'];
-const LAST_FIRST = ['supports', 'orbs', 'bombers', 'tugs', 'storms', 'lasers'];
+const LABELS = { eaters: 'Eaters', lasers: 'Lasers', storms: 'Storms', tugs: 'Tugs', bombers: 'Bombers', orbs: 'Orbs', supports: 'Support', cleaners: 'Cleaners' };
+const OTHERS = SHIP_KINDS;
+const TYPES = ['eaters', ...OTHERS].map((k) => [k, LABELS[k] || k]);
+const LAST_FIRST = [...OTHERS].reverse();
 
 export class ShipTypes {
   /**
@@ -89,7 +93,26 @@ export class ShipTypes {
       onInput(Number(input.value));
       this.sync();
     });
-    row.append(lock, l, input, out);
+    // arrows: one ship less / more
+    const arrow = (dir, text, name) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `ships-arrow ships-${dir > 0 ? 'more' : 'less'}`;
+      b.textContent = text;
+      b.title = `${name} ${label}`;
+      b.setAttribute('aria-label', `${name} ${label}`);
+      b.addEventListener('click', () => {
+        if (this.locked[id]) return;
+        const v = Math.max(0, Math.min(this.total, Number(input.value) + dir));
+        if (v === Number(input.value)) return;
+        onInput(v);
+        this.sync();
+      });
+      return b;
+    };
+    const less = arrow(-1, '◀', 'One fewer'), more = arrow(1, '▶', 'One more');
+    lock.addEventListener('change', () => { less.disabled = more.disabled = lock.checked; });
+    row.append(lock, l, less, input, more, out);
     this.root.appendChild(row);
     return { input, out, lock };
   }

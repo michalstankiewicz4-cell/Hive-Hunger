@@ -166,7 +166,7 @@ async def main():
 
         # the swarm eats the planet, pieces included: the next planet comes only after the pieces are gone
         await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
-          p.onNewPlanet(); p.setSetting('count', 300); p.setSetting('speed', 0.2); p.setSetting('power', 2); }''')
+          p.onNewPlanet(); p.setSetting('count', 100); p.setSetting('speed', 0.2); p.setSetting('power', 2); }''')
         seen_last = False
         for _ in range(60):
             await h.fast_forward(page, 200)
@@ -189,17 +189,17 @@ async def main():
           const a = [...box.values()].find(c => c.length === 64), k0 = Math.min(...a.map(i => (i / (N * N)) | 0));
           for (const i of a) if (((i / (N * N)) | 0) === k0 + 2) pl.remove(i);
           fr.step(true);
-          return { piece: fr.list.map(f => f.count), score: p.score, left: pl.left }; }""")
+          return { piece: fr.list.map(f => f.count), score: p.score, left: pl.left, delivered: p.delivered || 0 }; }""")
         towed = False
         for _ in range(20):
             await h.fast_forward(page, 150)
             st = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, fr = g.planet.fragments;
               return { pieces: fr.list.length, tows: p.swarm.tows.length, towed: fr.list.some(f => f.towed), score: p.score, left: g.planet.left, delivered: p.delivered || 0 }; }""")
             towed = towed or st['towed']
-            if st['delivered']:
+            if st['delivered'] > tg['delivered']:
                 break
         t.ok(tg['piece'] == [16] and towed, 'tugs catch a drifting piece with a tractor beam', st)
-        t.ok(st['delivered'] == 1 and st['pieces'] == 0 and st['score'] - tg['score'] == 5 * 16 and tg['left'] - st['left'] == 16,
+        t.ok(st['delivered'] == tg['delivered'] + 1 and st['pieces'] == 0 and st['score'] - tg['score'] == 5 * 16 and tg['left'] - st['left'] == 16,
              'towed home: the piece is gone and the player gets 5 × its points', {**st, 'before': tg})
 
         # a black hole pulls in a drifting piece within 15 voxels (gently) and swallows it: its voxels
@@ -220,6 +220,36 @@ async def main():
           return { d0, swallowed: f.dead, frames, maxSpeed, gained: p.score - score0, eaten: left0 - pl.left, count: 16 }; }""")
         t.ok(bh['swallowed'] and bh['gained'] == 16 and bh['eaten'] == 16, 'a black hole pulls in a piece 12 voxels away and swallows it (points for its owner)', bh)
         t.ok(bh['maxSpeed'] <= 0.0501 and bh['frames'] > 60, 'gently: it takes over a second', bh)
+
+        # cleaners (grey): eat only drifting pieces of at most 3 voxels — not bigger pieces, not the planet
+        await page.evaluate(BUILD, 1)
+        cl = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, pl = g.planet, fr = pl.fragments;
+          p.onNewPlanet(); p.setSetting('count', 20);
+          ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].forEach(k => p.setSetting(k, 0)); p.setSetting('cleaners', 20); p.setSetting('speed', 0.2);
+          const box = new Map(); for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) { const t = pl.tags[idx]; (box.get(t) || box.set(t, []).get(t)).push(idx); }
+          const small = [...box.values()].find(c => c.length === 3), big = [...box.values()].find(c => c.length === 4);
+          const fs = fr.create(small), fb = fr.create(big);
+          p.swarm.render(g.camera);
+          const c = p.swarm.mesh.instanceColor, grey = Math.abs(c.getX(0) - c.getZ(0)) < 0.15 && c.getX(0) > 0.45 && c.getX(0) < 0.8;
+          return { small: fs.id, big: fb.id, grey, cleaners: p.swarm.cleaners, staticLeft: pl.left - 7, left: pl.left }; }""")
+        st = None
+        for _ in range(30):
+            await h.fast_forward(page, 150)
+            st = await page.evaluate("""(ids) => { const g = window.__dbg, pl = g.planet, fr = pl.fragments, s = g.localPlayer.swarm;
+              const f = (id) => fr.byId.get(id);
+              let biteOnPlanet = 0; for (let i = 0; i < s.count; i++) if (s.food[i] >= 0 && fr.fragOf[s.food[i]] < 0) biteOnPlanet++;
+              return { smallLeft: f(ids[0]) && !f(ids[0]).dead ? f(ids[0]).count : 0, bigLeft: f(ids[1]) && !f(ids[1]).dead ? f(ids[1]).count : 0,
+                left: pl.left, biteOnPlanet, out: [...s.hidden.subarray(0, s.count)].filter(x => !x).length }; }""", [cl['small'], cl['big']])
+            if st['smallLeft'] == 0:
+                break
+        t.ok(cl['grey'] and cl['cleaners'] == 20, 'cleaners are grey', cl)
+        t.ok(st['smallLeft'] == 0 and st['out'] > 0, 'cleaners eat a drifting piece of 3 voxels', st)
+        await h.fast_forward(page, 600)
+        st2 = await page.evaluate("""(id) => { const g = window.__dbg, pl = g.planet, fr = pl.fragments, s = g.localPlayer.swarm, f = fr.byId.get(id);
+          let biteOnPlanet = 0; for (let i = 0; i < s.count; i++) if (s.food[i] >= 0 && fr.fragOf[s.food[i]] < 0) biteOnPlanet++;
+          return { bigLeft: f && !f.dead ? f.count : 0, left: pl.left, biteOnPlanet }; }""", cl['big'])
+        t.ok(st2['bigLeft'] == 4 and st2['left'] == cl['left'] - 3 and st2['biteOnPlanet'] == 0,
+             'but not a piece of 4 voxels, nor the planet', {**st2, 'before': cl})
 
         await browser.close()
     return t.done(errors)

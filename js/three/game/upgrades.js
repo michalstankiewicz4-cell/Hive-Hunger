@@ -1,4 +1,4 @@
-import { CONFIG } from '../../config.js';
+import { CONFIG, SHIP_KINDS } from '../../config.js';
 
 /**
  * Points, buying upgrades and what they add on top of the sliders, chain lightning.
@@ -17,18 +17,23 @@ export const Upgrades = {
     return true;
   },
 
+  /** The swarm's units by type: as many of each as set (SHIP_KINDS order), as far as they go; the rest eat. */
+  splitKinds() {
+    const s = this.swarm;
+    let left = s.count;
+    for (const k of SHIP_KINDS) {
+      s[k] = Math.max(0, Math.min(this[k], left));
+      left -= s[k];
+    }
+  },
+
   /** Slider values plus the bonuses of everything bought in the tree. */
   applyUpgrades() {
     const e = this.tree.effects();
     const s = this.swarm;
-    const count = Math.min(CONFIG.swarm.maxCount + 100, Math.round(this.base.count + e.count));
+    const count = Math.min(CONFIG.swarm.maxCount, Math.round(this.base.count + e.count));
     if (count !== s.count) s.setCount(count);
-    s.lasers = Math.min(this.lasers, s.count);
-    s.storms = Math.min(this.storms, s.count - s.lasers);
-    s.tugs = Math.min(this.tugs, s.count - s.lasers - s.storms);
-    s.bombers = Math.min(this.bombers, s.count - s.lasers - s.storms - s.tugs);
-    s.orbs = Math.min(this.orbs, s.count - s.lasers - s.storms - s.tugs - s.bombers);
-    s.supports = Math.min(this.supports, s.count - s.lasers - s.storms - s.tugs - s.bombers - s.orbs);
+    this.splitKinds();
     s.speed = this.base.speed * (1 + e.speed);
     this.biteRadius = this.base.power + e.power;
     this.bolt = e.bolt;

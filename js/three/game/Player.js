@@ -1,4 +1,4 @@
-import { CONFIG } from '../../config.js';
+import { CONFIG, SHIP_KINDS, kindConfig } from '../../config.js';
 import { Swarm3D } from '../swarm/Swarm3D.js';
 import { aroundPlanet } from '../swarm/steering.js';
 import { Portal3D } from '../scene/Portal3D.js';
@@ -36,12 +36,10 @@ export class Player {
     this.biteRadius = CONFIG.swarm.biteRadius; // power: crater radius (slider + upgrades)
     // slider values; the upgrade tree adds its bonuses on top (see applyUpgrades)
     this.base = { count: CONFIG.swarm.count, speed: CONFIG.swarm.speed, power: CONFIG.swarm.biteRadius };
-    this.lasers = CONFIG.swarm.laser.count; // ship types: how many units are red laser ships
-    this.storms = CONFIG.swarm.storm.count; // … and how many are blue storm ships
-    this.tugs = CONFIG.swarm.tug.count;     // … and green tugs
-    this.bombers = CONFIG.swarm.bomber.count; // … and purple bombers
-    this.orbs = CONFIG.swarm.orb.count;     // … and magenta orb ships
-    this.supports = CONFIG.swarm.support.count; // … and white support ships
+    // ship types: how many units are laser ships (this.lasers), storm ships, tugs, … (SHIP_KINDS);
+    // the rest are eaters
+    for (const k of SHIP_KINDS) this[k] = CONFIG.swarm[kindConfig(k)].count;
+    this.scraps = [];       // drifting pieces small enough for cleaners (found every frame)
     this.towing = new Map();                // tug unit → { f: fragment, on: tractor beam holds it }
     this.tree = new SkillTree();
     this.bolt = null;       // chain lightning settings once bought
@@ -59,12 +57,7 @@ export class Player {
     const start = this.spawnWorld();
     this.leader = new Leader(CONFIG.leader, start, ['x', 'y', 'z']);
     this.swarm = new Swarm3D(game.scene, { ...CONFIG.swarm, color: info.color }, new THREE.Vector3(start.x, start.y, start.z));
-    this.swarm.lasers = Math.min(this.lasers, this.swarm.count);
-    this.swarm.storms = Math.min(this.storms, this.swarm.count - this.swarm.lasers);
-    this.swarm.tugs = Math.min(this.tugs, this.swarm.count - this.swarm.lasers - this.swarm.storms);
-    this.swarm.bombers = Math.min(this.bombers, this.swarm.count - this.swarm.lasers - this.swarm.storms - this.swarm.tugs);
-    this.swarm.orbs = Math.min(this.orbs, this.swarm.count - this.swarm.lasers - this.swarm.storms - this.swarm.tugs - this.swarm.bombers);
-    this.swarm.supports = Math.min(this.supports, this.swarm.count - this.swarm.lasers - this.swarm.storms - this.swarm.tugs - this.swarm.bombers - this.swarm.orbs);
+    this.splitKinds();
     this.swarm.fragmentById = (id) => game.planet?.fragments?.byId.get(id);
     this.swarm.fragments = () => game.planet?.fragments || null;
     this.swarm.hidden.fill(1); // still in the tunnel
@@ -91,6 +84,28 @@ export class Player {
         const idx = pl.nearestFree(p, pl.count < this.swarm.count, nearestScratch);
         pl.claim(idx);
         return idx;
+      },
+      // cleaners: the nearest free voxel of a small drifting piece (see this.scraps), or -1
+      pickScrap: (p) => {
+        const pl = game.planet, fr = pl.fragments;
+        if (!fr || !this.scraps.length) return -1;
+        let best = -1, bestD = Infinity;
+        for (const f of this.scraps) {
+          if (f.dead) continue;
+          for (const c of fr.cellsOf(f)) {
+            if (pl.claims[c] > 0) continue;
+            fr.worldCenter(c, feedCenter);
+            const d = (feedCenter.x - p.x) ** 2 + (feedCenter.y - p.y) ** 2 + (feedCenter.z - p.z) ** 2;
+            if (d < bestD) { bestD = d; best = c; }
+          }
+        }
+        if (best >= 0) pl.claim(best);
+        return best;
+      },
+      isScrap: (idx) => {
+        const fr = game.planet.fragments;
+        const f = fr && idx >= 0 && fr.fragOf[idx] >= 0 ? fr.byId.get(fr.fragOf[idx]) : null;
+        return Boolean(f && !f.dead && f.count <= CONFIG.swarm.cleaner.maxPiece);
       },
       release: (idx) => game.planet.release(idx),
       claim: (idx) => game.planet.claim(idx),
@@ -148,15 +163,15 @@ export class Player {
       this.applyUpgrades();
     }
     else if (key === 'turn') s.turnSmoothing = value;
-    else if (key === 'lasers' || key === 'storms' || key === 'tugs' || key === 'bombers' || key === 'orbs' || key === 'supports') {
+    else if (SHIP_KINDS.includes(key)) {
       this[key] = Math.max(0, Math.round(value));
       this.applyUpgrades();
     }
   }
 
   getSetting(key) {
-    const s = this.swarm;
-    return { count: this.base.count, speed: this.base.speed, power: this.base.power, lasers: this.lasers, storms: this.storms, tugs: this.tugs, bombers: this.bombers, orbs: this.orbs, supports: this.supports, turn: s.turnSmoothing }[key];
+    if (SHIP_KINDS.includes(key)) return this[key];
+    return { count: this.base.count, speed: this.base.speed, power: this.base.power, turn: this.swarm.turnSmoothing }[key];
   }
 
   /** A new planet appeared: old bites belonged to the old one. */
@@ -206,6 +221,8 @@ export class Player {
     for (const idx of this.candidates) if (planet.claims[idx] === 0) this.freeCandidates++;
 
     this.updateArrival();
+    // ships added while the others jump (Units slider, an upgrade) jump too
+    if (this.homeMode === 'jump') this.swarm.jumpAll();
     const L = this.leader;
     if (this.homeMode === 'recall') {
       // called home: the swarm target keeps following the tunnel (it moves as space turns)
@@ -219,6 +236,9 @@ export class Player {
     this.swarmWorld.planetRadius = planet.alive ? planet.R : 0;
     this.swarmWorld.holding = Boolean(this.homeMode);
     this.updateTugs();
+    // pieces small enough for cleaners
+    const fr = planet.fragments, maxPiece = CONFIG.swarm.cleaner.maxPiece;
+    this.scraps = this.swarm.cleaners && fr ? fr.list.filter((f) => !f.dead && f.count <= maxPiece) : [];
     this.swarm.update(L.pos, this.swarmWorld);
     this.removeDead();
     this.updateSupport();

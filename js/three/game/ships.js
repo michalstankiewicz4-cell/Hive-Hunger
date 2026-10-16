@@ -1,4 +1,4 @@
-import { CONFIG } from '../../config.js';
+import { CONFIG, SHIP_KINDS } from '../../config.js';
 import { aroundPlanet } from '../swarm/steering.js';
 
 const THREE = window.THREE;
@@ -102,11 +102,17 @@ export const ShipRoles = {
     if (!s.dying.length) return;
     // highest first, so moving one doesn't move another that is still to go
     for (const i of [...new Set(s.dying)].sort((a, b) => b - a)) {
-      const bEnd = s.lasers + s.storms + s.tugs + s.bombers;
-      const oEnd = bEnd + s.orbs + s.supports;
-      s.swapUnits(i, bEnd - 1);           // the last bomber's place
-      s.swapUnits(bEnd - 1, oEnd - 1);    // past the orb and support ships (the last of them takes the bomber's place)
-      s.swapUnits(oEnd - 1, s.count - 1); // the last unit's place (an eater, if any)
+      // to the end, one type at a time: the dead bomber takes the last place of each type after
+      // the bombers and that type's last ship takes its place — which, with one bomber fewer,
+      // is the first place of that type (so every ship keeps its type)
+      let end = s.kindStart('bombers') + s.bombers;
+      s.swapUnits(i, end - 1); // the last bomber's place
+      for (const k of SHIP_KINDS.slice(SHIP_KINDS.indexOf('bombers') + 1)) {
+        if (!s[k]) continue;
+        s.swapUnits(end - 1, end + s[k] - 1);
+        end += s[k];
+      }
+      s.swapUnits(end - 1, s.count - 1); // the last unit's place (an eater, if any)
       if (s.food[s.count - 1] >= 0) this.game.planet.release(s.food[s.count - 1]);
       s.food[s.count - 1] = -1;
       this.bombers = Math.max(0, this.bombers - 1);

@@ -125,7 +125,7 @@ async def main():
           return { letters: seen.size, colours: new Set(cols).size, exposed: pl.count }; }''')
         t.ok(info['letters'] == 7 and info['colours'] == 7, 'planet 4: "TEST LVL" — 7 letters in 7 colours', info)
         await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
-          p.onNewPlanet(); p.setSetting('count', 200); p.setSetting('speed', 0.3); p.setSetting('power', 1.5); g.stop(); }''')
+          p.onNewPlanet(); p.setSetting('count', 100); p.setSetting('speed', 0.3); p.setSetting('power', 1.5); g.stop(); }''')
         before = txt['total']
         await h.fast_forward(page, 1500)
         st = await page.evaluate('() => ({ level: window.__dbg.level, left: window.__dbg.planet.left })')

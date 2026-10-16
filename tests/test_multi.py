@@ -43,7 +43,7 @@ async def main():
             host = await h.open_page(browser, url, errors, 'host', peer=True)
             # play single player first: points, an upgrade, part of the planet eaten …
             await host.click('.menu-choice >> nth=0')
-            await host.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 200); p.setSetting('speed', 0.4); }")
+            await host.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 100); p.setSetting('speed', 0.4); }")
             await h.fast_forward(host, 400)
             await host.evaluate("() => { window.__dbg.localPlayer.score += 100; window.__dbg.buyUpgrade('units1'); }")
             solo = await host.evaluate('() => ({ score: window.__dbg.localPlayer.score, left: window.__dbg.planet.left, total: window.__dbg.planet.total, count: window.__dbg.localPlayer.base.count })')
@@ -111,7 +111,7 @@ async def main():
 
             # play a little on the host, then compare
             await host.evaluate("""() => window.__dbg.activePlayers().forEach(p => {
-              p.setSetting('count', 200); p.setSetting('speed', 0.5); p.setSetting('power', 2); })""")
+              p.setSetting('count', 100); p.setSetting('speed', 0.5); p.setSetting('power', 2); })""")
             await h.fast_forward(host, 1200)
             await host.wait_for_timeout(1500)
             for g in guests:  # let paused guests apply the queued snapshots
