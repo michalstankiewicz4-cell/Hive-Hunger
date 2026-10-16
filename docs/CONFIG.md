@@ -19,7 +19,7 @@ Almost every tunable value is in `js/config.js` (upgrade costs and the lightning
 | `planet.radius` | 24 | planet radius | bigger planet, cubic growth in voxels and memory |
 | `planet.voxelSize` | 0.5 | voxel edge | smaller = smoother sphere but many more voxels (halving it = 8×) |
 | `planet.terrainDepth` | 1.6 | thickness of the coloured surface layer; rock below | |
-| `planet.spinSpeed` | 0.0005 | rotation in radians per frame (one turn ≈ 3.5 min) | 0 = no spin |
+| `planet.spinSpeed` | 0 | rotation in radians per frame, shown by turning the camera, sky and tunnels (off since 0.37.0: it looked like the camera turning by itself; 0.0005 = one turn in ≈ 3.5 min) | 0 = no spin |
 | `planet.strength` | 1 | a voxel's strength; eating takes `strength / eatFrames` per frame, lightning drains a share of it | (planned: harder voxels later) |
 | `planet.rock`, `planet.rockCore` | | rock colours below the surface (outer → core) | |
 | `planet.light` | | direction of the sun | |

@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.37.0] — 2026-10-16
+
+### Removed
+- **The camera no longer turns by itself.** The planet's slow spin was shown by turning the camera, sky and tunnels round it, which got in the way; it is off (`planet.spinSpeed` 0 — the code stays). The camera turns only when you turn it.
+
 ## [0.36.1] — 2026-10-16
 
 ### Changed

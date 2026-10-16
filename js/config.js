@@ -63,7 +63,9 @@ export const CONFIG = Object.freeze({
     radius: 24,
     voxelSize: 0.5,        // smaller = smoother sphere, more voxels
     terrainDepth: 1.6,     // thickness of the terrain-coloured layer
-    spinSpeed: 0.0005,     // planet rotation, radians per frame (one turn ≈ 3.5 min at 60 fps)
+    // planet rotation, radians per frame — shown by turning the camera, sky and tunnels round it, so it
+    // looked like the camera turning by itself: off (owner, 0.37.0; it was 0.0005, one turn ≈ 3.5 min)
+    spinSpeed: 0,
     strength: 1,
     rock: [96, 84, 74],     // interior below the surface (rock)
     rockCore: [58, 50, 46], // darker rock near the core

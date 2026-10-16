@@ -157,7 +157,7 @@ The surface is split into chunks of 16³ voxels. `VoxelPlanet.remove()` and `sho
 
 ## Frames of reference and the planet spin
 
-The simulation runs in the **planet's frame**: voxels never move. To make the planet look like it spins, the camera, the sky group, the sun and the tunnels (they live in the sky group) turn around the planet by `spin` (`planet.spinSpeed` per frame). The swarm flies in the planet's frame, so on screen it turns together with the planet. A beacon moves in the planet's frame, so a swarm flying home follows a slowly moving target.
+The simulation runs in the **planet's frame**: voxels never move. (The spin is off since 0.37.0 — `planet.spinSpeed` 0 — the code stays.) To make the planet look like it spins, the camera, the sky group, the sun and the tunnels (they live in the sky group) turn around the planet by `spin` (`planet.spinSpeed` per frame). The swarm flies in the planet's frame, so on screen it turns together with the planet. A beacon moves in the planet's frame, so a swarm flying home follows a slowly moving target.
 
 ## One frame (solo / host)
 
