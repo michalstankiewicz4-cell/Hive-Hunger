@@ -13,7 +13,7 @@ A recovery file: everything needed to pick the project up again — what it is, 
 
 ## Where we left off (2026-10-16, end of the day)
 
-- Live version: 0.42.1 (see `js/version.js`); everything is pushed to `main`; the owner still has to add the tags v0.32.0 … v0.42.1 in his clone (see Publishing).
+- Live version: see `js/version.js`; everything is pushed to `main`, and the owner added the tags up to v0.42.1 himself (2026-10-16). For every later version give him the tag command (see Publishing).
 - **Next, when the owner asks:** the upgrade tree's logic. The new layout is in `js/core/SkillTree.js` (ships = hexagons, their properties = circles, the swarm's traits = diamonds, levels 0–5, links across branches); only Brood, Wings, Jaws and the lightning work, everything else is `soon`. Open questions for him: (1) what buying a ship does — unlock the type (but every player now starts with 2 of each), +2 ships, or only open its properties; (2) the list of properties; (3) the cross links. A drawn proposal was shown to him (same layout as the game's tree).
 - Other open things: the rest of the solar system's bodies are on the map as "coming soon" (only the Kuiper Belt and Earth have levels); unlocking missions in order is chosen but switched off for now (every playable mission is open); the "fast swarms can't finish a planet" limitation (see Known limitations).
 - How to work: answer in Polish, write game / code / docs in English; propose ideas, don't add them on your own; ask with a few options when a request leaves real choices; run all five test suites before every publish; keep README, CHANGELOG, this file, `docs/*` and `tests/README.md` up to date; one publish = one version bump.
@@ -90,7 +90,7 @@ Licence: MIT (`LICENSE`), chosen by the owner.
 - GitHub Pages deploys automatically from `main` via `.github/workflows/static.yml` (whole repository is the site).
 - Versioning: bump `js/version.js`, add a `CHANGELOG.md` entry, tag the commit `vX.Y.Z`.
 - The owner's clone is `C:\Users\micha\vsrepos\Hive-Hunger` (Windows).
-- **Since 0.32.0 (2026-10-16) the cloud workspace can push `main` itself**: the owner connected GitHub to Claude. `git push origin main` works (the remote is `https://github.com/michalstankiewicz4-cell/Hive-Hunger.git`; the old lowercase name redirects). **Tags can't be pushed from there** (the proxy refuses tag refs and the GitHub API) — tell the owner the command for his clone: `git pull`, `git tag vX.Y.Z <commit>`, `git push origin --tags`. Tags still to add there at the end of 2026-10-16: v0.32.0 … v0.42.1 (see `git tag` in the workspace for the commits).
+- **Since 0.32.0 (2026-10-16) the cloud workspace can push `main` itself**: the owner connected GitHub to Claude. `git push origin main` works (the remote is `https://github.com/michalstankiewicz4-cell/Hive-Hunger.git`; the old lowercase name redirects). **Tags can't be pushed from there** (the proxy refuses tag refs and the GitHub API) — tell the owner the command for his clone: `git pull`, `git tag vX.Y.Z <commit>`, `git push origin --tags`. After `git pull` he runs `git tag vX.Y.Z <commit>` and `git push origin --tags` in PowerShell (red "NativeCommandError" text there is only git's progress; `* [new tag]` lines mean it worked).
 - Each publish: run the five test suites, update the docs, bump the version (one publish = one version), commit, tag, push `main`, give the owner the tag commands.
 
 Older way, when the workspace had no write access (as done for 0.12.0–0.31.1):
@@ -187,6 +187,7 @@ Lessons from writing them:
 | 0.41.1 | tag `v0.41.1` | Tab pauses single player while the tree is open |
 | 0.42.0 | tag `v0.42.0` | new tree layout: ships, their properties, swarm traits on levels 0–5 (logic later) |
 | 0.42.1 | tag `v0.42.1` | documentation brought up to date; where the work stopped |
+| 0.42.2 | tag `v0.42.2` | CONTEXT: the tags are on GitHub; how the owner adds them |
 
 ## Known limitations
 
