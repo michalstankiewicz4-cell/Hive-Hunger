@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.16.2] — 2026-10-16
+
+### Added
+- The game version is shown next to the title on the start screen (it was only in the bottom-right corner), so it's easy to check the page is the latest one.
+
 ## [0.16.1] — 2026-10-16
 
 ### Changed

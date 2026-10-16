@@ -320,6 +320,13 @@ body {
   color: var(--accent);
 }
 
+.menu-version {
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--hud-dim);
+  vertical-align: middle;
+}
+
 .menu-tagline,
 .menu-note {
   margin: 0;

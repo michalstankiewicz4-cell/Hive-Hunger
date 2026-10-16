@@ -106,6 +106,7 @@ Lessons from writing them:
 | 0.15.0 | tag `v0.15.0` | level 1: every box shape 1×1×1 … 4×4×4; the sphere + cube board moves to level 5 |
 | 0.16.0 | tag `v0.16.0` | pieces bitten off drift and turn; the swarm chases and eats them |
 | 0.16.1 | tag `v0.16.1` | drones give up on a bite they can't catch (10 s → 0.5 s pause → another bite); pieces stop 4 units away; big pieces turn slower |
+| 0.16.2 | tag `v0.16.2` | version shown next to the title on the start screen |
 
 ## Known limitations
 

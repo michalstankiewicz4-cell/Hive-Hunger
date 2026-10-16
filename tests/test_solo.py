@@ -36,6 +36,9 @@ async def main():
         # start screen
         choices = await page.locator('.menu-choice').all_inner_texts()
         t.ok(len(choices) == 3 and 'Single player' in choices[0], 'start screen offers 3 modes', choices)
+        title = await page.inner_text('#menu-title')
+        version = await page.inner_text('#version')
+        t.ok(title.startswith('Hive Hunger') and title.endswith(version) and version.startswith('v0.'), 'start screen shows the version next to the title', title)
         before = await page.evaluate(STATE)
         await page.wait_for_timeout(800)
         after = await page.evaluate(STATE)

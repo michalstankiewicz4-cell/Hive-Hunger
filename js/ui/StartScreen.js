@@ -1,3 +1,4 @@
+import { VERSION } from '../version.js';
 import { el, button, linkRow, hex, pingText, MODE_NAME, roomLink, backToMenu } from './dom.js';
 
 /**
@@ -32,6 +33,8 @@ export class StartScreen {
   /** The first screen: game modes. */
   showStart() {
     this.open('Hive Hunger');
+    // the version next to the title: shows at a glance whether the page is the latest one
+    this.card.querySelector('.menu-title').append(' ', el('span', 'menu-version', `v${VERSION}`));
     this.card.appendChild(el('p', 'menu-tagline', 'A swarm that eats planets.'));
     const { available, onSolo, onCreate } = this.opts;
     const choice = (label, note, onClick, disabled = false) => {
