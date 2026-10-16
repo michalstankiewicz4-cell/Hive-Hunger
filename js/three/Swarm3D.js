@@ -67,7 +67,7 @@ export class Swarm3D {
     // 1 = the unit has landed on its bite and is eating it
     this.landed = new Uint8Array(this.max);
     // 1 = the unit was sent somewhere by a click and has not arrived yet;
-    // in nearest-block mode its next bite is picked near the clicked point
+    // its next bite is picked near the clicked point
     this.redirect = new Uint8Array(this.max);
     // getting unstuck: best distance to the current target so far, frames without progress,
     // and the last voxel that blocked the unit (with how many frames ago that was)
@@ -334,9 +334,7 @@ export class Swarm3D {
   /**
    * @param {{x:number,y:number,z:number}} target the swarm target
    * @param {object} world
-   *   feeding: whether the swarm target is at matter (units then eat deliberately),
-   *   nearestMode: test mechanic — each unit picks the nearest free voxel to itself and never idles,
-   *   pickFood(p): index of a voxel to eat (near the target, or nearest to p in nearestMode), or -1,
+   *   pickFood(p): index of the nearest free voxel to p (every unit eats the nearest one to itself), or -1,
    *   cellCenter(idx): voxel centre (where it is now), cellAt(p), isSolidCell(idx): a voxel in
    *   its place in the grid (collisions), isFood(idx): still there to eat (also on a drifting
    *   fragment), floatingAt(p): fragment voxel at a point or -1, bite(idx)
@@ -418,9 +416,9 @@ export class Swarm3D {
       }
       const tug = this.isTug(i);
       if (tug && food[i] >= 0) { world.release(food[i]); food[i] = -1; } // was an eater a moment ago
-      if (food[i] < 0 && !tug && (world.feeding || world.nearestMode) && !world.holding) {
+      if (food[i] < 0 && !tug && !world.holding) {
         p.x = px; p.y = py; p.z = pz;
-        if (world.nearestMode && this.redirect[i] && world.clickPoint) {
+        if (this.redirect[i] && world.clickPoint) {
           food[i] = world.pickFood(world.clickPoint);
         } else {
           food[i] = world.pickFood(p);
@@ -437,8 +435,8 @@ export class Swarm3D {
         foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
         tx = foodPos[i3]; ty = foodPos[i3 + 1]; tz = foodPos[i3 + 2];
         targetWeight = w.feed;
-        // nearestMode: no free flying — only separation stays, the unit flies straight to its voxel
-        flocking = world.nearestMode ? 0 : c.feedFlocking;
+        // no free flying — only separation stays, the unit flies straight to its voxel
+        flocking = 0;
       }
       // a tug flies to its piece (or, towing it, ahead of it towards home)
       if (tug && this.tugHas[i]) {
@@ -465,6 +463,7 @@ export class Swarm3D {
         const reach = (ranged ? c.laser.reach : c.reachDistance) + speed;
         if (fx0 * fx0 + fy0 * fy0 + fz0 * fz0 < reach * reach) {
           landed[i] = 1;
+          this.aimed[i] = 0; // a new bite: it must turn to it first
           this.redirect[i] = 0;
           const l0 = Math.hypot(fx0, fy0, fz0) || 1;
           dir[i3] = fx0 / l0; dir[i3 + 1] = fy0 / l0; dir[i3 + 2] = fz0 / l0;
@@ -490,6 +489,7 @@ export class Swarm3D {
               foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
             }
             landed[i] = 1;
+            this.aimed[i] = 0;
           } else {
             const u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, q = Math.sqrt(1 - u * u);
             dir[i3] = q * Math.cos(a); dir[i3 + 1] = u; dir[i3 + 2] = q * Math.sin(a);
@@ -541,10 +541,10 @@ export class Swarm3D {
           // the grid, then the drifting fragments (units don't fly through them either)
           if (!world.isSolidCell(idx) && (inFragment || (idx = world.floatingAt(p)) < 0)) continue;
           p[ax2] = old;
-          // land on its own bite or a free voxel. In nearest-block mode only next to its own bite —
+          // land on its own bite or a free voxel. Only next to its own bite —
           // touching the planet on the way somewhere else is not a reason to stop there
           if (food[i] >= 0 && world.canBite(idx, food[i]) &&
-              (idx === food[i] || !world.nearestMode || nearOwnBite(world.cellCenter(idx), foodPos, i3, c.landSwapDistance))) {
+              (idx === food[i] || nearOwnBite(world.cellCenter(idx), foodPos, i3, c.landSwapDistance))) {
             if (idx !== food[i]) {
               world.release(food[i]);
               world.claim(idx);
@@ -553,6 +553,7 @@ export class Swarm3D {
               foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
             }
             landed[i] = 1;
+            this.aimed[i] = 0;
             // landed on a bite it flew to (picked near the click): it has arrived, from now on it
             // eats on from here. (Biting through a wall when stuck does not count — see above.)
             this.redirect[i] = 0;

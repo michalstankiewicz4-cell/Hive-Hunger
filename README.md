@@ -2,13 +2,13 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.20.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.21.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
 The swarm moves like a flock of birds (boids): units keep their distance from each other, fly the same way as their neighbours and stay with the group. Every unit flies at the same constant speed — only its direction changes.
 
-Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), flies to it, lands on it and eats it, then picks the next one. One voxel is eaten by one unit only — bites are shared only when the planet has fewer exposed voxels left than there are units. Units never eat in passing. They don't bounce off matter or pass through it; they slide along the surface. The swarm target moves on once no free voxels are left nearby.
+Eating is deliberate. Every unit claims the nearest uneaten, unclaimed voxel to itself (a "bite"), flies straight to it, lands on it and eats it, then picks the next nearest one — no free flying while eating, only a little spacing between units. One voxel is eaten by one unit only — bites are shared only when the planet has fewer exposed voxels left than there are units. Units never eat in passing. They don't bounce off matter or pass through it; they slide along the surface. The swarm target moves on once no free voxels are left nearby.
 
 Planets come in a cycle of levels: 1 — a test board with every box shape from 1×1×1 to 4×4×4 voxels once (20 boxes, 5 voxels apart), 2 — the usual planet, 3 — a cube, 4 — the text TEST LVL in coloured letters, 5 — a test board with a sphere and a cube side by side (10 voxels apart); then it starts again. Every planet is drawn as a smooth surface: no steps — slopes, rounded corners and craters. It is graphics only: underneath, the swarm still eats voxels — every voxel is still 1 point.
 
@@ -31,9 +31,6 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Speed** — the shared flying speed
   - **Power** — radius of the crater a unit eats out of its bite
   - **Turning** — how fast ships turn their nose; a ship eats only once it faces its bite
-  - **Spacing** — distance units keep from each other
-  - **Cohesion** — how strongly units stay with the group
-  - **Eat nearest block** (test mechanic) — when on, every unit flies straight from the voxel it just ate to the nearest uneaten, unclaimed voxel; no free flying, only spacing between units is kept
   - **Reset to default** — restore all settings to their starting values
   - **Level 1–5** (single player) — jump straight to that level; the swarm starts again from its beacon
 - **Ship types panel in the bottom-right corner** — how many of your units are yellow **Eaters**, red **Lasers**, blue **Storms** and green **Tugs** — a slider each (linked: together they are all your units; at the start split evenly — 5 of each). Every ship eats only once it faces its bite.

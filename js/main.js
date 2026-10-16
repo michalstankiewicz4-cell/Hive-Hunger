@@ -30,7 +30,7 @@ if (!window.THREE) {
 
   // the panel controls your own swarm; a guest's settings are sent to the host
   const S = CONFIG.swarm;
-  const guestSettings = { count: S.count, speed: S.speed, power: S.biteRadius, spacing: S.separationDistance, cohesion: S.weights.cohesion, nearest: S.nearestMode, lasers: S.laser.count, storms: S.storm.count, tugs: S.tug.count, turn: S.turnSmoothing };
+  const guestSettings = { count: S.count, speed: S.speed, power: S.biteRadius, lasers: S.laser.count, storms: S.storm.count, tugs: S.tug.count, turn: S.turnSmoothing };
   const bind = (key) => ({
     get: () => (game.role === 'guest' ? guestSettings[key] : game.localPlayer.getSetting(key)),
     set: (v) => {
@@ -39,7 +39,7 @@ if (!window.THREE) {
     },
   });
   new ControlPanel(document.getElementById('controls'), CONFIG.controls,
-    Object.fromEntries(['count', 'speed', 'power', 'turn', 'spacing', 'cohesion', 'nearest'].map((k) => [k, bind(k)])));
+    Object.fromEntries(['count', 'speed', 'power', 'turn'].map((k) => [k, bind(k)])));
   // single player: jump straight to any level (the swarm starts again from its beacon)
   const levels = new LevelSwitch(document.getElementById('controls'), CONFIG.levels, {
     isSolo: () => game.role === 'solo',

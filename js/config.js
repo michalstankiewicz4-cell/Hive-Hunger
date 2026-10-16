@@ -117,8 +117,6 @@ export const CONFIG = Object.freeze({
     stuck: { frames: 45, progress: 0.3, recentContact: 10 },
     reachDistance: 0.8,      // a unit this close to its own bite lands on it
     landSwapDistance: 1.5,   // a unit may land on a free voxel this close to its own bite instead
-    nearestMode: true,       // test mechanic: after eating, fly to the nearest uneaten voxel (checkbox)
-    feedFlocking: 0.35,      // while feeding: how much alignment and cohesion remain
     eatFrames: 25,           // frames a unit sits on its bite before it is eaten
     // ship types: red laser ships eat their bite from `reach` away (5 voxels of 0.5) and fly
     // `speedFactor` × the speed; `count` = how many of the units are lasers at the start
@@ -150,9 +148,6 @@ export const CONFIG = Object.freeze({
     { id: 'speed',  label: 'Speed',    min: 0.05, max: 0.6,  step: 0.01, decimals: 2 },
     { id: 'power',  label: 'Power',    min: 0.5,  max: 3,    step: 0.1,  decimals: 1 },
     { id: 'turn',   label: 'Turning',  min: 0.02, max: 0.3,  step: 0.01, decimals: 2 }, // how fast ships turn their nose (turnSmoothing)
-    { id: 'spacing',  label: 'Spacing',  min: 0.3, max: 3,   step: 0.1, decimals: 1 },
-    { id: 'cohesion', label: 'Cohesion', min: 0,   max: 3,   step: 0.1, decimals: 1 },
-    { id: 'nearest', type: 'toggle', label: 'Eat nearest block' },
   ],
 
   // beacon at the spawn point: click it to call the swarm back; after a planet is eaten

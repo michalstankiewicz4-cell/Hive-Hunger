@@ -199,7 +199,7 @@ export class Game3D {
     // a room starts from scratch — nothing carries over from single player (planet, points,
     // upgrades, swarm), so co-op and PvP are fair; only the settings panel values stay
     const old = this.localPlayer;
-    const keep = ['count', 'speed', 'power', 'turn', 'spacing', 'cohesion', 'nearest', 'lasers', 'storms', 'tugs'].map((k) => [k, old.getSetting(k)]);
+    const keep = ['count', 'speed', 'power', 'turn', 'lasers', 'storms', 'tugs'].map((k) => [k, old.getSetting(k)]);
     this.removePlayer(0);
     this.planet.dispose();
     this.level = 0;

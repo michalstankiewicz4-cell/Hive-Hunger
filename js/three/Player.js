@@ -63,35 +63,14 @@ export class Player {
     const feedCenter = new THREE.Vector3();
     const nearestScratch = [];
     this.swarmWorld = {
-      feeding: false,
-      // test mechanic (checkbox): every unit goes to the nearest free voxel from its own position
-      nearestMode: CONFIG.swarm.nearestMode,
       clickPoint: null,
       planetRadius: 0,
       holding: false, // called back home: nobody picks new bites
-      // a free (unclaimed) voxel near the swarm target. Shared only when the planet has
-      // fewer exposed voxels left than there are units (there are no more).
+      // every unit eats the nearest free (unclaimed) voxel to itself. Shared only when the
+      // planet has fewer exposed voxels left than there are units (there are no more).
       pickFood: (p) => {
         const pl = game.planet;
-        if (this.swarmWorld.nearestMode) {
-          const idx = pl.nearestFree(p, pl.count < this.swarm.count, nearestScratch);
-          pl.claim(idx);
-          return idx;
-        }
-        const list = this.candidates;
-        const n = list.length;
-        if (n === 0) return -1;
-        const start = (Math.random() * n) | 0;
-        for (let k = 0; k < n; k++) {
-          const idx = list[(start + k) % n];
-          if (pl.claims[idx] === 0 && pl.solid(idx)) {
-            pl.claim(idx);
-            this.freeCandidates--;
-            return idx;
-          }
-        }
-        if (pl.count >= this.swarm.count) return -1;
-        const idx = list[start];
+        const idx = pl.nearestFree(p, pl.count < this.swarm.count, nearestScratch);
         pl.claim(idx);
         return idx;
       },
@@ -151,7 +130,7 @@ export class Player {
 
   /**
    * A click / tap: the swarm target heads for the point and every unit drops its current
-   * bite, so the whole swarm goes there. In nearest-block mode each unit's next bite is
+   * bite, so the whole swarm goes there. Each unit's next bite is
    * the nearest free voxel to the clicked point.
    */
   command(point) {
@@ -176,22 +155,14 @@ export class Player {
     this.dropAllBites(0);
   }
 
-  /** Switches the nearest-block test mechanic; units drop their current bites and pick again by the new rule. */
-  setNearestMode(on) {
-    this.swarmWorld.nearestMode = Boolean(on);
-    this.dropAllBites(0);
-  }
-
   /** Applies one setting from the panel (locally or sent by a guest). */
   setSetting(key, value) {
     const s = this.swarm;
     if (key === 'count' || key === 'speed' || key === 'power') {
       this.base[key] = value;
       this.applyUpgrades();
-    } else if (key === 'spacing') s.separationDistance = value;
-    else if (key === 'cohesion') s.cohesion = value;
+    }
     else if (key === 'turn') s.turnSmoothing = value;
-    else if (key === 'nearest') this.setNearestMode(value);
     else if (key === 'lasers' || key === 'storms' || key === 'tugs') {
       this[key] = Math.max(0, Math.round(value));
       this.applyUpgrades();
@@ -200,8 +171,7 @@ export class Player {
 
   getSetting(key) {
     const s = this.swarm;
-    return { count: this.base.count, speed: this.base.speed, power: this.base.power, spacing: s.separationDistance,
-      cohesion: s.cohesion, nearest: this.swarmWorld.nearestMode, lasers: this.lasers, storms: this.storms, tugs: this.tugs, turn: s.turnSmoothing }[key];
+    return { count: this.base.count, speed: this.base.speed, power: this.base.power, lasers: this.lasers, storms: this.storms, tugs: this.tugs, turn: s.turnSmoothing }[key];
   }
 
   /** Points to spend in the upgrade tree: 1 eaten voxel = 1 point. */
@@ -322,11 +292,8 @@ export class Player {
     L.update(this.world);
     this.keepLeaderOverSurface();
 
-    // while the swarm target is travelling to a clicked point, units follow it instead of eating
-    const travelling = L.commanded && L.distanceTo(L.goal) > CONFIG.leader.arriveRadius;
     this.swarmWorld.planetRadius = planet.alive ? planet.R : 0;
     this.swarmWorld.holding = Boolean(this.homeMode);
-    this.swarmWorld.feeding = this.candidates.length > 0 && !travelling && !this.homeMode;
     this.updateTugs();
     this.swarm.update(L.pos, this.swarmWorld);
     this.updateLightning();

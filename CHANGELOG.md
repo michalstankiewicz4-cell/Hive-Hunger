@@ -2,6 +2,17 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.21.0] — 2026-10-16
+
+### Changed
+- **Eating the nearest block is always on**: every unit eats the nearest free voxel to itself and flies straight to it.
+
+### Removed
+- The other eating mode (bites picked near the swarm target, with flocking while feeding), its "Eat nearest block" toggle, and the **Spacing** and **Cohesion** sliders. Units keep the default spacing and cohesion from `config.js`.
+
+### Fixed
+- A ship that lands on a new bite always turns to it before eating, even right after eating a previous one (a laser could flash its beam for one frame first).
+
 ## [0.20.0] — 2026-10-16
 
 ### Added

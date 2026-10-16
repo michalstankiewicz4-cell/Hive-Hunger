@@ -22,7 +22,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Planet:** voxel sphere with Earth-like terrain, clouds, ice caps; rock inside (no coloured layered interior — removed on request). Small voxels for a smooth look. Slowly spins.
 - **Swarm = flock (boids):** units keep spacing, align, stay together; **every unit has the same constant speed**; turning on screen is smoothed.
 - **Eating is deliberate:** a unit claims its own voxel, flies to it, lands and eats; **one voxel is eaten by one unit only** unless there are no more free voxels; **no eating in passing**; **no bouncing and no passing through voxels** (units slide along surfaces).
-- **"Eat nearest block"** toggle (test mechanic, on by default): after eating, a unit goes straight to the nearest uneaten voxel; no free flying.
+- **Eating the nearest block is the only mechanic (0.21.0, owner):** after eating, a unit goes straight to the nearest uneaten voxel; no free flying. The old mode (bites near the swarm target with flocking) and its toggle and the Spacing / Cohesion sliders were removed on request.
 - **Clicks** send the whole swarm to the spot (marker ring shown); the swarm flies around the planet, not through it. Stuck units bite through the blocking voxel.
 - **Beacon** at the spawn point (about one planet radius above the surface, on screen, away from the panel): clicking it calls the swarm home.
 - **Pieces bitten off drift (0.16.0):** when eating splits a body, every part smaller than the rest comes loose, drifts gently away from the centre and turns; parts of equal size all stay (the owner's choices: "every part smaller than the rest", including big halves; equal parts both stay). Drones can chase and eat them for normal points; the planet counts as eaten only when the pieces are gone too. 0.16.1 (owner's request): a drone that hasn't eaten for 10 s stops for 0.5 s and takes another bite (back to the old one if there is none); pieces stop 4 units from where they came off; big pieces turn slower (edge ≤ half the default drone speed — proposed by the assistant, accepted). 0.17.0: pieces bitten through break up again the same way, down to the last voxel.
@@ -31,7 +31,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Tugs (0.20.0, the owner's idea):** green; fly only to drifting pieces; from 10 voxels a tractor beam (green cone of light streaks, brightest at the tug — from a reference picture the owner sent) takes the whole piece and tows it to the player's beacon; there it is gone and the player gets 5× the points of what is left (planet share counts the voxels once). Others may eat it while towed — "the cost, but the value is bigger if it gets there" (owner). Every ship type always has its own slider (owner). Start: even split, 5 of each.
 - **Level switch (0.17.0):** single player only, buttons 1–5 in the settings panel; the swarm restarts from its beacon (owner: so it never gets stuck inside a shape). Hidden in multiplayer.
 - **100% means every voxel is gone.** Then the swarm returns home and only then does the next planet appear.
-- **Defaults:** units 20, speed 0.05, power 0.5, spacing 1.5, cohesion 1.0, "Eat nearest block" on. "Reset to default" restores them.
+- **Defaults:** units 20, speed 0.05, power 0.5, turning 0.12. "Reset to default" restores them.
 - **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player **Esc** pauses and opens it, Esc again carries on (no Menu button — removed on request). No atmosphere glow (removed on request).
 - **Fair rooms:** creating a Co-op/PvP room starts from scratch (planet 1, no points/upgrades/eaten voxels from single player); only the settings panel stays.
 - **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (voxels eaten of the planet per player, share, total, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
@@ -117,6 +117,7 @@ Lessons from writing them:
 | 0.18.2 | tag `v0.18.2` | eaters face their bite before eating too; Turning slider |
 | 0.19.0 | tag `v0.19.0` | storm ships (forked lightning); colours by ship type; even split at the start; thin lightning glow |
 | 0.20.0 | tag `v0.20.0` | tugs towing drifting pieces home for 5× points; four ship-type sliders |
+| 0.21.0 | tag `v0.21.0` | eating the nearest block always on; old eating mode, Spacing and Cohesion sliders removed |
 
 ## Known limitations
 

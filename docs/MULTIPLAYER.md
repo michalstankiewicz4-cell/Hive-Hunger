@@ -47,7 +47,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'ready', ready}` | I pressed Start (`true`) or Not ready (`false`) |
 | guest → host | `{t:'cmd', kind:'click', p:{x,y,z}}` | send my swarm to this point (planet frame) |
 | guest → host | `{t:'cmd', kind:'recall'}` | call my swarm back to its beacon |
-| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `spacing`, `cohesion`, `nearest`, `lasers`, `storms`, `tugs`, `turn` |
+| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `turn`, `lasers`, `storms`, `tugs` |
 | host → guest | `{t:'ping', ts}` | every `net.pingMs` (2 s); `ts` = host time |
 | guest → host | `{t:'pong', ts}` | answer to a ping; the host's round trip `now − ts` is the guest's **ping** |
 | guest → host | `{t:'ping'}` | "still here", every `net.pingMs` |

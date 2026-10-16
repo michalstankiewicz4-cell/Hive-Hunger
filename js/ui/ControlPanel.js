@@ -1,9 +1,9 @@
 /**
- * Control panel with sliders and toggles. Every control changes the game live.
+ * Control panel with sliders. Every control changes the game live.
  * The values the game starts with are the defaults that "Reset to default" restores.
  * @param {HTMLElement} root panel container
- * @param {Array<{id,label,type?,min?,max?,step?,decimals?}>} defs definitions from CONFIG.controls (type 'toggle' = checkbox)
- * @param {Record<string,{get:()=>number|boolean,set:(v)=>void}>} bindings what each control changes
+ * @param {Array<{id,label,min,max,step,decimals}>} defs definitions from CONFIG.controls
+ * @param {Record<string,{get:()=>number,set:(v)=>void}>} bindings what each control changes
  */
 export class ControlPanel {
   constructor(root, defs, bindings) {
@@ -16,27 +16,6 @@ export class ControlPanel {
 
       const row = document.createElement('div');
       row.className = 'control';
-
-      if (def.type === 'toggle') {
-        row.classList.add('control-toggle');
-        const box = document.createElement('input');
-        box.type = 'checkbox';
-        box.id = `ctl-${def.id}`;
-        box.checked = Boolean(initial);
-        box.addEventListener('change', () => bind.set(box.checked));
-        const label = document.createElement('label');
-        label.htmlFor = box.id;
-        label.textContent = def.label;
-        row.append(box, label);
-        root.appendChild(row);
-        this.resets.push(() => {
-          if (box.checked !== Boolean(initial)) {
-            box.checked = Boolean(initial);
-            bind.set(box.checked);
-          }
-        });
-        continue;
-      }
 
       const label = document.createElement('label');
       label.htmlFor = `ctl-${def.id}`;

@@ -61,14 +61,14 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `count` | 20 | *slider Units* | |
 | `minCount`, `maxCount` | 10, 1500 | hard limits on the number of units (slider + Brood bonuses); the slider's own range is in `controls` | |
 | `speed` | 0.05 | *slider Speed* — identical constant speed of every unit | |
-| `perception` | 3 | how far a unit sees neighbours (at least 1.3 × spacing) | larger = smoother flock, slower |
-| `separationDistance` | 1.5 | *slider Spacing* | |
+| `perception` | 3 | how far a unit sees neighbours (at least 1.3 × `separationDistance`) | larger = smoother flock, slower |
+| `separationDistance` | 1.5 | distance below which units push each other away | |
 | `turnRate` | 0.07 | how sharply a unit can change direction per frame | higher = twitchier, lower = wide arcs, may miss targets |
 | `turnSmoothing` | 0.12 | *slider Turning* — how quickly a ship turns its nose to its flying direction; a landed ship eats only once its nose faces its bite | lower = slower turning, a longer wait before each bite |
 | `aimAngle` | 12 | a ship eats (a laser ship fires) only when its nose is within this many degrees of its bite | |
 | `weights.separation` | 1.8 | keep your distance | |
 | `weights.alignment` | 1.0 | fly like your neighbours | |
-| `weights.cohesion` | 1 | *slider Cohesion* — stay with the group | |
+| `weights.cohesion` | 1 | stay with the group (while flying without a bite) | |
 | `weights.target` | 1.1 | pull towards the swarm target | |
 | `weights.feed` | 3.0 | pull towards your own bite while eating | lower = units drift off their bites |
 | `avoid.minDistance` | 6 | trips shorter than this go straight | |
@@ -80,8 +80,6 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `stuck.recentContact` | 10 | the unit must have touched a wall this recently | |
 | `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
-| `nearestMode` | true | *toggle Eat nearest block* | |
-| `feedFlocking` | 0.35 | how much alignment/cohesion remains while feeding (with Eat nearest block it is 0) | higher = units pull each other off their bites |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
 | `count`, `laser.count`, `storm.count`, `tug.count` | 20, 5, 5, 5 | units at the start and how many are lasers / storms / tugs — computed in `config.js` from `START_UNITS` as an even split (the rest are eaters) | |
 | `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
@@ -106,7 +104,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 
 ## Settings panel (`controls`)
 
-Slider ranges and steps (`min`, `max`, `step`, `decimals`) and the `Eat nearest block` toggle. Defaults come from `swarm` above; "Reset to default" restores them.
+Slider ranges and steps (`min`, `max`, `step`, `decimals`): Units, Speed, Power, Turning. Defaults come from `swarm` above; "Reset to default" restores them.
 
 ## Beacon (`beacon`)
 

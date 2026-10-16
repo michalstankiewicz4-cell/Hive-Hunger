@@ -83,6 +83,9 @@ async def main():
         t.ok(await page.evaluate("() => !document.querySelector('[id*=menu-button]') && !window.__dbg.planet.atmosphere"),
              'no Menu button and no atmosphere')
 
+        labels = await page.locator('#controls .control label').all_inner_texts()
+        t.ok(labels == ['Units', 'Speed', 'Power', 'Turning'], 'settings panel: Units, Speed, Power, Turning (eating the nearest voxel is always on)', labels)
+
         # level switch (single player): a planet right away, the swarm starts again from its beacon
         levels = await page.locator('.control-levels button').all_inner_texts()
         t.ok(levels == ['1', '2', '3', '4', '5'] and await page.locator('.control-levels').is_visible(), 'level switch in the panel', levels)
