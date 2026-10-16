@@ -28,6 +28,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Pieces bitten off drift (0.16.0):** when eating splits a body, every part smaller than the rest comes loose, drifts gently away from the centre and turns; parts of equal size all stay (the owner's choices: "every part smaller than the rest", including big halves; equal parts both stay). Drones can chase and eat them for normal points; the planet counts as eaten only when the pieces are gone too. 0.16.1 (owner's request): a drone that hasn't eaten for 10 s stops for 0.5 s and takes another bite (back to the old one if there is none); pieces stop 4 units from where they came off; big pieces turn slower (edge ≤ half the default drone speed — proposed by the assistant, accepted). 0.17.0: pieces bitten through break up again the same way, down to the last voxel.
 - **Ship types (0.18.0):** bottom-right panel, linked sliders Eaters / Lasers (all units together; 1 laser by default). Red laser ships eat from 5 voxels away (glowing beam, 0.18.1) and fly 10% slower; they fire only once they face their bite (owner: not while turning). 0.18.2: eaters too eat only once they face their bite; a **Turning** slider under Power sets how fast ships turn (owner: they turned a bit fast). Lasers can hit a bite through a thin wall (no line-of-sight check).
 - **Storm ships (0.19.0):** blue; from laser range, a bolt (the chain-lightning look) forking at 70% into three: bite 40% of a laser's damage (whole crater, Power), two nearest voxels 30% each (owner: "identical damage to the laser, split over 3 blocks", sides slightly weaker). Normal speed. Same retarget rules as every ship (owner). Colours by type for every player: eaters yellow, lasers red, storms blue (owner's choice, also in multiplayer); lightning glow ~2 px. Start: units split as evenly as possible (7/7/6).
+- **Tugs (0.20.0, the owner's idea):** green; fly only to drifting pieces; from 10 voxels a tractor beam (green cone of light streaks, brightest at the tug — from a reference picture the owner sent) takes the whole piece and tows it to the player's beacon; there it is gone and the player gets 5× the points of what is left (planet share counts the voxels once). Others may eat it while towed — "the cost, but the value is bigger if it gets there" (owner). Every ship type always has its own slider (owner). Start: even split, 5 of each.
 - **Level switch (0.17.0):** single player only, buttons 1–5 in the settings panel; the swarm restarts from its beacon (owner: so it never gets stuck inside a shape). Hidden in multiplayer.
 - **100% means every voxel is gone.** Then the swarm returns home and only then does the next planet appear.
 - **Defaults:** units 20, speed 0.05, power 0.5, spacing 1.5, cohesion 1.0, "Eat nearest block" on. "Reset to default" restores them.
@@ -115,6 +116,7 @@ Lessons from writing them:
 | 0.18.1 | tag `v0.18.1` | lasers fire only when facing their bite; glowing beam |
 | 0.18.2 | tag `v0.18.2` | eaters face their bite before eating too; Turning slider |
 | 0.19.0 | tag `v0.19.0` | storm ships (forked lightning); colours by ship type; even split at the start; thin lightning glow |
+| 0.20.0 | tag `v0.20.0` | tugs towing drifting pieces home for 5× points; four ship-type sliders |
 
 ## Known limitations
 
@@ -126,7 +128,6 @@ Lessons from writing them:
 
 ## The owner's ideas for later (not built yet — wait for him to ask)
 
-- **Tug ship (holownik):** flies only to drifting pieces (fragments); from 10 voxels away it sends a tractor beam that takes in the whole piece and pulls it to the player's spawn; it gets 5× the points the whole piece is worth. (2026-10-16) Look of the beam (from a reference picture the owner sent): a cyan cone widening from the ship towards the piece, made of many translucent streaks of light (brighter lines inside a soft glow), glowing brightest at the ship.
 - Decided against: drifting pieces bouncing off each other (2026-10-16).
 
 ## Ideas proposed earlier but not done

@@ -1,8 +1,8 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
-// units at the start, split as evenly as possible between the three ship types
-// (eaters, laser ships, storm ships; what doesn't divide goes to eaters, then lasers)
+// units at the start, split as evenly as possible between the four ship types
+// (eaters, laser ships, storm ships, tugs; what doesn't divide goes to eaters, then lasers, then storms)
 const START_UNITS = 20;
-const THIRD = Math.floor(START_UNITS / 3), REST = START_UNITS % 3;
+const QUARTER = Math.floor(START_UNITS / 4), REST = START_UNITS % 4;
 
 export const CONFIG = Object.freeze({
   background: 0x0b0c14,
@@ -123,11 +123,15 @@ export const CONFIG = Object.freeze({
     // ship types: red laser ships eat their bite from `reach` away (5 voxels of 0.5) and fly
     // `speedFactor` × the speed; `count` = how many of the units are lasers at the start
     // The beam is a glowing band `width` wide with a glow of `hitSize` where it hits.
-    laser: { count: THIRD + (REST > 1 ? 1 : 0), reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
+    laser: { count: QUARTER + (REST > 1 ? 1 : 0), reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
     // blue storm ships: from laser range, a bolt that forks at `fork` (70%) of the way into three —
     // `centre` of a laser's damage on the bite, `side` on each of the two nearest voxels; a new
     // flash every `flashEvery` frames, `flashFrames` long; side bolts drawn at `sideGlow` brightness
-    storm: { count: THIRD, centre: 0.4, side: 0.3, fork: 0.7, color: 0x8fd0ff, boltColor: 0x6fbaff, flashEvery: 4, flashFrames: 6, sideGlow: 0.6 },
+    storm: { count: QUARTER + (REST > 2 ? 1 : 0), centre: 0.4, side: 0.3, fork: 0.7, color: 0x8fd0ff, boltColor: 0x6fbaff, flashEvery: 4, flashFrames: 6, sideGlow: 0.6 },
+    // green tugs: fly only to drifting pieces; within `range` (10 voxels) a tractor beam holds the whole
+    // piece and they tow it home at `pull` × their speed; at the beacon (`deliver` units from it) the
+    // piece is gone and the player gets `reward` × its points. `streaks` = light streaks in the beam
+    tug: { count: QUARTER, range: 5, pull: 0.9, deliver: 2, reward: 5, color: 0x6dff7a, beamColor: 0x3dff86, streaks: 14 },
     aimAngle: 12,            // a ship eats (a laser ship fires) only once it faces its bite within this many degrees
     // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
     // (0.5 s), then takes another bite — or the same one if there is no other
@@ -179,6 +183,7 @@ export const CONFIG = Object.freeze({
     maxDistance: 4,       // a piece stops this far from where it came off
     maxSteps: 400000,     // flood-fill limit when looking for a split (bigger parts: no split found)
     syncEvery: 30,        // frames between fragment positions sent to the guests
+    towSyncEvery: 6,      // … while a piece is being towed
   },
 
   // marker shown where the player clicked

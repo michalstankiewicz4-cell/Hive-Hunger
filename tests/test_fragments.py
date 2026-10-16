@@ -179,6 +179,28 @@ async def main():
         t.ok(seen_last, 'pieces drift while the swarm eats', st)
         t.ok(st['level'] > 1 or not st['alive'], 'the swarm chases and eats the drifting pieces too; then the planet is finished', st)
 
+        # tugs: fly to a drifting piece, hold it with a tractor beam, tow it home; at the beacon the
+        # piece is gone and the player gets 5 × its points (here only tugs, so nobody eats it on the way)
+        await page.evaluate(BUILD, 1)
+        tg = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, pl = g.planet, N = pl.N, fr = pl.fragments;
+          p.onNewPlanet(); p.setSetting('count', 20); ['lasers', 'storms'].forEach(k => p.setSetting(k, 0)); p.setSetting('tugs', 20); p.setSetting('speed', 0.2);
+          const box = new Map(); for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) { const t = pl.tags[idx]; (box.get(t) || box.set(t, []).get(t)).push(idx); }
+          const a = [...box.values()].find(c => c.length === 64), k0 = Math.min(...a.map(i => (i / (N * N)) | 0));
+          for (const i of a) if (((i / (N * N)) | 0) === k0 + 2) pl.remove(i);
+          fr.step(true);
+          return { piece: fr.list.map(f => f.count), score: p.score, left: pl.left }; }""")
+        towed = False
+        for _ in range(20):
+            await h.fast_forward(page, 150)
+            st = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, fr = g.planet.fragments;
+              return { pieces: fr.list.length, tows: p.swarm.tows.length, towed: fr.list.some(f => f.towed), score: p.score, left: g.planet.left, delivered: p.delivered || 0 }; }""")
+            towed = towed or st['towed']
+            if st['delivered']:
+                break
+        t.ok(tg['piece'] == [16] and towed, 'tugs catch a drifting piece with a tractor beam', st)
+        t.ok(st['delivered'] == 1 and st['pieces'] == 0 and st['score'] - tg['score'] == 5 * 16 and tg['left'] - st['left'] == 16,
+             'towed home: the piece is gone and the player gets 5 × its points', {**st, 'before': tg})
+
         await browser.close()
     return t.done(errors)
 

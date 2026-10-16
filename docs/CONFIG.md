@@ -83,7 +83,12 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `nearestMode` | true | *toggle Eat nearest block* | |
 | `feedFlocking` | 0.35 | how much alignment/cohesion remains while feeding (with Eat nearest block it is 0) | higher = units pull each other off their bites |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `count`, `laser.count`, `storm.count` | 20, 7, 6 | units at the start and how many are lasers / storms — computed in `config.js` from `START_UNITS` as an even split (the rest are eaters) | |
+| `count`, `laser.count`, `storm.count`, `tug.count` | 20, 5, 5, 5 | units at the start and how many are lasers / storms / tugs — computed in `config.js` from `START_UNITS` as an even split (the rest are eaters) | |
+| `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
+| `tug.pull` | 0.9 | a towed piece's speed × the swarm speed | |
+| `tug.deliver` | 2 | how close (beyond the piece's radius) to the beacon a piece counts as home | |
+| `tug.reward` | 5 | points per voxel of a piece brought home | |
+| `tug.color`, `tug.beamColor`, `tug.streaks` | green, 14 | tug and beam colour, light streaks in the beam | |
 | `eaterColor` | yellow | eaters' colour (every player); `color` stays the swarm's colour in single player (beacon, click marker) | |
 | `storm.centre`, `storm.side` | 0.4, 0.3 | a storm ship's damage on its bite / on each of the two nearest voxels, as a share of what a laser does (its whole crater) | |
 | `storm.fork` | 0.7 | where the bolt forks (share of the way to the bite) | |
@@ -137,6 +142,7 @@ Slider ranges and steps (`min`, `max`, `step`, `decimals`) and the `Eat nearest 
 | `maxDistance` | 4 | a piece stops this far from where it came off (keeps turning) | |
 | `maxSteps` | 400000 | flood-fill limit when looking for a split per eaten cluster; above it no split is found | lower = cheaper, huge halves don't come loose |
 | `syncEvery` | 30 | frames between piece positions sent to guests | |
+| `towSyncEvery` | 6 | … while a piece is being towed | |
 
 ## Other
 

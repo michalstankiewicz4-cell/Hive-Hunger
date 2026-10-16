@@ -121,8 +121,8 @@ async def main():
                  f"host {hs['left']} guest {gs['left']}")
             t.ok(sum(hs['scores']) > 0, 'swarms eat', hs['scores'])
             await host.wait_for_timeout(500)
-            ls = await guests[1].evaluate('() => window.__dbg.activePlayers().map(p => [p.swarm.lasers, p.swarm.storms, p.swarm.mesh.instanceColor.getX(0) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.lasers) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.count - 1) < 0.5])')
-            t.ok(len(ls) == 3 and all(x == [7, 6, True, True, True] for x in ls), 'guests see every player\'s ships in the type colours (red lasers, blue storms, yellow eaters)', ls)
+            ls = await guests[1].evaluate('() => window.__dbg.activePlayers().map(p => [p.swarm.lasers, p.swarm.storms, p.swarm.mesh.instanceColor.getX(0) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.lasers) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.count - 1) < 0.5, p.swarm.tugs, p.swarm.mesh.instanceColor.getY(p.swarm.lasers + p.swarm.storms) > 0.9 && p.swarm.mesh.instanceColor.getX(p.swarm.lasers + p.swarm.storms) < 0.6])')
+            t.ok(len(ls) == 3 and all(x == [5, 5, True, True, True, 5, True] for x in ls), 'guests see every player\'s ships in the type colours (red lasers, blue storms, green tugs, yellow eaters)', ls)
 
             # finish the planet: summary for everyone, the next planet only after everyone pressed Next planet
             # slower for the last scraps: at high speed a unit turns in a wide arc and can circle an

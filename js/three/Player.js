@@ -30,6 +30,8 @@ export class Player {
     this.base = { count: CONFIG.swarm.count, speed: CONFIG.swarm.speed, power: CONFIG.swarm.biteRadius };
     this.lasers = CONFIG.swarm.laser.count; // ship types: how many units are red laser ships
     this.storms = CONFIG.swarm.storm.count; // … and how many are blue storm ships
+    this.tugs = CONFIG.swarm.tug.count;     // … and green tugs
+    this.towing = new Map();                // tug unit → { f: fragment, on: tractor beam holds it }
     this.tree = new SkillTree();
     this.bolt = null;       // chain lightning settings once bought
     this.boltClock = 0;     // seconds since the last bolt
@@ -46,6 +48,8 @@ export class Player {
     this.swarm = new Swarm3D(game.scene, { ...CONFIG.swarm, color: info.color }, new THREE.Vector3(start.x, start.y, start.z));
     this.swarm.lasers = Math.min(this.lasers, this.swarm.count);
     this.swarm.storms = Math.min(this.storms, this.swarm.count - this.swarm.lasers);
+    this.swarm.tugs = Math.min(this.tugs, this.swarm.count - this.swarm.lasers - this.swarm.storms);
+    this.swarm.fragmentById = (id) => game.planet?.fragments?.byId.get(id);
 
     // exposed voxels near the swarm target — computed once per frame
     this.candidates = [];
@@ -188,7 +192,7 @@ export class Player {
     else if (key === 'cohesion') s.cohesion = value;
     else if (key === 'turn') s.turnSmoothing = value;
     else if (key === 'nearest') this.setNearestMode(value);
-    else if (key === 'lasers' || key === 'storms') {
+    else if (key === 'lasers' || key === 'storms' || key === 'tugs') {
       this[key] = Math.max(0, Math.round(value));
       this.applyUpgrades();
     }
@@ -197,7 +201,7 @@ export class Player {
   getSetting(key) {
     const s = this.swarm;
     return { count: this.base.count, speed: this.base.speed, power: this.base.power, spacing: s.separationDistance,
-      cohesion: s.cohesion, nearest: this.swarmWorld.nearestMode, lasers: this.lasers, storms: this.storms, turn: s.turnSmoothing }[key];
+      cohesion: s.cohesion, nearest: this.swarmWorld.nearestMode, lasers: this.lasers, storms: this.storms, tugs: this.tugs, turn: s.turnSmoothing }[key];
   }
 
   /** Points to spend in the upgrade tree: 1 eaten voxel = 1 point. */
@@ -220,6 +224,7 @@ export class Player {
     if (count !== s.count) s.setCount(count);
     s.lasers = Math.min(this.lasers, s.count);
     s.storms = Math.min(this.storms, s.count - s.lasers);
+    s.tugs = Math.min(this.tugs, s.count - s.lasers - s.storms);
     s.speed = this.base.speed * (1 + e.speed);
     this.biteRadius = this.base.power + e.power;
     this.bolt = e.bolt;
@@ -261,6 +266,9 @@ export class Player {
 
   /** A new planet appeared: old bites belonged to the old one. */
   onNewPlanet() {
+    this.towing.clear(); // the pieces belonged to the old planet
+    this.swarm.tugHas.fill(0);
+    this.swarm.tows = [];
     this.swarm.food.fill(-1);
     this.swarm.landed.fill(0);
     this.planetScore = 0;
@@ -319,13 +327,95 @@ export class Player {
     this.swarmWorld.planetRadius = planet.alive ? planet.R : 0;
     this.swarmWorld.holding = Boolean(this.homeMode);
     this.swarmWorld.feeding = this.candidates.length > 0 && !travelling && !this.homeMode;
+    this.updateTugs();
     this.swarm.update(L.pos, this.swarmWorld);
     this.updateLightning();
 
     this.beacon.active = Boolean(this.homeMode);
   }
 
+  /**
+   * Tugs: each takes the nearest drifting piece nobody tows yet and flies to it; within `tug.range`
+   * (10 voxels) of it, its tractor beam holds the whole piece and it flies home, the piece
+   * following (around the planet, not through it). At the beacon the piece is gone and the player
+   * gets `tug.reward` × the points of what is left of it. Others may eat the piece on the way.
+   */
+  updateTugs() {
+    const s = this.swarm, fr = this.game.planet.fragments, c = CONFIG.swarm.tug;
+    const start = s.lasers + s.storms, end = Math.min(start + s.tugs, s.count);
+    for (const [i, t] of this.towing) if (i < start || i >= end || t.f.dead || !fr) this.letGo(i, t);
+    s.tows = [];
+    if (!fr || start >= end) return;
+    const home = this.spawnWorld();
+    const p = new THREE.Vector3(), g = new THREE.Vector3(), d = new THREE.Vector3();
+    for (let i = start; i < end; i++) {
+      s.tugHas[i] = 0;
+      p.fromArray(s.pos, i * 3);
+      let t = this.towing.get(i);
+      if (!t) {
+        // the nearest piece nobody is towing
+        let best = null, bestD = Infinity;
+        for (const f of fr.list) {
+          if (f.dead || f.tug) continue;
+          const dd = f.pos.distanceToSquared(p);
+          if (dd < bestD) { bestD = dd; best = f; }
+        }
+        if (!best) continue;
+        t = { f: best, on: false };
+        best.tug = this;
+        this.towing.set(i, t);
+      }
+      const f = t.f;
+      const gap = p.distanceTo(f.pos) - f.radius; // from the tug to the piece's edge
+      if (!t.on && gap <= c.range) { t.on = true; f.towed = true; }
+      else if (t.on && gap > c.range * 1.6) { t.on = false; f.towed = false; f.vel.set(0, 0, 0); f.origin.copy(f.pos); }
+      if (t.on) {
+        // pull the piece towards home, around the planet
+        const pl = this.game.planet;
+        const way = pl.alive ? aroundPlanet(f.pos.x, f.pos.y, f.pos.z, home.x, home.y, home.z, pl.R, CONFIG.swarm.avoid) : null;
+        d.set(way ? way[0] : home.x, way ? way[1] : home.y, way ? way[2] : home.z).sub(f.pos).normalize();
+        f.vel.copy(d).multiplyScalar(s.speed * c.pull);
+        g.copy(f.pos).addScaledVector(d, f.radius + c.range * 0.6); // the tug flies ahead of it
+        s.tows.push([i, f.id]);
+        if (f.pos.distanceTo(home) < f.radius + c.deliver) { this.deliver(i, t); continue; }
+      } else {
+        g.copy(p).sub(f.pos).normalize().multiplyScalar(f.radius + c.range * 0.6).add(f.pos); // to its near side
+      }
+      s.tugGoal[i * 3] = g.x; s.tugGoal[i * 3 + 1] = g.y; s.tugGoal[i * 3 + 2] = g.z;
+      s.tugHas[i] = 1;
+    }
+  }
+
+  /** A towed piece reached the beacon: it is gone, and its voxels are worth `tug.reward` × the points. */
+  deliver(i, t) {
+    const game = this.game, pl = game.planet, fr = pl.fragments, f = t.f;
+    const cells = fr.cellsOf(f), v = new THREE.Vector3();
+    this.score += CONFIG.swarm.tug.reward * cells.length;
+    this.planetScore += cells.length;
+    cells.forEach((c, n) => {
+      if (n < 400) game.debris.emit(pl.cellCenter(c, v), pl.voxelColor(c), 1);
+      pl.remove(c); // eaten: counted, logged for the guests
+    });
+    this.towing.delete(i);
+    this.swarm.tugHas[i] = 0;
+    this.swarm.tows = this.swarm.tows.filter(([u]) => u !== i);
+    this.delivered = (this.delivered || 0) + 1; // (tests)
+  }
+
+  /** A tug lets go of its piece (it changed type, the piece is gone, …). */
+  letGo(i, t) {
+    const f = t.f;
+    if (!f.dead) {
+      if (f.tug === this) f.tug = null;
+      if (t.on) { f.towed = false; f.vel.set(0, 0, 0); f.origin.copy(f.pos); }
+    }
+    this.towing.delete(i);
+    this.swarm.tugHas[i] = 0;
+  }
+
   dispose() {
+    for (const [i, t] of this.towing) this.letGo(i, t);
+    this.swarm.disposeTows();
     this.dropAllBites(0);
     this.game.scene.remove(this.swarm.mesh);
     this.game.scene.remove(this.swarm.beams.band, this.swarm.beams.hits);

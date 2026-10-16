@@ -26,7 +26,7 @@ STATE = """() => {
 
 # a ship that has landed is turned away from its bite: it must face it again before eating
 AIM = """(laser) => { const g = window.__dbg, s = g.localPlayer.swarm, pl = g.planet;
-            const pick = () => { for (let k = laser ? 0 : s.lasers + s.storms; k < (laser ? s.lasers : s.count); k++) if (s.landed[k] && s.food[k] >= 0 && s.aimed[k] && pl.solid(s.food[k]) && pl.strengthOf(s.food[k]) > 0.5) return k; return -1; };
+            const pick = () => { for (let k = laser ? 0 : s.lasers + s.storms + s.tugs; k < (laser ? s.lasers : s.count); k++) if (s.landed[k] && s.food[k] >= 0 && s.aimed[k] && pl.solid(s.food[k]) && pl.strengthOf(s.food[k]) > 0.5) return k; return -1; };
             let i = pick(); for (let f = 0; i < 0 && f < 300; f++) { g.update(); i = pick(); }
             if (i < 0) return { found: false };
             // turn it away from its bite: it stops firing until it faces it again
@@ -104,17 +104,17 @@ async def main():
         t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'boxes'], 'back to level 1')
 
         # ship types (bottom-right): 1 red laser ship by default; lasers eat from 5 voxels away, 10% slower
-        ui = await page.evaluate("""() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, +document.getElementById('ships-storms').value, window.__dbg.localPlayer.swarm.lasers, window.__dbg.localPlayer.swarm.storms]""")
-        t.ok(ui == [7, 7, 6, 7, 6], 'ship types at the start, as even as possible: 7 eaters, 7 red laser ships, 6 blue storm ships', ui)
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs'].map((k) => +document.getElementById('ships-' + k).value).concat([window.__dbg.localPlayer.swarm.lasers, window.__dbg.localPlayer.swarm.storms, window.__dbg.localPlayer.swarm.tugs])""")
+        t.ok(ui == [5, 5, 5, 5, 5, 5, 5], 'ship types at the start, even: 5 eaters, 5 red laser ships, 5 blue storm ships, 5 green tugs', ui)
         await page.click('.control-levels button >> nth=1')
         await page.evaluate("""() => { const e = document.getElementById('ships-lasers'); e.value = 8; e.dispatchEvent(new Event('input'));
           window.__dbg.localPlayer.setSetting('speed', 0.3); }""")
         await page.wait_for_timeout(400)
-        ui = await page.evaluate("""() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, +document.getElementById('ships-storms').value, window.__dbg.localPlayer.swarm.lasers, window.__dbg.localPlayer.swarm.storms]""")
-        t.ok(ui == [6, 8, 6, 8, 6], 'the sliders are linked: 8 lasers → 6 eaters', ui)
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs'].map((k) => +document.getElementById('ships-' + k).value).concat([window.__dbg.localPlayer.swarm.lasers, window.__dbg.localPlayer.swarm.storms, window.__dbg.localPlayer.swarm.tugs])""")
+        t.ok(ui == [2, 8, 5, 5, 8, 5, 5], 'the sliders are linked: 8 lasers → 2 eaters', ui)
         ui2 = await page.evaluate("""() => { const e = document.getElementById('ships-eaters'); e.value = 15; e.dispatchEvent(new Event('input')); return 0; }""")
-        ui2 = await page.evaluate("""() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, +document.getElementById('ships-storms').value, window.__dbg.localPlayer.swarm.lasers, window.__dbg.localPlayer.swarm.storms]""")
-        t.ok(ui2 == [15, 5, 0, 5, 0], '15 eaters take the storm ship first, then lasers', ui2)
+        ui2 = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs'].map((k) => +document.getElementById('ships-' + k).value).concat([window.__dbg.localPlayer.swarm.lasers, window.__dbg.localPlayer.swarm.storms, window.__dbg.localPlayer.swarm.tugs])""")
+        t.ok(ui2 == [15, 5, 0, 0, 5, 0, 0], '15 eaters take the tugs first, then storm ships, then lasers', ui2)
         await page.evaluate("""() => { const e = document.getElementById('ships-lasers'); e.value = 8; e.dispatchEvent(new Event('input'));
           const st = document.getElementById('ships-storms'); st.value = 1; st.dispatchEvent(new Event('input')); }""")
         sp = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm; g.update();

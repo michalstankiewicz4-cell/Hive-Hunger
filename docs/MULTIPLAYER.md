@@ -47,7 +47,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'ready', ready}` | I pressed Start (`true`) or Not ready (`false`) |
 | guest → host | `{t:'cmd', kind:'click', p:{x,y,z}}` | send my swarm to this point (planet frame) |
 | guest → host | `{t:'cmd', kind:'recall'}` | call my swarm back to its beacon |
-| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `spacing`, `cohesion`, `nearest`, `lasers`, `storms`, `turn` |
+| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `spacing`, `cohesion`, `nearest`, `lasers`, `storms`, `tugs`, `turn` |
 | host → guest | `{t:'ping', ts}` | every `net.pingMs` (2 s); `ts` = host time |
 | guest → host | `{t:'pong', ts}` | answer to a ping; the host's round trip `now − ts` is the guest's **ping** |
 | guest → host | `{t:'ping'}` | "still here", every `net.pingMs` |
@@ -57,7 +57,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'buy', id}` | buy upgrade `id` with my points |
 | host → guest | `{t:'tree', tree:{owned, spent}}` | your upgrade tree after a purchase |
 | host → guest | `{t:'bolt', index, p:[x,y,z,…]}` | a chain-lightning bolt of player `index` to draw |
-| host → guest | `{t:'frags', list:[[id, px, py, pz, qx, qy, qz, qw], …]}` | where the drifting pieces are, every `fragments.syncEvery` frames (30); guests move them with the same physics in between |
+| host → guest | `{t:'frags', list:[[id, px, py, pz, qx, qy, qz, qw, vx, vy, vz, towed], …]}` | where the drifting pieces are and how they move, every `fragments.syncEvery` frames (30; `towSyncEvery` = 6 while one is towed); guests move them with the same physics in between |
 | host → guest | `{t:'notice', text}` | "Pink joined", "Pink left the room", "Pink: connection lost" — shown in the HUD for `net.noticeMs` |
 | both | `{t:'bye'}` | leaving (a guest closing the tab, or the host closing the room) |
 
@@ -90,6 +90,7 @@ per player: u8 index | u8 home (0 none, 1 recall, 2 return) | u32 score | u32 pl
             | u16 beams | beams × (u16 unit | 3 × i16 point hit (×100))
             | u16 storms (the next `storms` units are storm ships)
             | u16 bolts | bolts × (u16 unit | u8 sides | 3 × i16 bite | sides × 3 × i16 side voxel)
+            | u16 tugs (the next `tugs` units are tugs) | u16 tows | tows × (u16 unit | u32 piece id)
 u32 removed | removed × u32 voxel index (eaten since the last snapshot)
 ```
 If a guest's connection is backed up (`bufferedAmount > net.maxBuffered`), the host skips a snapshot; eaten voxels stay queued for the next one, so nothing is lost.

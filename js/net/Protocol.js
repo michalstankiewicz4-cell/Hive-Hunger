@@ -9,6 +9,7 @@
  *               | u16 lasers (units 0 … lasers−1 are laser ships) | u16 beams | beams × (u16 unit | 3 × i16 point hit)
  *               | u16 storms (the next `storms` units are storm ships) | u16 bolts
  *               | bolts × (u16 unit | u8 sides | 3 × i16 bite | sides × 3 × i16 side voxel)
+ *               | u16 tugs (the next `tugs` units are tugs) | u16 tows | tows × (u16 unit | u32 piece id)
  *   u32 removed | removed × u32 voxel index
  *
  * PLANET (type 2), host → guest(s): a new planet, or the current one for a guest who joins
@@ -74,7 +75,7 @@ export function encodeSnapshot(game, removed) {
   const beams = players.map((p) => p.swarm.beamList());
   const bolts = players.map((p) => p.swarm.stormList());
   players.forEach((p, n) => {
-    size += 1 + 1 + 4 + 4 + 2 + 2 + p.swarm.count * 9 + 2 + 2 + beams[n].length * 8 + 2 + 2;
+    size += 1 + 1 + 4 + 4 + 2 + 2 + p.swarm.count * 9 + 2 + 2 + beams[n].length * 8 + 2 + 2 + 2 + 2 + p.swarm.tows.length * 6;
     for (const b of bolts[n]) size += 2 + 1 + 6 + b[4].length * 2;
   });
   const i16 = (x) => Math.max(-32767, Math.min(32767, Math.round(x * POS_SCALE)));
@@ -115,6 +116,9 @@ export function encodeSnapshot(game, removed) {
       v.setUint8(o, sides.length / 3); o += 1;
       for (const c of [x, y, z, ...sides]) { v.setInt16(o, i16(c), true); o += 2; }
     }
+    v.setUint16(o, Math.min(s.tugs, Math.max(0, s.count - s.lasers - s.storms)), true); o += 2;
+    v.setUint16(o, s.tows.length, true); o += 2;
+    for (const [i, id] of s.tows) { v.setUint16(o, i, true); o += 2; v.setUint32(o, id, true); o += 4; }
   });
   v.setUint32(o, removed.length, true); o += 4;
   for (const idx of removed) { v.setUint32(o, idx, true); o += 4; }
@@ -161,7 +165,11 @@ export function decodeSnapshot(buf) {
       for (let k = 0; k < 3 + ns * 3; k++) { p.push(v.getInt16(o, true) / POS_SCALE); o += 2; }
       bolts.push([i, p[0], p[1], p[2], p.slice(3)]);
     }
-    players.push({ index, home, score, planetScore, wins, count, pos, dir, lasers, beams, storms, bolts });
+    const tugs = v.getUint16(o, true); o += 2;
+    const ntows = v.getUint16(o, true); o += 2;
+    const tows = [];
+    for (let t = 0; t < ntows; t++) { const i = v.getUint16(o, true); o += 2; tows.push([i, v.getUint32(o, true)]); o += 4; }
+    players.push({ index, home, score, planetScore, wins, count, pos, dir, lasers, beams, storms, bolts, tugs, tows });
   }
   const nr = v.getUint32(o, true); o += 4;
   const removed = new Uint32Array(nr);

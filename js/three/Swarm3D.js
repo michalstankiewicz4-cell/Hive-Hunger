@@ -87,6 +87,14 @@ export class Swarm3D {
     // forks into three — the bite and the two voxels nearest to it (see Game3D.stormCell)
     this.storms = 0;
     this.stormSides = new Float32Array(this.max * 6); // where the two side bolts hit
+    // the next `tugs` units are green tugs: they don't eat — they fly to drifting pieces and tow
+    // them home with a tractor beam (Player.updateTugs sets where each one flies, and the tows)
+    this.tugs = 0;
+    this.tugGoal = new Float32Array(this.max * 3);
+    this.tugHas = new Uint8Array(this.max);
+    this.tows = [];           // [[unit, fragment id], …] — tractor beams on now
+    this.fragmentById = null; // (id) => fragment (set by the player)
+    this.towBeams = [];       // tractor beam meshes, one per tow being drawn
     this.stormSideN = new Uint8Array(this.max);
     // laser beams being fired: per unit 1/0 and the point it hits (set by the simulation, or on a
     // guest from the host's snapshot)
@@ -117,6 +125,9 @@ export class Swarm3D {
     this.baseColor = new THREE.Color(cfg.eaterColor);
     this.laserColor = new THREE.Color(cfg.laser.color);
     this.stormColor = new THREE.Color(cfg.storm.color);
+    this.tugColor = new THREE.Color(cfg.tug.color);
+    this.coloredTugs = -1;
+    this.scene = scene;
     this.coloredStorms = -1;
     // the storm ships' lightning (the chain-lightning look, short-lived flashes)
     this.stormBolts = new Lightning3D(scene, { life: cfg.storm.flashFrames, jag: 0.25, pieces: 4 });
@@ -220,13 +231,22 @@ export class Swarm3D {
 
   /** Units in red (lasers) and in the swarm's colour (eaters). */
   updateColors() {
-    const n = Math.min(this.lasers, this.count), m = Math.min(n + this.storms, this.count);
-    if (n === this.coloredLasers && m === this.coloredStorms && this.colorsFor === this.count) return;
+    const n = Math.min(this.lasers, this.count), m = Math.min(n + this.storms, this.count), t = Math.min(m + this.tugs, this.count);
+    if (n === this.coloredLasers && m === this.coloredStorms && t === this.coloredTugs && this.colorsFor === this.count) return;
     this.coloredLasers = n;
     this.coloredStorms = m;
+    this.coloredTugs = t;
     this.colorsFor = this.count;
-    for (let i = 0; i < this.count; i++) this.mesh.setColorAt(i, i < n ? this.laserColor : i < m ? this.stormColor : this.baseColor);
+    for (let i = 0; i < this.count; i++) {
+      this.mesh.setColorAt(i, i < n ? this.laserColor : i < m ? this.stormColor : i < t ? this.tugColor : this.baseColor);
+    }
     this.mesh.instanceColor.needsUpdate = true;
+  }
+
+  /** Tugs among the units (after the storm ships). */
+  isTug(i) {
+    const a = this.lasers + this.storms;
+    return i >= a && i < a + this.tugs;
   }
 
   /** Storm ships among the units (after the laser ships). */
@@ -238,10 +258,12 @@ export class Swarm3D {
    * Multiplayer guest: show positions and headings received from the host instead of
    * simulating. Units move smoothly towards the received positions between updates.
    */
-  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null) {
+  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null) {
     this.remote = true;
     this.lasers = lasers;
     this.storms = storms;
+    this.tugs = tugs;
+    this.tows = tows || [];
     this.remoteBolts = bolts || [];
     this.firing.fill(0);
     if (beams) for (const [i, x, y, z] of beams) {
@@ -343,7 +365,7 @@ export class Swarm3D {
 
       // landed on its bite: eats it until it is gone, then takes off
       if (landed[i]) {
-        if (food[i] >= 0 && world.isFood(food[i])) {
+        if (food[i] >= 0 && world.isFood(food[i]) && !this.isTug(i)) {
           // a bite on a drifting fragment moves: the unit holds on and moves with it
           const fc = world.cellCenter(food[i]);
           pos[i3] += fc.x - foodPos[i3]; pos[i3 + 1] += fc.y - foodPos[i3 + 1]; pos[i3 + 2] += fc.z - foodPos[i3 + 2];
@@ -394,7 +416,9 @@ export class Swarm3D {
         world.release(food[i]);
         food[i] = -1;
       }
-      if (food[i] < 0 && (world.feeding || world.nearestMode) && !world.holding) {
+      const tug = this.isTug(i);
+      if (tug && food[i] >= 0) { world.release(food[i]); food[i] = -1; } // was an eater a moment ago
+      if (food[i] < 0 && !tug && (world.feeding || world.nearestMode) && !world.holding) {
         p.x = px; p.y = py; p.z = pz;
         if (world.nearestMode && this.redirect[i] && world.clickPoint) {
           food[i] = world.pickFood(world.clickPoint);
@@ -415,6 +439,12 @@ export class Swarm3D {
         targetWeight = w.feed;
         // nearestMode: no free flying — only separation stays, the unit flies straight to its voxel
         flocking = world.nearestMode ? 0 : c.feedFlocking;
+      }
+      // a tug flies to its piece (or, towing it, ahead of it towards home)
+      if (tug && this.tugHas[i]) {
+        tx = this.tugGoal[i3]; ty = this.tugGoal[i3 + 1]; tz = this.tugGoal[i3 + 2];
+        targetWeight = w.feed;
+        flocking = 0;
       }
 
       // no bite eaten for `retarget.frames` while chasing one: stop for `retarget.pauseFrames`
@@ -451,7 +481,7 @@ export class Swarm3D {
       if (stuck[i] > c.stuck.frames) {
         const b = lastBlock[i];
         if (blockAge[i] < c.stuck.recentContact && world.isFood(b)) {
-          if (!world.holding && world.canBite(b, food[i])) {
+          if (!world.holding && !tug && world.canBite(b, food[i])) {
             if (b !== food[i]) {
               world.release(food[i]);
               world.claim(b);
@@ -625,6 +655,38 @@ export class Swarm3D {
     }
   }
 
+  /**
+   * Tractor beams: a green cone from each towing tug over the whole piece, made of a soft glow
+   * and streaks of light, brightest at the tug.
+   */
+  renderTows() {
+    let n = 0;
+    const v = this.v, up = TOW_UP;
+    for (const [i, id] of this.tows) {
+      const f = this.fragmentById?.(id);
+      if (!f || f.dead || i >= this.count) continue;
+      const beam = this.towBeams[n] || (this.towBeams[n] = makeTowBeam(this.cfg.tug, this.scene));
+      n++;
+      const i3 = i * 3;
+      beam.group.position.set(this.pos[i3], this.pos[i3 + 1], this.pos[i3 + 2]);
+      v.copy(f.pos).sub(beam.group.position);
+      const len = v.length() || 1;
+      beam.group.quaternion.setFromUnitVectors(up, v.divideScalar(len));
+      const r = f.radius * 1.05;
+      beam.group.scale.set(r, len, r);
+      beam.group.visible = true;
+      if ((this.stormClock + n) % 3 === 0) beam.shimmer();
+      beam.cone.material.opacity = 0.32 + Math.random() * 0.08;
+    }
+    for (let k = n; k < this.towBeams.length; k++) this.towBeams[k].group.visible = false;
+  }
+
+  /** Removes the tractor beam meshes (the swarm is going away). */
+  disposeTows() {
+    for (const b of this.towBeams) this.scene.remove(b.group);
+    this.towBeams = [];
+  }
+
   /** Storm ships firing now: [[unit, x, y, z, [side points…]], …] (on a guest: from the host). */
   stormList() {
     if (this.remote) return this.remoteBolts || [];
@@ -654,6 +716,7 @@ export class Swarm3D {
     this.updateColors();
     this.renderBeams(camera);
     this.renderStorms(camera);
+    this.renderTows();
     if (this.remote) this.turnLook(); // a guest's copy: no simulation turns it
     const dm = this.dummy;
     const look = this.look;
@@ -667,6 +730,57 @@ export class Swarm3D {
     }
     this.mesh.instanceMatrix.needsUpdate = true;
   }
+}
+
+const TOW_UP = new THREE.Vector3(0, 1, 0);
+
+/**
+ * One tractor beam: in unit size along +y from the tug (scaled to the piece): an open cone with a
+ * glow fading from the tug, and streaks of light from the tug to random points across the piece.
+ */
+function makeTowBeam(cfg, scene) {
+  const group = new THREE.Group();
+  // along the cone: bright at the tug (bottom of the canvas = the tug end), fading out
+  const c = document.createElement('canvas');
+  c.width = 4; c.height = 64;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0, 64, 0, 0);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+  grad.addColorStop(1, 'rgba(255,255,255,0.08)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 4, 64);
+  const coneGeo = new THREE.CylinderGeometry(1, 0.04, 1, 24, 1, true);
+  coneGeo.translate(0, 0.5, 0); // the narrow end at the tug, the wide one over the piece
+  const cone = new THREE.Mesh(coneGeo, new THREE.MeshBasicMaterial({
+    map: new THREE.CanvasTexture(c), color: cfg.beamColor, transparent: true, opacity: 0.35,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+  }));
+  // streaks: bright at the tug, dim at the piece
+  const n = cfg.streaks;
+  const pos = new Float32Array(n * 6), col = new Float32Array(n * 6);
+  const bright = new THREE.Color(cfg.beamColor), dim = bright.clone().multiplyScalar(0.12);
+  for (let k = 0; k < n; k++) {
+    col.set([bright.r, bright.g, bright.b, dim.r, dim.g, dim.b], k * 6);
+  }
+  const streakGeo = new THREE.BufferGeometry();
+  streakGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  streakGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const streaks = new THREE.LineSegments(streakGeo, new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  const shimmer = () => {
+    for (let k = 0; k < n; k++) {
+      const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * 0.95;
+      pos.set([0, 0, 0, Math.cos(a) * r, 1, Math.sin(a) * r], k * 6);
+    }
+    streakGeo.attributes.position.needsUpdate = true;
+  };
+  shimmer();
+  for (const m of [cone, streaks]) m.frustumCulled = false;
+  group.add(cone, streaks);
+  scene.add(group);
+  return { group, cone, streaks, shimmer };
 }
 
 /** Laser beam meshes: glowing bands (camera-facing quads) and a glow at each hit point. */

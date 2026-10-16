@@ -199,7 +199,7 @@ export class Game3D {
     // a room starts from scratch — nothing carries over from single player (planet, points,
     // upgrades, swarm), so co-op and PvP are fair; only the settings panel values stay
     const old = this.localPlayer;
-    const keep = ['count', 'speed', 'power', 'turn', 'spacing', 'cohesion', 'nearest', 'lasers', 'storms'].map((k) => [k, old.getSetting(k)]);
+    const keep = ['count', 'speed', 'power', 'turn', 'spacing', 'cohesion', 'nearest', 'lasers', 'storms', 'tugs'].map((k) => [k, old.getSetting(k)]);
     this.removePlayer(0);
     this.planet.dispose();
     this.level = 0;
@@ -458,7 +458,9 @@ export class Game3D {
     }
     // bitten-off pieces drift and turn; new splits are found
     this.planet.fragments?.step(this.started && this.planet.alive);
-    if (this.role === 'host' && this.frameNo % this.cfg.fragments.syncEvery === 0) {
+    // (more often while a piece is being towed: it moves faster than a drift)
+    const every = this.planet.fragments?.towing ? this.cfg.fragments.towSyncEvery : this.cfg.fragments.syncEvery;
+    if (this.role === 'host' && this.frameNo % every === 0) {
       this.net?.broadcastFragmentMotions(this.planet.fragments?.motions() || []);
     }
     this.planet.sync();
@@ -646,7 +648,7 @@ export class Game3D {
       p.score = ps.score;
       p.planetScore = ps.planetScore;
       p.wins = ps.wins;
-      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts);
+      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts, ps.tugs, ps.tows);
     }
     const pl = this.planet;
     if (pl && pl.alive) {

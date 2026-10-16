@@ -1,14 +1,18 @@
 /**
- * Ship types panel (bottom-right): how many of your units are eaters, red laser ships and
- * blue storm ships. The sliders are linked — together they are always all your units (the
- * Units slider plus upgrades):
- *  - Lasers / Storms take their ships from the eaters (and, if there are none left, from each other);
- *  - Eaters take theirs from the storm ships first, then from the laser ships.
+ * Ship types panel (bottom-right): how many of your units are yellow eaters, red laser ships,
+ * blue storm ships and green tugs — a slider each. The sliders are linked: together they are
+ * always all your units (the Units slider plus upgrades).
+ *  - Moving Lasers, Storms or Tugs takes the ships from the eaters; when there are none left,
+ *    from the other types, the last one first (tugs, then storms, then lasers).
+ *  - Moving Eaters takes the ships from the tugs first, then the storm ships, then the lasers.
  */
+const TYPES = [['eaters', 'Eaters'], ['lasers', 'Lasers'], ['storms', 'Storms'], ['tugs', 'Tugs']];
+const OTHERS = ['lasers', 'storms', 'tugs'];
+
 export class ShipTypes {
   /**
    * @param {HTMLElement} root panel container
-   * @param {{total:()=>number, get:(key:'lasers'|'storms')=>number, set:(key:'lasers'|'storms', n:number)=>void}} opts
+   * @param {{total:()=>number, get:(key:string)=>number, set:(key:string, n:number)=>void}} opts
    */
   constructor(root, opts) {
     this.opts = opts;
@@ -17,28 +21,44 @@ export class ShipTypes {
     title.className = 'ships-title';
     title.textContent = 'Ship types';
     root.appendChild(title);
-    this.sliders = {
-      eaters: this.slider('eaters', 'Eaters', (v) => {
-        const rest = this.total - v;
-        const lasers = Math.min(this.counts().lasers, rest);
-        this.apply(lasers, rest - lasers);
-      }),
-      lasers: this.slider('lasers', 'Lasers', (v) => this.apply(v, Math.min(this.counts().storms, this.total - v))),
-      storms: this.slider('storms', 'Storms', (v) => this.apply(Math.min(this.counts().lasers, this.total - v), v)),
-    };
+    this.sliders = {};
+    for (const [key, label] of TYPES) this.sliders[key] = this.slider(key, label, (v) => this.change(key, v));
     this.sync();
   }
 
+  /** Current split (each type clamped so that together they are all the units). */
   counts() {
-    const total = this.total;
-    const lasers = Math.min(this.opts.get('lasers'), total);
-    const storms = Math.min(this.opts.get('storms'), total - lasers);
-    return { lasers, storms, eaters: total - lasers - storms };
+    let left = this.total;
+    const c = {};
+    for (const key of OTHERS) {
+      c[key] = Math.max(0, Math.min(this.opts.get(key), left));
+      left -= c[key];
+    }
+    c.eaters = left;
+    return c;
   }
 
-  apply(lasers, storms) {
-    this.opts.set('lasers', lasers);
-    this.opts.set('storms', storms);
+  /** One slider moved: fit the others around it. */
+  change(key, v) {
+    const c = this.counts();
+    if (key === 'eaters') {
+      let over = c.lasers + c.storms + c.tugs - (this.total - v);
+      for (const k of ['tugs', 'storms', 'lasers']) {
+        const take = Math.min(over, c[k]);
+        c[k] -= take;
+        over -= take;
+      }
+    } else {
+      c[key] = v;
+      let over = c.lasers + c.storms + c.tugs - this.total;
+      for (const k of ['tugs', 'storms', 'lasers']) {
+        if (k === key || over <= 0) continue;
+        const take = Math.min(over, c[k]);
+        c[k] -= take;
+        over -= take;
+      }
+    }
+    for (const k of OTHERS) this.opts.set(k, c[k]);
   }
 
   slider(id, label, onInput) {
@@ -67,7 +87,7 @@ export class ShipTypes {
   sync() {
     this.total = Math.max(0, Math.round(this.opts.total()));
     const c = this.counts();
-    for (const key of ['eaters', 'lasers', 'storms']) {
+    for (const [key] of TYPES) {
       const s = this.sliders[key];
       s.input.max = this.total;
       s.input.value = c[key];

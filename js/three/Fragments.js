@@ -465,6 +465,7 @@ export class Fragments {
       const c = this.cfg, q = this._q, axis = this._v;
       for (const f of this.list) {
         f.pos.add(f.vel);
+        if (f.towed) { this.turn(f, q, axis); continue; } // a tug's tractor beam moves it (Player.updateTugs)
         f.vel.multiplyScalar(c.damping);
         // never further than maxDistance from where it came off: there it stops (and keeps turning)
         const away = axis.subVectors(f.pos, f.origin), d = away.length();
@@ -472,18 +473,23 @@ export class Fragments {
           f.pos.copy(f.origin).addScaledVector(away, c.maxDistance / d);
           f.vel.set(0, 0, 0);
         }
-        const a = f.spin.length();
-        if (a > 1e-7) {
-          q.setFromAxisAngle(axis.copy(f.spin).divideScalar(a), a);
-          f.quat.premultiply(q).normalize();
-        }
-        f.spin.multiplyScalar(c.spinDamping);
-        this.applyTransform(f);
+        this.turn(f, q, axis);
       }
       this.rehash();
       this.findSplits();
     }
     for (const f of this.list) f.surface.sync();
+  }
+
+  /** One frame of turning. */
+  turn(f, q, axis) {
+    const a = f.spin.length();
+    if (a > 1e-7) {
+      q.setFromAxisAngle(axis.copy(f.spin).divideScalar(a), a);
+      f.quat.premultiply(q).normalize();
+    }
+    f.spin.multiplyScalar(this.cfg.spinDamping);
+    this.applyTransform(f);
   }
 
   applyTransform(f) {
@@ -493,16 +499,26 @@ export class Fragments {
 
   /** Motion of every fragment, for guests to stay in step: [[id, px, py, pz, qx, qy, qz, qw], …] */
   motions() {
-    return this.list.map((f) => [f.id, ...f.pos.toArray(), ...f.quat.toArray()].map((x, n) => (n ? Math.round(x * 1e4) / 1e4 : x)));
+    return this.list.map((f) => [f.id, ...f.pos.toArray(), ...f.quat.toArray(), ...f.vel.toArray(), f.towed ? 1 : 0]
+      .map((x, n) => (n ? Math.round(x * 1e4) / 1e4 : x)));
+  }
+
+  /** Is any piece being towed? (the host then sends positions more often) */
+  get towing() {
+    return this.list.some((f) => f.towed);
   }
 
   /** Guest: correct fragment positions from the host. */
   applyMotions(list) {
-    for (const [id, px, py, pz, qx, qy, qz, qw] of list) {
+    for (const [id, px, py, pz, qx, qy, qz, qw, vx = 0, vy = 0, vz = 0, towed = 0] of list) {
       const f = this.byId.get(id);
       if (!f) continue;
       f.pos.set(px, py, pz);
       f.quat.set(qx, qy, qz, qw);
+      f.vel.set(vx, vy, vz);
+      const was = f.towed;
+      f.towed = Boolean(towed);
+      if (was && !f.towed) f.origin.copy(f.pos); // let go: it may drift maxDistance from here
       this.applyTransform(f);
     }
   }

@@ -2,6 +2,13 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.20.0] — 2026-10-16
+
+### Added
+- **Tugs** (green): a fourth ship type that doesn't eat. A tug takes the nearest drifting piece nobody tows yet and flies to it; within 10 voxels of it a green tractor beam (a glowing cone of light streaks, brightest at the tug) takes in the whole piece, and the tug flies home with the piece following (around the planet, not through it). At the beacon the piece is gone and the player gets 5 × the points of what is left of it (the voxels count as eaten; in PvP the planet share counts them once). Other ships may eat the piece while it is towed. If the tug falls too far behind, the beam lets go and it catches up again.
+- The Ship types panel has a fourth slider, **Tugs**. At the start the units are split evenly: 5 eaters, 5 lasers, 5 storms, 5 tugs.
+- Multiplayer: the snapshot carries each player's tugs and tractor beams; piece positions are sent 10 times a second while one is towed.
+
 ## [0.19.0] — 2026-10-16
 
 ### Added
