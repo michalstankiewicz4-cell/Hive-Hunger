@@ -68,7 +68,7 @@ async def main():
              'a slab cut off a cube comes loose as one piece', c['frags'])
         t.ok(c['left'] == b['total'] - c['cut'], 'coming loose is not eating: only the cut voxels count', c['left'])
         m = await page.evaluate(MOTION, 120)
-        t.ok(m['moved'] > 0.3 and m['turned'] > 0.2 and m['triangles'] > 100, 'the piece drifts, turns and is drawn smooth', m)
+        t.ok(m['moved'] > 0.3 and m['turned'] > 0.05 and m['triangles'] > 100, 'the piece drifts, turns and is drawn smooth', m)
         if shots:
             await page.evaluate('() => { const g = window.__dbg; g.renderer.render(g.scene, g.camera); }')
             await page.screenshot(path=os.path.join(shots, 'fragment.png'))
@@ -85,6 +85,31 @@ async def main():
         t.ok(e['away'] > 0.3 and not e['solid'] and e['score'] >= 1 and e['score'] == e['left'],
              'a piece\'s voxels move with it and are eaten for points', e)
         t.ok(e['near'] > 0, 'the swarm finds drifting voxels near a point', e['near'])
+
+        # a big piece turns slowly enough for drones to keep up, and never drifts too far
+        lim = await page.evaluate('''() => { const g = window.__dbg, fr = g.planet.fragments, f = fr.list[0], c = g.cfg.fragments;
+          const rim = f.spin.length() * f.radius;
+          for (let n = 0; n < 3000; n++) fr.step(true);
+          return { rim, max: c.maxRimSpeed, away: f.pos.distanceTo(f.pivot), maxDistance: c.maxDistance, still: f.vel.length() }; }''')
+        t.ok(lim['rim'] <= lim['max'] + 1e-6, 'a big piece\'s edge moves no faster than maxRimSpeed', lim)
+        t.ok(lim['away'] <= lim['maxDistance'] + 1e-6, 'a piece stays within maxDistance of where it came off', lim)
+
+        # a drone that hasn't eaten for 10 s stops for 0.5 s, then takes another bite
+        rt = await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet, c = g.cfg.swarm.retarget;
+          p.onNewPlanet(); p.setSetting('count', 20);
+          for (let n = 0; n < 5; n++) g.update();
+          let i = -1; for (let k = 0; k < s.count; k++) if (s.food[k] >= 0 && !s.landed[k]) { i = k; break; }
+          if (i < 0) return { found: false };
+          const old = s.food[i]; s.hungry[i] = c.frames - 1;
+          const at = [s.pos[i * 3], s.pos[i * 3 + 1], s.pos[i * 3 + 2]];
+          g.update();
+          const paused = s.pause[i];
+          for (let n = 0; n < c.pauseFrames - 1; n++) g.update();
+          const still = Math.hypot(s.pos[i * 3] - at[0], s.pos[i * 3 + 1] - at[1], s.pos[i * 3 + 2] - at[2]);
+          g.update();
+          return { found: true, paused, still, old, now: s.food[i], oldClaims: pl.claims[old], pauseLeft: s.pause[i] }; }''')
+        t.ok(rt.get('found') and rt['paused'] == 30 and rt['still'] < 1e-6, 'a drone without a bite for 10 s stops for 0.5 s', rt)
+        t.ok(rt['now'] != rt['old'] and rt['now'] >= 0 and rt['pauseLeft'] == 0, 'then it takes another bite (the old one is let go)', rt)
 
         # planet 1 (boxes): eating in two boxes at once never makes one of them come loose;
         # cutting a 4×4×4 box between layers 1 and 2 frees the single layer, a 3×3×3 cut through the middle keeps both

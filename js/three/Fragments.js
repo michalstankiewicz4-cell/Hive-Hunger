@@ -258,6 +258,9 @@ export class Fragments {
       const rnd = () => (Math.random() - 0.5) * 2;
       f.vel.copy(out).multiplyScalar(this.cfg.drift).add(new THREE.Vector3(rnd(), rnd(), rnd()).multiplyScalar(this.cfg.drift * 0.4));
       f.spin.set(rnd(), rnd(), rnd()).normalize().multiplyScalar(this.cfg.spin * (0.5 + Math.random()));
+      // a big piece turns slower: its edge never moves faster than maxRimSpeed (drones must keep up)
+      const maxSpin = this.cfg.maxRimSpeed / f.radius;
+      if (f.spin.length() > maxSpin) f.spin.setLength(maxSpin);
     }
     // local grid cell li's centre is (li + 0.5)·s − half; shift so it lands at original − pivot
     f.inner.position.set(g0[0] * s - pl.half + local.half - pivot.x, g0[1] * s - pl.half + local.half - pivot.y, g0[2] * s - pl.half + local.half - pivot.z);
@@ -405,6 +408,12 @@ export class Fragments {
       for (const f of this.list) {
         f.pos.add(f.vel);
         f.vel.multiplyScalar(c.damping);
+        // never further than maxDistance from where it came off: there it stops (and keeps turning)
+        const away = axis.subVectors(f.pos, f.pivot), d = away.length();
+        if (d > c.maxDistance) {
+          f.pos.copy(f.pivot).addScaledVector(away, c.maxDistance / d);
+          f.vel.set(0, 0, 0);
+        }
         const a = f.spin.length();
         if (a > 1e-7) {
           q.setFromAxisAngle(axis.copy(f.spin).divideScalar(a), a);

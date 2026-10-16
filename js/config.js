@@ -115,6 +115,9 @@ export const CONFIG = Object.freeze({
     nearestMode: true,       // test mechanic: after eating, fly to the nearest uneaten voxel (checkbox)
     feedFlocking: 0.35,      // while feeding: how much alignment and cohesion remain
     eatFrames: 25,           // frames a unit sits on its bite before it is eaten
+    // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
+    // (0.5 s), then takes another bite — or the same one if there is no other
+    retarget: { frames: 600, pauseFrames: 30 },
     biteRadius: 0.5,         // power: radius of the crater eaten out of a bite
     spawnSpread: 4,
     spawnGap: 1,             // spawn distance from the planet's surface, in planet radii
@@ -156,6 +159,8 @@ export const CONFIG = Object.freeze({
     damping: 0.997,
     spin: 0.006,
     spinDamping: 1,       // 1 = keeps turning
+    maxRimSpeed: 0.025,   // a piece's edge moves at most this fast (half the default unit speed): big pieces turn slower
+    maxDistance: 4,       // a piece stops this far from where it came off
     maxSteps: 400000,     // flood-fill limit when looking for a split (bigger parts: no split found)
     syncEvery: 30,        // frames between fragment positions sent to the guests
   },

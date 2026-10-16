@@ -82,6 +82,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `nearestMode` | true | *toggle Eat nearest block* | |
 | `feedFlocking` | 0.35 | how much alignment/cohesion remains while feeding (with Eat nearest block it is 0) | higher = units pull each other off their bites |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
+| `retarget.frames`, `retarget.pauseFrames` | 600, 30 | a unit with a bite that has not eaten for 10 s stops for 0.5 s, then takes another bite (the same one if there is no other) | lower = gives up sooner |
 | `biteRadius` | 0.5 | *slider Power* — crater radius per bite | |
 | `spawnSpread` | 4 | size of the cloud new units appear in | |
 | `spawnGap` | 1 | spawn distance from the surface, in planet radii | |
@@ -121,6 +122,8 @@ Slider ranges and steps (`min`, `max`, `step`, `decimals`) and the `Eat nearest 
 | `damping` | 0.997 | drift speed kept each frame; a piece stops after about `drift / (1 − damping)` ≈ 3.3 units | 1 = never stops |
 | `spin` | 0.006 | turn per frame, radians (each piece 0.5–1.5 × this, about a random axis) | |
 | `spinDamping` | 1 | turn kept each frame | 1 = keeps turning |
+| `maxRimSpeed` | 0.025 | a piece's edge moves at most this fast (half the default drone speed): big pieces get a slower turn | higher = big pieces turn faster, harder to catch |
+| `maxDistance` | 4 | a piece stops this far from where it came off (keeps turning) | |
 | `maxSteps` | 400000 | flood-fill limit when looking for a split per eaten cluster; above it no split is found | lower = cheaper, huge halves don't come loose |
 | `syncEvery` | 30 | frames between piece positions sent to guests | |
 

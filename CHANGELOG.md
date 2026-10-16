@@ -2,6 +2,13 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.16.1] — 2026-10-16
+
+### Changed
+- **A drone that can't catch its bite gives up on it.** If a drone with a bite hasn't eaten anything for 10 s, it stops for 0.5 s (the bite may come closer meanwhile), then takes another free bite; if there is no other, it goes back to the one it had (`swarm.retarget`).
+- **Drifting pieces stay close:** a piece stops at most 4 units from where it came off and only keeps turning (`fragments.maxDistance`).
+- **Big pieces turn slower:** a piece's edge never moves faster than 0.025 per frame — half the default drone speed — so drones can keep up with it (`fragments.maxRimSpeed`).
+
 ## [0.16.0] — 2026-10-16
 
 ### Added

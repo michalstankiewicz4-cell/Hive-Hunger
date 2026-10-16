@@ -73,6 +73,10 @@ export class Swarm3D {
     this.stuck = new Uint16Array(this.max);
     this.lastBlock = new Int32Array(this.max).fill(-1);
     this.blockAge = new Uint8Array(this.max).fill(255);
+    // frames a unit with a bite has gone without eating, and frames left of its pause before
+    // it picks another bite (it can't catch its bite — e.g. on a fast-turning piece)
+    this.hungry = new Uint16Array(this.max);
+    this.pause = new Uint8Array(this.max);
 
     // parameters changed by sliders
     this.separationDistance = cfg.separationDistance;
@@ -120,6 +124,8 @@ export class Swarm3D {
         this.stuck[i] = 0;
         this.lastBlock[i] = -1;
         this.blockAge[i] = 255;
+        this.hungry[i] = 0;
+        this.pause[i] = 0;
       }
     }
     // removed units release their claims
@@ -221,6 +227,12 @@ export class Swarm3D {
     for (let i = 0; i < this.count; i++) {
       const i3 = i * 3;
 
+      // giving up on a bite it couldn't reach: stays still for a moment, then picks another
+      if (this.pause[i] > 0) {
+        if (--this.pause[i] === 0) this.retarget(i, world);
+        continue;
+      }
+
       // landed on its bite: eats it until it is gone, then takes off
       if (landed[i]) {
         if (food[i] >= 0 && world.isFood(food[i])) {
@@ -229,6 +241,7 @@ export class Swarm3D {
           pos[i3] += fc.x - foodPos[i3]; pos[i3 + 1] += fc.y - foodPos[i3 + 1]; pos[i3 + 2] += fc.z - foodPos[i3 + 2];
           foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
           world.bite(food[i], food[i]);
+          this.hungry[i] = 0;
           continue;
         }
         landed[i] = 0;
@@ -286,6 +299,16 @@ export class Swarm3D {
         // nearestMode: no free flying — only separation stays, the unit flies straight to its voxel
         flocking = world.nearestMode ? 0 : c.feedFlocking;
       }
+
+      // no bite eaten for `retarget.frames` while chasing one: stop for `retarget.pauseFrames`
+      // (a moving bite may come closer meanwhile), then take another (see retarget)
+      if (food[i] >= 0 && !world.holding) {
+        if (++this.hungry[i] >= c.retarget.frames) {
+          this.hungry[i] = 0;
+          this.pause[i] = c.retarget.pauseFrames;
+          continue;
+        }
+      } else this.hungry[i] = 0;
 
       // within reach of its own bite: land on it. At constant speed a unit could otherwise
       // circle a small, isolated scrap forever without ever touching it.
@@ -399,6 +422,25 @@ export class Swarm3D {
       if (l > 1e-6) { dir[i3] = d[0] / l; dir[i3 + 1] = d[1] / l; dir[i3 + 2] = d[2] / l; }
       else { dir[i3] = dx; dir[i3 + 1] = dy; dir[i3 + 2] = dz; }
     }
+  }
+
+  /**
+   * After a pause: unit `i` takes another free bite (its own stays claimed while it looks, so
+   * it isn't picked again). If there is no other, it goes back to the one it had.
+   */
+  retarget(i, world) {
+    const old = this.food[i];
+    if (old < 0 || !world.isFood(old)) return; // gone meanwhile: a new one is picked as usual
+    const i3 = i * 3;
+    const idx = world.pickFood({ x: this.pos[i3], y: this.pos[i3 + 1], z: this.pos[i3 + 2] });
+    if (idx < 0) return; // nothing else: keep the old one
+    world.release(old);  // the old bite, or the extra claim when the same one came back
+    if (idx === old) return;
+    this.food[i] = idx;
+    const fc = world.cellCenter(idx);
+    this.foodPos[i3] = fc.x; this.foodPos[i3 + 1] = fc.y; this.foodPos[i3 + 2] = fc.z;
+    this.best[i] = Infinity;
+    this.stuck[i] = 0;
   }
 
   /**

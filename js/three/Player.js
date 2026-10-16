@@ -136,6 +136,7 @@ export class Player {
       s.food[i] = -1;
       s.landed[i] = 0;
       s.redirect[i] = redirect;
+      s.hungry[i] = 0;
     }
   }
 
