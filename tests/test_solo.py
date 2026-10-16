@@ -92,6 +92,13 @@ async def main():
           fits: document.querySelector('.menu-card').getBoundingClientRect().height <= window.innerHeight })""")
         t.ok(gd['sections'] == ['Attack', 'Support'] and len(gd['attack']) == 9 and gd['support'] == ['tugs', 'supports', 'cleaners', 'boosters'] and gd['fits'],
              'Ship guide: 13 ships, attack and support apart, on one screen', gd)
+        await page.set_viewport_size({'width': 1000, 'height': 480})
+        gs = await page.evaluate("""() => { const s = document.querySelector('.guide-scroll'), b = document.querySelector('.guide-back'), t = document.getElementById('menu-title');
+          s.scrollTop = 99999; const r = b.getBoundingClientRect(), tr = t.getBoundingClientRect();
+          const out = { scrolls: s.scrollHeight > s.clientHeight && s.scrollTop > 0, backSeen: r.bottom <= innerHeight && !s.contains(b), titleSeen: tr.top >= 0 && !s.contains(t) };
+          s.scrollTop = 0; return out; }""")
+        await page.set_viewport_size({'width': 1000, 'height': 640})
+        t.ok(gs['scrolls'] and gs['backSeen'] and gs['titleSeen'], 'on a low screen only the ships scroll: the title and Back stay in view', gs)
         pic = lambda: page.evaluate("() => document.querySelector('.guide-ship[data-kind=snipers] canvas').toDataURL()")
         still = await pic()
         await page.hover('.guide-ship[data-kind=snipers]')

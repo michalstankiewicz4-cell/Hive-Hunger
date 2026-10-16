@@ -91,7 +91,7 @@ css/             one stylesheet per part of the page
 | `Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
 | `Lobby.js` | Room panel during a multiplayer match: room, link, leave |
 | `TreeView.js` | The tree view (Tab): drawn on a small canvas and scaled up without smoothing (pixel art); hover tooltip, click to buy |
-| `ShipGuide.js` | The Ship guide in the menu: per type a 120 × 64 canvas picture drawn in 2D (`PICTURES`), its name and what it does, attack and support apart (`SHIP_GROUPS`); pointing at one (or focusing it) loops its shot |
+| `ShipGuide.js` | The Ship guide in the menu (a window no taller than the screen: the title and Back stay, the ships scroll in `.guide-scroll`): per type a 120 × 64 canvas picture drawn in 2D (`PICTURES`), its name and what it does, attack and support apart (`SHIP_GROUPS`); pointing at one (or focusing it) loops its shot |
 | `SettingsView.js` | The Settings screen in the menu: Mouse (controls, camera turning, zoom speed), Keyboard (keys), Graphics (FPS counter, resolution, smooth edges, effects) side by side in three columns (`.settings-columns`; stacked under 820 px), Reset settings, Back |
 | `dom.js` | Small DOM helpers for the menus |
 | `js/utils/*` | Noise (fBm), terrain colours, nebula/star colours |

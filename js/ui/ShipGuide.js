@@ -3,7 +3,8 @@ import { el, button } from './dom.js';
 
 /**
  * The Ship guide in the start menu: every ship type with a small picture and what it does, attack
- * ships and support ships apart (SHIP_GROUPS), all on one screen. Pointing at a ship (or focusing it)
+ * ships and support ships apart (SHIP_GROUPS), in a window that fits the screen: the title and Back stay
+ * put, the ships scroll. Pointing at a ship (or focusing it)
  * plays its shot as a short looping animation; otherwise the picture shows the middle of it.
  */
 
@@ -34,6 +35,9 @@ const shipColor = (k) => hex(k === 'eaters' ? CONFIG.swarm.eaterColor : CONFIG.s
 export function fillGuide(card, onBack) {
   card.classList.add('is-guide');
   const stop = [];
+  // the title and Back stay put; only the ships scroll (when they don't fit the screen)
+  const scroll = el('div', 'guide-scroll');
+  card.appendChild(scroll);
   for (const group of SHIP_GROUPS) {
     const section = el('section', 'guide-section');
     section.append(el('h3', 'settings-title', group.name));
@@ -75,7 +79,7 @@ export function fillGuide(card, onBack) {
       stop.push(() => cancelAnimationFrame(frame));
     }
     section.appendChild(grid);
-    card.appendChild(section);
+    scroll.appendChild(section);
   }
   const back = button('Back', () => { for (const s of stop) s(); onBack(); }, 'lobby-button is-primary guide-back');
   card.appendChild(back);

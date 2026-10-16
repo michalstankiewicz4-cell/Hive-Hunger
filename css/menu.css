@@ -326,11 +326,49 @@
   text-align: right;
 }
 
-/* Ship guide: every ship type on one screen, attack and support apart */
+/* Ship guide: every ship type, attack and support apart, in a window that fits the screen —
+   the title and Back stay put, the ships scroll inside it */
 .menu-card.is-guide {
+  display: flex;
+  flex-direction: column;
   width: min(1040px, 100%);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
   gap: 8px;
   padding: 16px 18px 14px;
+  overflow: hidden;
+}
+
+.menu-card.is-guide > .menu-title,
+.menu-card.is-guide > .guide-back {
+  flex: none;
+}
+
+.guide-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y; /* (the page itself takes no touch scrolling) */
+  padding-right: 6px;
+  margin-right: -6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+
+.guide-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.guide-scroll::-webkit-scrollbar-thumb {
+  background: var(--panel-border);
+  border-radius: 4px;
+}
+
+.guide-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 .guide-section {
@@ -388,7 +426,7 @@
 }
 
 .guide-back {
-  justify-self: end;
+  align-self: flex-end;
 }
 
 @media (max-width: 520px) {
