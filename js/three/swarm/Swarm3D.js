@@ -85,6 +85,10 @@ export class Swarm3D {
     // the last `piercers` units are copper piercers: from `piercer.reach` an orange beam through
     // `piercer.pierce` voxels in a row (world.pierce), a yellow lightning winding round it (beams.js)
     this.piercers = 0;
+    this.pierceOn = new Uint8Array(this.max);        // firing along a locked line
+    this.pierceDir = new Float32Array(this.max * 3); // the line's direction
+    this.pierceEnd = new Float32Array(this.max * 3); // where the beam ends now (the nearest voxel hit)
+    this.pierceAfter = new Uint16Array(this.max);    // frames since it got through
     this.drills = 0;
     this.drillLeft = new Float32Array(this.max);
     this.drillDir = new Float32Array(this.max * 3);
@@ -185,6 +189,7 @@ export class Swarm3D {
         this.warpT[i] = 0;
         this.drillLeft[i] = 0;
         this.drillAim[i] = 0;
+        this.pierceOn[i] = 0;
       }
     }
     // removed units release their claims
@@ -323,6 +328,18 @@ export class Swarm3D {
         if (this.drillLeft[i] <= 0) { this.drillLeft[i] = 0; best[i] = Infinity; stuck[i] = 0; }
         continue;
       }
+      // a piercer locked on a line: it fires along it until it is through, then `piercer.afterFrames`
+      // (2 s) more, then switches off and flies on
+      if (this.pierceOn[i]) {
+        if (!this.isPiercer(i) || world.holding) { this.pierceOn[i] = 0; continue; } // another type now / called back
+        const E = this.pierceEnd;
+        const hit = world.pierceLine(i, pos[i3], pos[i3 + 1], pos[i3 + 2], this.pierceDir, E);
+        this.hungry[i] = 0;
+        dir[i3] = this.pierceDir[i3]; dir[i3 + 1] = this.pierceDir[i3 + 1]; dir[i3 + 2] = this.pierceDir[i3 + 2];
+        if (hit) this.pierceAfter[i] = 0; // (E: the nearest voxel hit)
+        else if (++this.pierceAfter[i] >= c.piercer.afterFrames) { this.pierceOn[i] = 0; best[i] = Infinity; stuck[i] = 0; }
+        continue;
+      }
       // giving up on a bite it couldn't reach: stays still for a moment, then picks another
       if (this.pause[i] > 0) {
         if (--this.pause[i] === 0) this.retarget(i, world);
@@ -364,7 +381,9 @@ export class Swarm3D {
           }
           // a bite on a drifting fragment moves: the unit holds on and moves with it
           const fc = world.cellCenter(food[i]);
-          pos[i3] += fc.x - foodPos[i3]; pos[i3 + 1] += fc.y - foodPos[i3 + 1]; pos[i3 + 2] += fc.z - foodPos[i3 + 2];
+          // (unless that would carry it into the planet: then it stays and eats from where it is)
+          p.x = pos[i3] + fc.x - foodPos[i3]; p.y = pos[i3 + 1] + fc.y - foodPos[i3 + 1]; p.z = pos[i3 + 2] + fc.z - foodPos[i3 + 2];
+          if (!world.isSolidCell(world.cellAt(p))) { pos[i3] = p.x; pos[i3 + 1] = p.y; pos[i3 + 2] = p.z; }
           foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
           // every ship first turns to face its bite and eats (a laser ship: fires) only then
           if (!this.aim(i)) continue;
@@ -378,8 +397,22 @@ export class Swarm3D {
             const at = world.storm(food[i], food[i]);
             this.stormSideN[i] = at.length / 3;
             for (let k = 0; k < at.length; k++) this.stormSides[i * 6 + k] = at[k];
-          } else if (this.isPiercer(i)) world.pierce(food[i], i);
-          else world.bite(food[i], food[i]);
+          } else if (this.isPiercer(i)) {
+            if (world.isFloating(food[i])) world.pierce(food[i], i); // on a drifting piece: just its bite
+            else {
+              // aimed: the line from here through the bite is locked, and it fires along it to the end
+              const l = Math.hypot(foodPos[i3] - pos[i3], foodPos[i3 + 1] - pos[i3 + 1], foodPos[i3 + 2] - pos[i3 + 2]) || 1;
+              this.pierceDir[i3] = (foodPos[i3] - pos[i3]) / l;
+              this.pierceDir[i3 + 1] = (foodPos[i3 + 1] - pos[i3 + 1]) / l;
+              this.pierceDir[i3 + 2] = (foodPos[i3 + 2] - pos[i3 + 2]) / l;
+              this.pierceEnd[i3] = foodPos[i3]; this.pierceEnd[i3 + 1] = foodPos[i3 + 1]; this.pierceEnd[i3 + 2] = foodPos[i3 + 2];
+              this.pierceOn[i] = 1;
+              this.pierceAfter[i] = 0;
+              world.release(food[i]);
+              food[i] = -1;
+              landed[i] = 0;
+            }
+          } else world.bite(food[i], food[i]);
           this.hungry[i] = 0;
           continue;
         }

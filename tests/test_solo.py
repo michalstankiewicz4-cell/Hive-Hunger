@@ -16,7 +16,7 @@ STATE = """() => {
   let inside = 0, shared = 0;
   const seen = new Set();
   for (let i = 0; i < s.count; i++) {
-    if (pl.alive && pl.isSolid({ x: s.pos[i * 3], y: s.pos[i * 3 + 1], z: s.pos[i * 3 + 2] })) inside++;
+    if (pl.alive && pl.isSolid({ x: s.pos[i * 3], y: s.pos[i * 3 + 1], z: s.pos[i * 3 + 2] })) { inside++; (window.__inside ||= []).push([g.frameNo, i, ['lasers','storms','tugs','bombers','orbs','supports','cleaners','drills','piercers'].find((k) => s.isKind(i, k)) || 'eater', s.landed[i], s.food[i], s.hidden[i], s.pierceOn[i], s.drillLeft[i]]); }
     const f = s.food[i];
     if (f >= 0) { if (seen.has(f)) shared++; seen.add(f); }
   }
@@ -338,23 +338,37 @@ async def main():
             for (let m = 0; m < 3; m++) s.pos[k*3+m] *= R / l;
             if (s.food[k] >= 0) pl.release(s.food[k]); s.food[k] = -1; s.landed[k] = 0; }
           const ic = s.mesh.instanceColor, copper = ic.getX(a) > 0.6 && ic.getY(a) > 0.3 && ic.getY(a) < 0.55 && ic.getZ(a) < 0.35;
-          const ready = (i) => s.landed[i] && s.aimed[i] && s.food[i] >= 0 && !pl.fragments?.has(s.food[i]) && pl.strengthOf(s.food[i]) > 0.5;
-          let f = 0, i = -1; while (i < 0 && f < 2000) { g.update(); f++; for (const k of [a, a + 1]) if (ready(k)) { i = k; break; } }
+          // aimed at its bite, it locks the line through it and fires along it
+          let f = 0, i = -1; while (i < 0 && f < 2000) { g.update(); f++; for (const k of [a, a + 1]) if (s.pierceOn[k]) { i = k; break; } }
           if (i < 0) return { fired: false, copper };
-          const c = g.cfg.swarm.piercer;
-          // the voxels in a row behind the bite, along the beam
-          const b = pl.cellCenter(s.food[i], new window.THREE.Vector3()), d = b.clone().sub(new window.THREE.Vector3(s.pos[i*3], s.pos[i*3+1], s.pos[i*3+2]));
-          const dist = d.length(); d.normalize();
-          const row = [s.food[i]], q = b.clone();
-          for (let k = 0; k < 12 && row.length < c.pierce; k++) { q.addScaledVector(d, pl.s * 0.5); const n = pl.cellAt(q); if (n >= 0 && pl.hp[n] > 0 && !row.includes(n) && !pl.claimedByOther(n, s.food[i])) row.push(n); }
+          const c = g.cfg.swarm.piercer, T = window.THREE;
+          const P = new T.Vector3(s.pos[i*3], s.pos[i*3+1], s.pos[i*3+2]), d = new T.Vector3(s.pierceDir[i*3], s.pierceDir[i*3+1], s.pierceDir[i*3+2]);
+          // the first 3 voxels on the line
+          const line = () => { const row = [], q = P.clone(); for (let k = 0; k < c.length / (pl.s * 0.5) && row.length < c.pierce; k++) { q.addScaledVector(d, pl.s * 0.5); const n = pl.cellAt(q); if (n >= 0 && pl.hp[n] > 0 && !row.includes(n) && !pl.claimedByOther(n, -1)) row.push(n); } return row; };
+          const row = line(), dist = row.length ? pl.cellCenter(row[0], new T.Vector3()).distanceTo(P) : 0;
           const before = row.map((n) => pl.strengthOf(n)), shown = s.piercerBolts.shown;
           g.update(); for (let k = 0; k < 4; k++) s.render(g.camera);
           const lost = row.map((n, k) => before[k] - pl.strengthOf(n));
           const eater = g.cfg.planet.strength / g.cfg.swarm.eatFrames;
-          return { fired: true, copper, dist, row: row.length, lost, want: eater * c.damage, orange: s.piercerBeamCount > 0, spirals: s.piercerBolts.shown - shown }; }""")
+          const orange = s.piercerBeamCount > 0, spirals = s.piercerBolts.shown - shown;
+          // it fires until it is through, then 2 s more, then switches off
+          let lastHit = 0, off = -1, still = true;
+          for (let k = 1; k < 20000 && off < 0; k++) {
+            g.update();
+            if (s.pierceOn[i] && s.pierceAfter[i] === 0) lastHit = k;
+            if (s.pierceOn[i] && Math.hypot(s.pos[i*3] - P.x, s.pos[i*3+1] - P.y, s.pos[i*3+2] - P.z) > 1e-6) still = false;
+            if (!s.pierceOn[i]) off = k;
+          }
+          const through = line().length === 0;
+          // then it goes on: a new bite (flying to it, or from here if it is in range) and a new line
+          let next = false;
+          for (let k = 0; k < 600 && !next; k++) { g.update(); next = s.food[i] >= 0 || (s.pierceOn[i] && s.pierceDir[i*3] * d.x + s.pierceDir[i*3+1] * d.y + s.pierceDir[i*3+2] * d.z < 0.9999); }
+          return { fired: true, copper, dist, row: row.length, lost, want: eater * c.damage, orange, spirals, after: off - lastHit, through, still, next }; }""")
         t.ok(pc.get('fired') and pc['copper'] and pc['dist'] > 4, 'a copper piercer fires from a distance (up to 20 voxels)', pc)
         t.ok(pc.get('row') == 3 and all(abs(x - pc['want']) < 1e-4 for x in pc['lost']), 'its beam goes through 3 voxels in a row and eats them at once (0.8 × an eater)', pc)
         t.ok(pc.get('orange') and pc.get('spirals', 0) > 0, 'an orange beam with a yellow spiral lightning round it', pc)
+        t.ok(pc.get('through') and pc.get('still') and 118 <= pc.get('after', 0) <= 122, 'it fires along the locked line until it is through, then 2 s more, staying put', pc)
+        t.ok(pc.get('next'), 'then it switches off and goes on to its next bite', pc)
         await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('piercers', 0); g.start(); }")
         # Space pauses single player (nothing moves, "Paused" at the bottom) and carries on
         await page.mouse.move(500, 300)
@@ -397,7 +411,7 @@ async def main():
             if s['left'] == 0 or not s['alive'] or s['level'] > 1:
                 break
         t.ok(s['left'] == 0 or s['level'] > 1, 'the planet is eaten to the last voxel', s['left'])
-        t.ok(worst_inside == 0, 'no unit inside solid voxels', worst_inside)
+        t.ok(worst_inside == 0, 'no unit inside solid voxels', [worst_inside, await page.evaluate('() => (window.__inside || []).slice(0, 5)')])
         t.ok(worst_shared == 0, 'no bite shared while free voxels are left', worst_shared)
 
         # the next planet: the tunnel opens, the ships come out of it, it closes

@@ -99,6 +99,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `drill.bitColor`, `drill.bitDark`, `drill.bitLength`, `drill.bitRadius`, `drill.bitSpin` | orange, dark brown, 0.6, 0.16, 0.6 | the spiral bit: colours of the spiral, size, turn per frame (radians) | |
 | `piercer.count`, `piercer.color` | 2, copper | piercers at the start; hull colour | |
 | `piercer.reach`, `piercer.pierce`, `piercer.damage` | 10, 3, 0.8 | firing distance (20 voxels); voxels in a row the beam goes through; each eaten at this × an eater's rate | more `pierce` = deeper shots |
+| `piercer.length`, `piercer.afterFrames` | 70, 120 | how far along its locked line a piercer fires; frames it keeps firing once through (2 s) | |
 | `piercer.width`, `piercer.hitSize`, `piercer.beamColors`, `piercer.hitColors` | 0.4, 1.2, orange | the beam (as for lasers) |
 | `piercer.spiralColor`, `spiralRadius`, `spiralTurns`, `spiralPoints` | yellow, 0.22, 0.64, 10 | the lightning round the beam: radius, turns per unit (0.64: about one turn per 1.5 units), points per turn |
 | `piercer.flashEvery`, `flashFrames`, `glowPx` | 3, 5, 4 | a new spiral every 3 frames, lasting 5; glow 4 px (like the support ships' bolt) |

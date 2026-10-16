@@ -2,6 +2,14 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.30.0] — 2026-10-16
+
+### Changed
+- **Piercers fire right through**: once aimed at a bite, a piercer locks the line from itself through it and fires along it — always at the 3 nearest voxels on the line, each at 0.8 × an eater's rate — until no voxel is left on it (up to 70 units, so through a whole planet), then 2 seconds more; then it switches off and goes on to its next bite. It stays put meanwhile. On a drifting piece it still just eats its bite.
+
+### Fixed
+- A ship eating a voxel on a drifting piece is no longer carried into the planet when the piece drifts against it.
+
 ## [0.29.0] — 2026-10-16
 
 ### Added

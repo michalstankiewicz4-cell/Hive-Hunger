@@ -52,6 +52,35 @@ export const Destruction = {
     return hit.length;
   },
 
+  /**
+   * A piercer (unit i of `player`) at (x, y, z) firing along its locked line (direction D[i*3…]):
+   * the first `piercer.pierce` (3) solid grid voxels on the line, out to `piercer.length`, are each
+   * bitten for `piercer.damage` × an eater's rate (claimed ones passed over), a point each when
+   * gone. E[i*3…] is set to the nearest one hit (where the beam ends); none hit — it is through —
+   * returns false and E stays where the last one was.
+   */
+  pierceLine(player, i, x, y, z, D, E) {
+    const pl = this.planet, c = this.cfg.swarm.piercer, i3 = i * 3;
+    const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage;
+    const p = PIERCE_P.set(x, y, z), step = pl.s * 0.5, hit = [];
+    for (let k = 0, steps = Math.ceil(c.length / step); k < steps && hit.length < c.pierce; k++) {
+      p.x += D[i3] * step; p.y += D[i3 + 1] * step; p.z += D[i3 + 2] * step;
+      const n = pl.cellAt(p);
+      if (n < 0 || pl.hp[n] <= 0 || hit.includes(n) || pl.claimedByOther(n, -1)) continue;
+      hit.push(n);
+    }
+    if (!hit.length) return false;
+    pl.cellCenter(hit[0], PIERCE_B);
+    E[i3] = PIERCE_B.x; E[i3 + 1] = PIERCE_B.y; E[i3 + 2] = PIERCE_B.z;
+    for (const n of hit) {
+      if (pl.bite(n, amount) !== BITE.REMOVED) continue;
+      player.score++;
+      player.planetScore++;
+      this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
+    }
+    return true;
+  },
+
   /** The planet voxel at (x, y, z), if there is one, is gone (a point to `player`); returns 1 or 0. */
   clearCell(x, y, z, player) {
     const pl = this.planet, idx = pl.cellAt(PIERCE_P.set(x, y, z));

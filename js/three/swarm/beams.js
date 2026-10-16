@@ -16,6 +16,12 @@ export const Beams = {
     if (!this.remote) {
       // here the simulation runs: a landed laser ship or piercer that faces its bite is firing
       for (let i = 0; i < this.count; i++) {
+        // (a piercer on its locked line fires at the nearest voxel on it, or where it got through)
+        if (this.pierceOn[i] && !this.hidden[i]) {
+          firing[i] = 1;
+          to[i * 3] = this.pierceEnd[i * 3]; to[i * 3 + 1] = this.pierceEnd[i * 3 + 1]; to[i * 3 + 2] = this.pierceEnd[i * 3 + 2];
+          continue;
+        }
         const on = (i < this.lasers || this.isPiercer(i)) && this.landed[i] && this.aimed[i] && this.food[i] >= 0 ? 1 : 0;
         firing[i] = on;
         if (on) { to[i * 3] = this.foodPos[i * 3]; to[i * 3 + 1] = this.foodPos[i * 3 + 1]; to[i * 3 + 2] = this.foodPos[i * 3 + 2]; }
