@@ -148,6 +148,18 @@ export const CONFIG = Object.freeze({
     noticeMs: 6000,           // how long notices (joined / left / connection lost) stay in the HUD
   },
 
+  // pieces bitten off a planet: every part smaller than the rest comes loose, drifts away from the
+  // centre and turns; the swarm can still eat it (same points). Per frame: drift and spin are the
+  // starting speed (units) and turn (radians); damping slows the drift (it stops after ≈ drift / (1 − damping)).
+  fragments: {
+    drift: 0.01,
+    damping: 0.997,
+    spin: 0.006,
+    spinDamping: 1,       // 1 = keeps turning
+    maxSteps: 400000,     // flood-fill limit when looking for a split (bigger parts: no split found)
+    syncEvery: 30,        // frames between fragment positions sent to the guests
+  },
+
   // marker shown where the player clicked
   marker: { color: 0x8fd0ff, radius: 1.6, opacity: 0.9, lift: 0.9, lifeFrames: 240, pulseSpeed: 0.12 },
 

@@ -57,6 +57,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'buy', id}` | buy upgrade `id` with my points |
 | host → guest | `{t:'tree', tree:{owned, spent}}` | your upgrade tree after a purchase |
 | host → guest | `{t:'bolt', index, p:[x,y,z,…]}` | a chain-lightning bolt of player `index` to draw |
+| host → guest | `{t:'frags', list:[[id, px, py, pz, qx, qy, qz, qw], …]}` | where the drifting pieces are, every `fragments.syncEvery` frames (30); guests move them with the same physics in between |
 | host → guest | `{t:'notice', text}` | "Pink joined", "Pink left the room", "Pink: connection lost" — shown in the HUD for `net.noticeMs` |
 | both | `{t:'bye'}` | leaving (a guest closing the tab, or the host closing the room) |
 
@@ -66,7 +67,14 @@ Binary messages (`js/net/Protocol.js`, little-endian):
 ```
 u8 type=2 | u32 seed | u16 level | u8 hasBits | [eaten voxels: run lengths as varints]
 ```
-The guest builds the planet from the seed and level, then removes the eaten voxels. The run lengths go over all voxel indices, alternating "not eaten" / "eaten" (starting with "not eaten"), each as a little-endian base-128 varint (`VoxelPlanet.eatenRuns`). Eaten areas are craters, so this stays small (a bitset of the whole grid was too big for one WebRTC message on large levels).
+The guest builds the planet from the seed and level, then removes the eaten voxels (voxels of drifting pieces don't count as eaten — they follow as FRAG messages). The run lengths go over all voxel indices, alternating "not eaten" / "eaten" (starting with "not eaten"), each as a little-endian base-128 varint (`VoxelPlanet.eatenRuns`). Eaten areas are craters, so this stays small (a bitset of the whole grid was too big for one WebRTC message on large levels).
+
+**FRAG** (type 4) — a piece bitten off the planet (sent when it comes loose, and to a guest who joins for every piece drifting at that moment):
+```
+u8 type=4 | u32 id | 16 × f32: original centre (3), position (3), rotation quaternion (4), velocity (3), spin (3)
+| u32 count | count × varint: voxel indices, sorted, each as the gap from the previous one
+```
+The guest takes those voxels out of its grid into a fragment with the same id and motion. Voxels eaten off a piece arrive in snapshots like any other eaten voxel. Large pieces go in PART messages.
 
 **PART** (type 3) — a piece of any binary message larger than 60 000 bytes (`MAX_PART`); the guest joins the pieces and handles the result as the original message:
 ```

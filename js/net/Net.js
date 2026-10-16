@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { encodeSnapshot, decodeSnapshot, encodePlanet, decodePlanet, SNAPSHOT, PLANET, PART, MAX_PART, splitParts, joinPart } from './Protocol.js';
+import { encodeSnapshot, decodeSnapshot, encodePlanet, decodePlanet, encodeFragment, decodeFragment, SNAPSHOT, PLANET, PART, FRAG, MAX_PART, splitParts, joinPart } from './Protocol.js';
 
 /**
  * Multiplayer over WebRTC with PeerJS. The host's browser runs the game; guests connect
@@ -126,6 +126,9 @@ export class NetHost {
       this.game.layoutSpawns();
       this.send(conn, JSON.stringify({ t: 'welcome', index, mode: this.mode, code: this.code }));
       this.send(conn, encodePlanet(this.game.planet, this.game.level, true));
+      // pieces drifting right now
+      const fr = this.game.planet.fragments;
+      if (fr) for (const f of fr.list) this.send(conn, encodeFragment(f, fr.cellsOf(f)));
       this.broadcastPlayers();
       this.notice(`${this.game.players[index].name} joined`);
     });
@@ -204,6 +207,20 @@ export class NetHost {
   broadcastPlanet(game) {
     const buf = encodePlanet(game.planet, game.level, false);
     for (const conn of this.guests.keys()) this.send(conn, buf);
+  }
+
+  /** A piece came off the planet: the guests make the same fragment. */
+  broadcastFragment(f, cells) {
+    if (this.guests.size === 0) return;
+    const buf = encodeFragment(f, cells);
+    for (const conn of this.guests.keys()) this.send(conn, buf);
+  }
+
+  /** Where the fragments are now, so the guests' copies stay in step. */
+  broadcastFragmentMotions(list) {
+    if (this.guests.size === 0 || list.length === 0) return;
+    const msg = JSON.stringify({ t: 'frags', list });
+    for (const conn of this.guests.keys()) this.send(conn, msg);
   }
 
   /** A chain-lightning bolt for the guests to draw (positions rounded to 1 cm). */
@@ -303,6 +320,7 @@ export class NetGuest {
       } else if (json.t === 'notice') g.notify(json.text);
       else if (json.t === 'summary') g.setSummary(json.summary);
       else if (json.t === 'bolt') g.onBolt(json);
+      else if (json.t === 'frags') g.planet?.fragments?.applyMotions(json.list);
       else if (json.t === 'tree') g.onTree(json.tree);
       else if (json.t === 'bye') {
         this.hostLeft = true;
@@ -319,6 +337,7 @@ export class NetGuest {
     }
     if (type === PLANET) g.onPlanet(decodePlanet(bin));
     else if (type === SNAPSHOT) g.onSnapshot(decodeSnapshot(bin));
+    else if (type === FRAG) g.onFragment(decodeFragment(bin));
   }
 
   sendCommand(cmd) {

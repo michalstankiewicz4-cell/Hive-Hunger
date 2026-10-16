@@ -202,7 +202,9 @@ export class Swarm3D {
    *   feeding: whether the swarm target is at matter (units then eat deliberately),
    *   nearestMode: test mechanic — each unit picks the nearest free voxel to itself and never idles,
    *   pickFood(p): index of a voxel to eat (near the target, or nearest to p in nearestMode), or -1,
-   *   cellCenter(idx): voxel centre, cellAt(p), isSolidCell(idx), bite(idx)
+   *   cellCenter(idx): voxel centre (where it is now), cellAt(p), isSolidCell(idx): a voxel in
+   *   its place in the grid (collisions), isFood(idx): still there to eat (also on a drifting
+   *   fragment), floatingAt(p): fragment voxel at a point or -1, bite(idx)
    */
   update(target, world) {
     const c = this.cfg;
@@ -221,7 +223,11 @@ export class Swarm3D {
 
       // landed on its bite: eats it until it is gone, then takes off
       if (landed[i]) {
-        if (food[i] >= 0 && world.isSolidCell(food[i])) {
+        if (food[i] >= 0 && world.isFood(food[i])) {
+          // a bite on a drifting fragment moves: the unit holds on and moves with it
+          const fc = world.cellCenter(food[i]);
+          pos[i3] += fc.x - foodPos[i3]; pos[i3 + 1] += fc.y - foodPos[i3 + 1]; pos[i3 + 2] += fc.z - foodPos[i3 + 2];
+          foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
           world.bite(food[i], food[i]);
           continue;
         }
@@ -254,7 +260,7 @@ export class Swarm3D {
       let targetWeight = w.target;
       let flocking = 1;
       // a bite is kept until eaten, even when the swarm moves on; new ones are picked near the swarm target
-      if (food[i] >= 0 && !world.isSolidCell(food[i])) {
+      if (food[i] >= 0 && !world.isFood(food[i])) {
         world.release(food[i]);
         food[i] = -1;
       }
@@ -273,6 +279,8 @@ export class Swarm3D {
         }
       }
       if (food[i] >= 0) {
+        const fc = world.cellCenter(food[i]); // a fragment's voxels move
+        foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
         tx = foodPos[i3]; ty = foodPos[i3 + 1]; tz = foodPos[i3 + 2];
         targetWeight = w.feed;
         // nearestMode: no free flying — only separation stays, the unit flies straight to its voxel
@@ -301,7 +309,7 @@ export class Swarm3D {
       if (blockAge[i] < 255) blockAge[i]++;
       if (stuck[i] > c.stuck.frames) {
         const b = lastBlock[i];
-        if (blockAge[i] < c.stuck.recentContact && world.isSolidCell(b)) {
+        if (blockAge[i] < c.stuck.recentContact && world.isFood(b)) {
           if (!world.holding && world.canBite(b, food[i])) {
             if (b !== food[i]) {
               world.release(food[i]);
@@ -348,6 +356,8 @@ export class Swarm3D {
       //  - a feeding unit that hits its own or a free voxel lands on it and starts eating,
       //  - otherwise it slides along the surface.
       p.x = px; p.y = py; p.z = pz;
+      // a fragment that drifted onto the unit doesn't trap it: it may fly out
+      const inFragment = world.floatingAt(p) >= 0;
       const d = [dx, dy, dz];
       const substeps = Math.max(1, Math.ceil(this.speed / MAX_STEP));
       const stepLen = this.speed / substeps;
@@ -356,8 +366,9 @@ export class Swarm3D {
           const ax2 = AXES[a];
           const old = p[ax2];
           p[ax2] = old + d[a] * stepLen;
-          const idx = world.cellAt(p);
-          if (!world.isSolidCell(idx)) continue;
+          let idx = world.cellAt(p);
+          // the grid, then the drifting fragments (units don't fly through them either)
+          if (!world.isSolidCell(idx) && (inFragment || (idx = world.floatingAt(p)) < 0)) continue;
           p[ax2] = old;
           // land on its own bite or a free voxel. In nearest-block mode only next to its own bite —
           // touching the planet on the way somewhere else is not a reason to stop there

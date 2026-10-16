@@ -148,6 +148,29 @@ async def main():
             t.ok((await host.evaluate(GAME))['level'] == 2 and await host.locator('#summary').is_hidden()
                  and await guests[1].locator('#summary').is_hidden(), 'everyone pressed: next planet, summary closed')
 
+            # a piece bitten off on the host drifts on every screen; eating it there shows on the guests
+            cut = await host.evaluate("""() => { const g = window.__dbg, pl = g.planet, N = pl.N;
+              let lo = -1; for (let i = 0; i < N && lo < 0; i++) for (let idx = i; idx < pl.hp.length; idx += N) if (pl.hp[idx] > 0) { lo = i; break; }
+              for (let k = 0; k < N; k++) for (let j = 0; j < N; j++) { const idx = (k * N + j) * N + lo + 3; if (pl.hp[idx] > 0) pl.remove(idx); }
+              g.update();
+              const f = pl.fragments.list[0];
+              return f ? { id: f.id, count: f.count } : null; }""")
+            await host.wait_for_timeout(1500)
+            frag = 'pl => { const f = pl.fragments.list[0]; return f ? { id: f.id, count: f.count, pos: f.pos.toArray() } : null; }'
+            gf = await guests[1].evaluate(f'() => ({frag})(window.__dbg.planet)')
+            t.ok(cut is not None and gf is not None and gf['id'] == cut['id'] and gf['count'] == cut['count'],
+                 'a piece bitten off on the host drifts on the guests too', f'host {cut} guest {gf}')
+            await host.evaluate("""() => { const g = window.__dbg, pl = g.planet, fr = pl.fragments, f = fr.list[0];
+              for (const idx of fr.exposedOf(f).slice(0, 10)) pl.remove(idx);
+              g.update(); g.update(); g.update(); g.update(); }""")
+            await host.wait_for_timeout(1500)
+            await guests[1].evaluate('() => { const g = window.__dbg; for (let f = 0; f < 3; f++) g.update(); }')
+            hf = await host.evaluate(f'() => ({frag})(window.__dbg.planet)')
+            gf = await guests[1].evaluate(f'() => ({frag})(window.__dbg.planet)')
+            dist = sum((a - b) ** 2 for a, b in zip(hf['pos'], gf['pos'])) ** 0.5
+            t.ok(gf['count'] == hf['count'] == cut['count'] - 10 and dist < 0.5,
+                 'voxels eaten off the piece disappear on the guests; it is in the same place', f"host {hf['count']} guest {gf['count']}, {dist:.2f} apart")
+
             # connection stats: every guest has a measured ping, shown in the HUD and the room panel
             stats = await host.evaluate('() => window.__dbg.netStats')
             t.ok(stats[0].get('host') and all(isinstance(x.get('rtt'), int) for x in stats[1:]), 'ping measured for every guest', stats)
@@ -182,6 +205,14 @@ async def main():
             ll = await late.evaluate('() => [window.__dbg.planet.left, window.__dbg.planet.total]')
             t.ok(hl[1] == ll[1] and hl[0] < hl[1] and abs(hl[0] - ll[0]) < 3000,
                  'a late guest gets the eaten voxels (compressed planet message)', f'host {hl} late {ll}')
+            # hold still while comparing (the last frames send what is still queued)
+            await host.evaluate('() => { const g = window.__dbg; g.stop(); do g.update(); while (g.frameNo % g.cfg.net.snapshotEvery !== 0); }')
+            await late.wait_for_timeout(2500)
+            await late.evaluate('() => { const g = window.__dbg; for (let f = 0; f < 3; f++) g.update(); }')
+            hc = await host.evaluate('() => window.__dbg.planet.fragments.list.map(f => [f.id, f.count])')
+            lc = await late.evaluate('() => window.__dbg.planet.fragments.list.map(f => [f.id, f.count])')
+            t.ok(len(hc) > 0 and sorted(hc) == sorted(lc), 'a late guest gets the drifting pieces', f'host {hc} late {lc}')
+            await host.evaluate('() => window.__dbg.start()')
             await host.evaluate('() => window.__dbg.net.close()')
             await late.wait_for_function("document.getElementById('menu').innerText.includes('host left')", timeout=20000)
             t.ok(True, 'guest sees "The host left the room"')

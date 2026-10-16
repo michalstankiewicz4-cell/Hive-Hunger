@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.15.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.16.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -12,7 +12,7 @@ Eating is deliberate. At matter, every unit claims its own voxel (a "bite"), fli
 
 Planets come in a cycle of levels: 1 — a test board with every box shape from 1×1×1 to 4×4×4 voxels once (20 boxes, 5 voxels apart), 2 — the usual planet, 3 — a cube, 4 — the text TEST LVL in coloured letters, 5 — a test board with a sphere and a cube side by side (10 voxels apart); then it starts again. Every planet is drawn as a smooth surface: no steps — slopes, rounded corners and craters. It is graphics only: underneath, the swarm still eats voxels — every voxel is still 1 point.
 
-A planet counts as eaten only when its last voxel is gone. The swarm then flies back to its spawn point (the beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
+When eating cuts a piece off — a part no longer connected to the rest — it comes loose: every part smaller than the rest gently drifts away and turns (parts of equal size all stay). The swarm can chase it and eat it like any other voxel, for the same points. A planet counts as eaten only when its last voxel is gone, drifting pieces included. The swarm then flies back to its spawn point (the beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
 
 ## Points and upgrades
 
@@ -94,6 +94,7 @@ js/
   three/Game3D.js       scene, camera, input, game loop, roles (solo / host / guest)
   three/Player.js       one player: swarm, brain, beacon, settings, score
   three/VoxelPlanet.js  voxel planet
+  three/Fragments.js    pieces bitten off the planet: finding splits, drifting, eating them
   three/PlanetSurface.js smooth / wedge surfaces over the voxels (levels 3 and 4)
   three/shapes.js       shapes of the levels: sphere, cube, text
   three/Swarm3D.js      the flock (boids) with collisions and feeding

@@ -4,7 +4,7 @@ const THREE = window.THREE;
  * Extra planet graphics built from the voxel grid, for the levels that test new looks.
  * Physics and eating stay on the voxels (cubes); this only changes what is drawn.
  *
- * The grid is split into chunks of `CHUNK` voxels per axis. Eating a voxel marks the chunks
+ * The grid is split into chunks of `CHUNK` (16) voxels per axis. Eating a voxel marks the chunks
  * around it dirty; `sync()` rebuilds a few dirty chunks per frame.
  *
  * Styles (a "builder" fills one chunk's geometry):
@@ -25,8 +25,10 @@ export class PlanetSurface {
    * @param {VoxelPlanet} planet
    * @param {'smooth'|'wedges'} style
    * @param {THREE.Material} material vertex-coloured material
+   * @param {number} [chunk] chunk size in voxels (a small grid — a fragment — fits in one)
    */
-  constructor(planet, style, material) {
+  constructor(planet, style, material, chunk = CHUNK) {
+    this.chunk = chunk;
     this.planet = planet;
     this.style = style;
     this.build = BUILDERS[style];
@@ -34,7 +36,7 @@ export class PlanetSurface {
     this.group = new THREE.Group();
     planet.scene.add(this.group);
     // edges of cells (smooth) go from voxel -1 to N-1, so chunks cover N+1 positions
-    this.C = Math.ceil((planet.N + 1) / CHUNK);
+    this.C = Math.ceil((planet.N + 1) / chunk);
     this.meshes = new Map(); // chunk key → mesh
     this.dirty = new Set();
     this.budgetMs = 3; // time per frame for rebuilding chunks (at least one is rebuilt)
@@ -49,8 +51,8 @@ export class PlanetSurface {
 
   /** A voxel changed: its chunk and the neighbouring ones it touches need rebuilding. */
   touch(vi, vj, vk) {
-    const lo = (v) => Math.max(0, Math.floor(v / CHUNK));
-    const hi = (v) => Math.min(this.C - 1, Math.floor((v + 2) / CHUNK));
+    const lo = (v) => Math.max(0, Math.floor(v / this.chunk));
+    const hi = (v) => Math.min(this.C - 1, Math.floor((v + 2) / this.chunk));
     for (let k = lo(vk); k <= hi(vk); k++) for (let j = lo(vj); j <= hi(vj); j++) for (let i = lo(vi); i <= hi(vi); i++) {
       this.dirty.add(this.key(i, j, k));
     }
@@ -73,8 +75,8 @@ export class PlanetSurface {
     const key = this.key(i, j, k);
     const out = { pos: [], nrm: [], col: [], idx: [] };
     // chunk ranges in voxel coordinates (cell origins), -1 .. N-1
-    const r0 = (c) => c * CHUNK - 1;
-    this.build(this.planet, r0(i), r0(j), r0(k), CHUNK, out);
+    const r0 = (c) => c * this.chunk - 1;
+    this.build(this.planet, r0(i), r0(j), r0(k), this.chunk, out);
     const old = this.meshes.get(key);
     if (old) {
       this.group.remove(old);

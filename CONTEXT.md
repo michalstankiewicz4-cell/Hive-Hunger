@@ -25,6 +25,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **"Eat nearest block"** toggle (test mechanic, on by default): after eating, a unit goes straight to the nearest uneaten voxel; no free flying.
 - **Clicks** send the whole swarm to the spot (marker ring shown); the swarm flies around the planet, not through it. Stuck units bite through the blocking voxel.
 - **Beacon** at the spawn point (about one planet radius above the surface, on screen, away from the panel): clicking it calls the swarm home.
+- **Pieces bitten off drift (0.16.0):** when eating splits a body, every part smaller than the rest comes loose, drifts gently away from the centre and turns; parts of equal size all stay (the owner's choices: "every part smaller than the rest", including big halves; equal parts both stay). Drones can chase and eat them for normal points; the planet counts as eaten only when the pieces are gone too.
 - **100% means every voxel is gone.** Then the swarm returns home and only then does the next planet appear.
 - **Defaults:** units 20, speed 0.05, power 0.5, spacing 1.5, cohesion 1.0, "Eat nearest block" on. "Reset to default" restores them.
 - **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player **Esc** pauses and opens it, Esc again carries on (no Menu button — removed on request). No atmosphere glow (removed on request).
@@ -59,7 +60,7 @@ Older way (0.6.0–0.11.1), only as a fallback: fast-forwarding through the Linu
 
 ## Testing
 
-Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` instead of the CDNs, a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the level cycle and the smooth / wedge surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). Run all four after every change to the game.
+Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` instead of the CDNs, a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the level cycle and the smooth / wedge surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). `test_fragments.py` checks pieces coming loose, drifting and being eaten. Run all five after every change to the game.
 
 Lessons from writing them:
 
@@ -103,12 +104,15 @@ Lessons from writing them:
 | 0.14.2 | tag `v0.14.2` | level 1 back to the smooth style (owner's choice) |
 | 0.14.3 | tag `v0.14.3` | extra-smooth style code removed |
 | 0.15.0 | tag `v0.15.0` | level 1: every box shape 1×1×1 … 4×4×4; the sphere + cube board moves to level 5 |
+| 0.16.0 | tag `v0.16.0` | pieces bitten off drift and turn; the swarm chases and eats them |
 
 ## Known limitations
 
 - The host's tab must stay in the foreground (browsers pause animation in background tabs → the game pauses for everyone).
 - Multiplayer depends on the PeerJS public server for joining; strict NATs without TURN may fail to connect (no TURN server is configured).
 - With slow defaults (20 units, speed 0.05) a planet takes a long time; sliders change that live.
+- A huge, fast swarm crumbles a planet into thousands of small drifting pieces (each its own small mesh); with 1500 units at full power the frame time roughly doubles while it lasts. Normal swarms add about 1–2 ms per frame.
+- A drifting piece stays one rigid piece even if eating cuts it in two (only the planet's still parts are checked for splits).
 - **Fast swarms can't finish a planet.** At high Speed a unit turns in a wide arc (radius ≈ `speed / turnRate`, e.g. 0.5 / 0.07 ≈ 7) and can circle an isolated last voxel forever without coming within `reachDistance` + its speed; the planet stays at a few dozen voxels. Found while testing 0.8.0 (3 swarms at speed 0.5); lowering Speed finishes it. Not fixed yet — waiting for the owner's decision.
 
 ## Ideas proposed earlier but not done

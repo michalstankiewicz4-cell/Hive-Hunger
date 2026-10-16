@@ -1,6 +1,7 @@
 import { terrainColor, mix } from '../utils/terrain.js';
 import { PlanetSurface } from './PlanetSurface.js';
 import { buildShape } from './shapes.js';
+import { Fragments } from './Fragments.js';
 
 const THREE = window.THREE;
 
@@ -26,7 +27,7 @@ export class VoxelPlanet {
    * @param {{radius?:number, style?:'cubes'|'smooth'|'wedges', shape?:'sphere'|'cube'|'text', text?:string}} [look]
    *   size, shape and graphics of this planet
    */
-  constructor(scene, cfg, seed, look = {}) {
+  constructor(scene, cfg, seed, look = {}, fragmentCfg = null) {
     this.scene = scene;
     this.cfg = cfg;
     this.s = cfg.voxelSize;
@@ -43,6 +44,7 @@ export class VoxelPlanet {
     this.fill = shape.fill;            // which voxels the planet started with (for eatenRuns)
     this.seed = seed ?? ((Math.random() * 1e6) | 0);
     this.alive = true;
+    this.fragments = null; // set at the end (pieces bitten off — Fragments.js)
     this.log = null; // multiplayer host: indices of removed voxels since the last network update
 
     const N = this.N, n3 = N * N * N;
@@ -93,6 +95,8 @@ export class VoxelPlanet {
       // the smooth surface replaces the cubes; wedges are added to them
       if (this.style === 'smooth') this.mesh.visible = false;
     }
+    // pieces bitten off the rest drift away (see Fragments.js)
+    this.fragments = fragmentCfg ? new Fragments(this, fragmentCfg) : null;
 
   }
 
@@ -171,7 +175,18 @@ export class VoxelPlanet {
     return false;
   }
 
+  /** Centre of a voxel — where it is now (a voxel of a drifting fragment moves with it). */
   cellCenter(idx, out) {
+    const fr = this.fragments;
+    if (fr !== null) {
+      if (fr.has(idx)) return fr.worldCenter(idx, out);
+      if (idx === fr.lastIdx && this.hp[idx] <= 0) return out.copy(fr.lastPos); // just eaten off a fragment
+    }
+    return this.gridCenter(idx, out);
+  }
+
+  /** Centre of a voxel's place in the grid (where it was built). */
+  gridCenter(idx, out) {
     const [i, j, k] = this.coords(idx);
     const s = this.s;
     const h = this.half;
@@ -190,10 +205,21 @@ export class VoxelPlanet {
     return idx >= 0 && this.hp[idx] > 0;
   }
 
+  /** Is the voxel still there to eat (in place or on a drifting fragment)? */
+  solid(idx) {
+    return idx >= 0 && (this.hp[idx] > 0 || (this.fragments !== null && this.fragments.has(idx)));
+  }
+
+  /** Strength left in a voxel (in place or on a fragment). */
+  strengthOf(idx) {
+    if (idx < 0) return 0;
+    return this.hp[idx] > 0 ? this.hp[idx] : this.fragments?.has(idx) ? this.fragments.hpOf(idx) : 0;
+  }
+
   // --- colours ---
 
   colorOf(idx) {
-    const p = this.cellCenter(idx, this._v);
+    const p = this.gridCenter(idx, this._v);
     const d = p.length() || 1;
     let rgb;
     if (this.tags) {
@@ -250,7 +276,7 @@ export class VoxelPlanet {
     if (this.count >= this.capacity) this.createMesh(Math.ceil(this.capacity * 1.6));
     const slot = this.count++;
     this.mesh.count = this.count;
-    this._m.makeTranslation(...this.cellCenter(idx, this._v).toArray());
+    this._m.makeTranslation(...this.gridCenter(idx, this._v).toArray());
     this.mesh.setMatrixAt(slot, this._m);
     const [r, g, b] = this.colorOf(idx);
     this.mesh.setColorAt(slot, this._c.setRGB(r, g, b));
@@ -280,7 +306,14 @@ export class VoxelPlanet {
   // --- eating ---
 
   bite(idx, amount) {
-    if (!this.alive || idx < 0 || this.hp[idx] <= 0) return BITE.MISS;
+    if (!this.alive || idx < 0) return BITE.MISS;
+    if (this.hp[idx] <= 0) {
+      // a voxel of a drifting fragment
+      if (!this.fragments?.has(idx)) return BITE.MISS;
+      if (!this.fragments.bite(idx, amount)) return BITE.HIT;
+      this.eaten(idx);
+      return BITE.REMOVED;
+    }
     this.hp[idx] -= amount;
     if (this.hp[idx] > 0) {
       this.showDamage(idx);
@@ -304,7 +337,7 @@ export class VoxelPlanet {
     if (slot < 0) return;
     const f = Math.max(0, Math.min(1, this.hp[idx] / this.cfg.strength));
     const k = 0.45 + 0.55 * f, shake = (1 - f) * 0.08 * this.s;
-    const c = this.cellCenter(idx, this._v);
+    const c = this.gridCenter(idx, this._v);
     c.x += (Math.random() - 0.5) * shake; c.y += (Math.random() - 0.5) * shake; c.z += (Math.random() - 0.5) * shake;
     this._m.makeScale(k, k, k).setPosition(c);
     this.mesh.setMatrixAt(slot, this._m);
@@ -356,21 +389,45 @@ export class VoxelPlanet {
    */
   biteSphere(idx, radius, amount, onRemoved, ownFood = -1) {
     if (!this.alive || idx < 0) return;
+    // a bite on a fragment takes only from that fragment (its neighbours by original place)
+    const fr = this.fragments, frag = fr ? fr.fragOf[idx] : -1;
     const [ci, cj, ck] = this.coords(idx);
     const r = radius / this.s, r2 = r * r, ri = Math.ceil(r);
     for (let dk = -ri; dk <= ri; dk++) for (let dj = -ri; dj <= ri; dj++) for (let di = -ri; di <= ri; di++) {
       if (di * di + dj * dj + dk * dk > r2) continue;
       const n = this.index(ci + di, cj + dj, ck + dk);
       if (n < 0 || this.claimedByOther(n, ownFood)) continue;
+      if (fr && fr.fragOf[n] !== frag) continue;
       if (this.bite(n, amount) === BITE.REMOVED) onRemoved(n);
     }
   }
 
+  /** A voxel is eaten (in place or on a fragment). */
   remove(idx) {
+    if (this.fragments?.has(idx)) {
+      if (this.fragments.eat(idx)) this.eaten(idx);
+      return;
+    }
+    this.takeOut(idx);
+    this.eaten(idx);
+    this.fragments?.noteRemoved(idx);
+  }
+
+  /** Counts an eaten voxel (and logs it for the guests). */
+  eaten(idx) {
     if (this.log) this.log.push(idx);
+    this.left--;
+  }
+
+  /** A voxel comes loose and joins a fragment: out of the grid, but not eaten. */
+  detach(idx) {
+    this.takeOut(idx);
+  }
+
+  /** Takes a voxel out of the static grid and shows what was under it. */
+  takeOut(idx) {
     this.hp[idx] = 0;
     this.removeInstance(idx);
-    this.left--;
     const [i, j, k] = this.coords(idx);
     this.surface?.touch(i, j, k);
     for (const [a, b, c] of NEIGHBORS) {
@@ -392,7 +449,7 @@ export class VoxelPlanet {
     let state = false, run = 0;
     for (let idx = 0; idx < n; idx++) {
       let eaten = false;
-      if (this.hp[idx] <= 0) {
+      if (this.hp[idx] <= 0 && !this.fragments?.has(idx)) {
         const i = idx % N, j = ((idx / N) | 0) % N, k = (idx / (N * N)) | 0;
         eaten = this.fill(i, j, k) > 0;
       }
@@ -442,6 +499,7 @@ export class VoxelPlanet {
         }
       }
     }
+    if (this.fragments?.any) this.fragments.exposedNear(p, r, out);
     return out.length;
   }
 
@@ -452,12 +510,12 @@ export class VoxelPlanet {
    * Returns an index or -1.
    */
   nearestFree(p, allowShared, out) {
-    if (!this.alive || this.count === 0) return -1;
+    if (!this.alive || (this.count === 0 && !this.fragments?.any)) return -1;
     const v = this._v;
     const pick = (list, freeOnly) => {
       let best = -1, bestD = Infinity;
       for (const idx of list) {
-        if (this.hp[idx] <= 0 || (freeOnly && this.claims[idx] > 0)) continue;
+        if (!this.solid(idx) || (freeOnly && this.claims[idx] > 0)) continue;
         this.cellCenter(idx, v);
         const d = (v.x - p.x) ** 2 + (v.y - p.y) ** 2 + (v.z - p.z) ** 2;
         if (d < bestD) { bestD = d; best = idx; }
@@ -473,6 +531,7 @@ export class VoxelPlanet {
     out.length = 0;
     const n = Math.min(3000, this.count);
     for (let k = 0; k < n; k++) out.push(this.idxOfSlot[(Math.random() * this.count) | 0]);
+    if (this.fragments?.any) for (let k = 0; k < 300; k++) out.push(this.fragments.randomVoxel());
     const idx = pick(out, true);
     if (idx >= 0) return idx;
     return allowShared ? pick(out, false) : -1;
@@ -480,12 +539,15 @@ export class VoxelPlanet {
 
   /** Nearest free (unclaimed) voxel from a random sample of exposed ones; if none is free — the nearest of any. */
   findMatter(p, samples) {
-    if (!this.alive || this.count === 0) return null;
+    if (!this.alive || (this.count === 0 && !this.fragments?.any)) return null;
     let best = -1, bestD = Infinity, bestFree = false;
     const v = this._v;
+    const sample = [];
     const n = Math.min(samples, this.count);
-    for (let k = 0; k < n; k++) {
-      const idx = this.idxOfSlot[(Math.random() * this.count) | 0];
+    for (let k = 0; k < n; k++) sample.push(this.idxOfSlot[(Math.random() * this.count) | 0]);
+    if (this.fragments?.any) for (let k = 0; k < 300; k++) sample.push(this.fragments.randomVoxel());
+    for (const idx of sample) {
+      if (idx < 0) continue;
       const free = this.claims[idx] === 0;
       if (bestFree && !free) continue;
       this.cellCenter(idx, v);
@@ -525,6 +587,10 @@ export class VoxelPlanet {
       const idx = this.idxOfSlot[s];
       onCell(idx, this.colorOf(idx));
     }
+    if (this.fragments) {
+      for (const f of this.fragments.list) for (const idx of this.fragments.exposedOf(f)) onCell(idx, this.voxelColor(idx));
+      this.fragments.clear();
+    }
     this.hp.fill(0);
     this.surface?.clear();
     this.count = 0;
@@ -541,6 +607,7 @@ export class VoxelPlanet {
   }
 
   dispose() {
+    this.fragments?.disposeAll();
     this.surface?.dispose();
     this.surfaceMaterial?.dispose();
     this.scene.remove(this.mesh);

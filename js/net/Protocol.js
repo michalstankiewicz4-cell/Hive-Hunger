@@ -9,12 +9,17 @@
  *   u32 removed | removed × u32 voxel index
  *
  * PLANET (type 2), host → guest(s): a new planet, or the current one for a guest who joins
- *   u8 type | u32 seed | u16 level | u8 hasBits | [bits: 1 bit per voxel, 1 = still solid]
+ *   u8 type | u32 seed | u16 level | u8 hasEaten | [eaten voxels: varint run lengths, see VoxelPlanet.eatenRuns]
+ *
+ * FRAG (type 4), host → guest(s): a piece bitten off the planet that now drifts (see Fragments.js)
+ *   u8 type | u32 id | 16 × f32: pivot (3), position (3), rotation quaternion (4), velocity (3), spin (3)
+ *   | u32 count | count × varint: voxel indices, sorted, each as the gap from the previous one
  */
 
 export const SNAPSHOT = 1;
 export const PLANET = 2;
 export const PART = 3; // a piece of a binary message too large for one WebRTC message
+export const FRAG = 4;
 
 /** Largest binary message sent in one piece (WebRTC data channels reject much larger ones). */
 export const MAX_PART = 60000;
@@ -140,4 +145,46 @@ export function decodePlanet(buf) {
   const level = v.getUint16(5, true);
   const bits = v.getUint8(7) ? new Uint8Array(buf.slice(8)) : null;
   return { seed, level, bits };
+}
+
+/** A drifting fragment (Fragments.js) for the guests; `cells` = its voxels still there. */
+export function encodeFragment(f, cells) {
+  const sorted = Int32Array.from(cells).sort();
+  const bytes = [];
+  let prev = 0;
+  for (const c of sorted) {
+    let d = c - prev;
+    prev = c;
+    while (d >= 128) { bytes.push((d & 127) | 128); d >>>= 7; }
+    bytes.push(d);
+  }
+  const head = 1 + 4 + 16 * 4 + 4;
+  const buf = new ArrayBuffer(head + bytes.length);
+  const v = new DataView(buf);
+  v.setUint8(0, FRAG);
+  v.setUint32(1, f.id, true);
+  const nums = [...f.pivot.toArray(), ...f.pos.toArray(), ...f.quat.toArray(), ...f.vel.toArray(), ...f.spin.toArray()];
+  nums.forEach((x, n) => v.setFloat32(5 + n * 4, x, true));
+  v.setUint32(head - 4, sorted.length, true);
+  new Uint8Array(buf, head).set(bytes);
+  return buf;
+}
+
+export function decodeFragment(buf) {
+  const v = new DataView(buf);
+  const id = v.getUint32(1, true);
+  const f = [];
+  for (let n = 0; n < 16; n++) f.push(v.getFloat32(5 + n * 4, true));
+  const head = 1 + 4 + 16 * 4 + 4;
+  const count = v.getUint32(head - 4, true);
+  const bytes = new Uint8Array(buf, head);
+  const cells = new Array(count);
+  let p = 0, prev = 0;
+  for (let n = 0; n < count; n++) {
+    let d = 0, shift = 0, b;
+    do { b = bytes[p++]; d += (b & 127) * 2 ** shift; shift += 7; } while (b & 128);
+    prev += d;
+    cells[n] = prev;
+  }
+  return { id, cells, motion: { pivot: f.slice(0, 3), pos: f.slice(3, 6), quat: f.slice(6, 10), vel: f.slice(10, 13), spin: f.slice(13, 16) } };
 }

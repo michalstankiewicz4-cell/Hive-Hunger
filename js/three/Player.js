@@ -76,7 +76,7 @@ export class Player {
         const start = (Math.random() * n) | 0;
         for (let k = 0; k < n; k++) {
           const idx = list[(start + k) % n];
-          if (pl.claims[idx] === 0 && pl.hp[idx] > 0) {
+          if (pl.claims[idx] === 0 && pl.solid(idx)) {
             pl.claim(idx);
             this.freeCandidates--;
             return idx;
@@ -93,6 +93,8 @@ export class Player {
       cellCenter: (idx) => game.planet.cellCenter(idx, feedCenter),
       cellAt: (p) => game.planet.cellAt(p),
       isSolidCell: (idx) => idx >= 0 && game.planet.hp[idx] > 0,
+      isFood: (idx) => game.planet.solid(idx),
+      floatingAt: (p) => game.planet.fragments?.at(p) ?? -1,
       bite: (idx, ownFood) => game.biteCell(idx, ownFood, this),
     };
   }

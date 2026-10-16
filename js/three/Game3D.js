@@ -201,8 +201,14 @@ export class Game3D {
 
   spawnPlanet(seed) {
     this.level++;
-    this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level));
+    this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level), this.cfg.fragments);
     if (this.role === 'host') this.planet.log = [];
+    const fr = this.planet.fragments;
+    if (fr) {
+      // pieces come off on the host (and in single player); guests get them from the host
+      fr.detect = this.role !== 'guest';
+      fr.onCreate = (f, cells) => { if (this.role === 'host') this.net?.broadcastFragment(f, cells); };
+    }
     for (const p of this.activePlayers()) p.onNewPlanet();
     this.banner = '';
   }
@@ -394,6 +400,11 @@ export class Game3D {
         this.net?.broadcastPlanet(this);
       }
     }
+    // bitten-off pieces drift and turn; new splits are found
+    this.planet.fragments?.step(this.started && this.planet.alive);
+    if (this.role === 'host' && this.frameNo % this.cfg.fragments.syncEvery === 0) {
+      this.net?.broadcastFragmentMotions(this.planet.fragments?.motions() || []);
+    }
     this.planet.sync();
     if (this.role === 'host' && this.frameNo % this.cfg.net.snapshotEvery === 0) this.net?.broadcastSnapshot(this);
   }
@@ -497,6 +508,7 @@ export class Game3D {
       if (this.planet.alive && this.planet.left <= 0) {
         this.planet.shatter((idx, color) => this.debris.emit(this.planet.cellCenter(idx, this.tmp), color, this.cfg.debris.perCellOnFinish));
       }
+      this.planet.fragments?.step(this.started && this.planet.alive);
       this.planet.sync();
     }
   }
@@ -560,6 +572,11 @@ export class Game3D {
     if (this.summary) this.setSummary(null);
   }
 
+  /** A piece bitten off on the host: the same fragment here (same voxels, id and motion). */
+  onFragment({ id, cells, motion }) {
+    this.planet?.fragments?.create(cells, id, motion);
+  }
+
   /** A state update from the host. */
   onSnapshot(s) {
     this.remoteSpin = s.spin;
@@ -578,7 +595,7 @@ export class Game3D {
     const pl = this.planet;
     if (pl && pl.alive) {
       for (const idx of s.removed) {
-        if (pl.hp[idx] > 0) {
+        if (pl.solid(idx)) {
           this.debris.emit(pl.cellCenter(idx, this.tmp), pl.colorOf(idx), this.cfg.debris.perCell);
           pl.remove(idx);
         }

@@ -2,6 +2,14 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.16.0] — 2026-10-16
+
+### Added
+- **Pieces bitten off drift away.** When eating cuts a body of voxels into parts, every part smaller than the rest comes loose and gently drifts away from the planet's centre while slowly turning (drawn with the same smooth surface). Parts of equal size all stay. Bodies that were apart from the start — the boxes, the letters, the sphere and the cube — are never compared with each other.
+- The swarm can chase drifting pieces, land on them and eat them like any other voxel — same points; units don't fly through them. Coming loose is not eating: the planet counts as eaten only when the pieces are gone too.
+- Multiplayer: the host finds the splits and sends each new piece to the guests (binary `FRAG` message), with position corrections twice a second; a guest who joins mid-planet gets the pieces drifting at that moment.
+- `fragments` settings in `config.js` (drift, damping, spin, flood-fill limit, sync interval) and a new test, `tests/test_fragments.py`.
+
 ## [0.15.0] — 2026-10-16
 
 ### Added

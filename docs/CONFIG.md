@@ -113,6 +113,17 @@ Slider ranges and steps (`min`, `max`, `step`, `decimals`) and the `Eat nearest 
 | `timeoutMs` | 10000 | silence after which a player counts as **connection lost** | lower = faster detection, more false drops |
 | `noticeMs` | 6000 | how long joined / left / lost notices stay in the HUD | |
 
+## Pieces bitten off (`fragments`)
+
+| Value | Default | What it does | More / less |
+| --- | --- | --- | --- |
+| `drift` | 0.01 | starting speed of a piece, away from the planet's centre (plus a little sideways), units per frame | higher = flies off faster |
+| `damping` | 0.997 | drift speed kept each frame; a piece stops after about `drift / (1 − damping)` ≈ 3.3 units | 1 = never stops |
+| `spin` | 0.006 | turn per frame, radians (each piece 0.5–1.5 × this, about a random axis) | |
+| `spinDamping` | 1 | turn kept each frame | 1 = keeps turning |
+| `maxSteps` | 400000 | flood-fill limit when looking for a split per eaten cluster; above it no split is found | lower = cheaper, huge halves don't come loose |
+| `syncEvery` | 30 | frames between piece positions sent to guests | |
+
 ## Other
 
 - `background` — scene background colour behind the sky.
@@ -139,4 +150,5 @@ Every node is bought once and needs its parent; effects add up on top of the sli
 ## Other constants outside `config.js`
 
 - `js/three/PlanetSurface.js`: `CHUNK = 16` (voxels per chunk edge of the smooth / wedge surfaces), `budgetMs = 3` (time per frame for rebuilding changed chunks; at least one is rebuilt).
+- `js/three/Fragments.js`: `HASH = 8` (cell size of the spatial hash used to find drifting pieces near a unit).
 - `js/three/Lightning3D.js`: `life = 20` (frames a bolt stays visible), `jag` (how jagged it is), `pieces` (kinks per jump).
