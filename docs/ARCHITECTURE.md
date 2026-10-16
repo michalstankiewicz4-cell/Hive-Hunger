@@ -61,7 +61,7 @@ css/             one stylesheet per part of the page
 | `grid.js` | `BITE` results, the six neighbours, offsets within 2 voxels |
 | `Fragments.js` | Pieces bitten off the planet: finding splits (flood fill from the neighbours of eaten voxels), drifting and turning, their own smooth surfaces, eating them, the spatial hash the swarm uses to find and avoid them |
 | `PlanetSurface.js` | Extra planet graphics over the voxels: `smooth` (surface nets) and `wedges` (ramps and corner pieces in the steps), built per 16³ chunk and rebuilt as voxels are eaten (within `budgetMs` per frame) |
-| `shapes.js` | Which voxels are solid for a level's `shape`: `sphere`, `cube`, `pair`, `boxes`, `text` |
+| `shapes.js` | Which voxels are solid for a level's `shape`: `sphere`, `belt` (the Kuiper Belt's band, a grid that isn't a cube); `cube`, `pair`, `boxes`, `text` (test boards, not missions any more) |
 | **`js/three/effects/`** | |
 | `Lightning3D.js` | Lightning bolts (chain lightning, storm ships): a jagged 1-px white core with a thin glow ribbon (`glowPx` = 2 px each side, turned to the camera every frame), flickering out |
 | `Zaps.js` | Support ships' lightning: a seeded, bent bolt through a chain of ships with flowing energy and branches, run from ship to ship; reports each finished jump |
@@ -106,9 +106,14 @@ css/             one stylesheet per part of the page
 ```mermaid
 stateDiagram-v2
     [*] --> StartScreen
-    StartScreen --> Playing: Single player
-    Playing --> StartScreen: Esc (pause, single player)
-    StartScreen --> Playing: Esc (single player, after a pause)
+    StartScreen --> Map: Single player (new game or Continue a save)
+    Map --> Playing: Start on a mission's card
+    Map --> StartScreen: Back / Esc
+    Playing --> Paused: Esc (single player)
+    Paused --> Playing: Resume / Esc
+    Paused --> Paused: Save game
+    Paused --> StartScreen: Save and exit / Exit to main menu
+    Playing --> Map: mission eaten, ships gone (single player)
     StartScreen --> WaitingRoom: Multiplayer · Co-op / PvP
     [*] --> WaitingRoom: open a room link
     WaitingRoom --> WaitingRoom: Start / Not ready, players join or leave
@@ -123,7 +128,7 @@ stateDiagram-v2
     }
 ```
 
-- **Start screen** and **waiting room** are the overlay (`StartScreen`); `game.started` is `false`, so swarms wait at their tunnels and the planet doesn't turn. In single player **Esc** sets `started` back to `false` (pause) and shows the start screen; Esc again or **Single player** carries on. Creating a room (`Game3D.becomeHost`) starts from scratch: a new planet 1 and a new host player (no points, upgrades or eaten voxels from single player); only the settings panel values are kept.
+- **Start screen** and **waiting room** are the overlay (`StartScreen`); `game.started` is `false`, so swarms wait at their tunnels and the planet doesn't turn. In single player **Esc** sets `started` back to `false` and shows the pause menu (`StartScreen.showPause`: Resume, Save game, Save and exit, Exit to main menu, Settings); Esc again or Resume carries on. **Tab** (the tree) also stops single player (`game.paused`) while it is open. Creating a room (`Game3D.becomeHost`) starts from scratch: a new planet 1 and a new host player (no points, upgrades or eaten voxels from single player); only the settings panel values are kept.
 - **Playing:** `game.started` is `true`. In multiplayer the room panel (`Lobby`, bottom left) has the link and **Leave room**; leaving reloads the page without `?room=`, i.e. back to the start screen.
 - Someone who opens a room link while the match is running skips the waiting room.
 - **Jumping:** after the last voxel, `Player.jumpOut` sets `homeMode = 'jump'` and `Swarm3D.jumpAll` gives every ship a random delay within `swarm.warp.window`; when it runs out (`stepWarp`, host) the ship speeds up away from the planet (`accel`, up to `maxSpeed`), leaves a streak (`renderTrails`) and after `warp.frames` is hidden. The next planet appears when every ship is hidden (`Player.departed`) or after `beacon.returnTimeoutFrames`.
@@ -200,7 +205,7 @@ Until the match has started (`game.started`: Single player chosen, or every play
 
 ## The planet (`VoxelPlanet`)
 
-- Voxels in the level's shape (`shapes.js`): a full-size sphere (radius 24 / voxel 0.5) has ≈ 463 000 voxels, planet 1 ≈ 165 000, the cube ≈ 314 000, the text ≈ 8 000. Colours come from 3D noise on the sphere (`terrainColor`) for the outer `terrainDepth`, rock below (the text: a colour per letter).
+- Voxels in the level's shape (`shapes.js`): a full-size sphere (Earth, radius 24 / voxel 0.5) has ≈ 463 000 voxels, the Kuiper Belt ≈ 11 000 (335 rocks in a grid of ≈ 2.7 million cells), the test cube ≈ 314 000. Colours come from 3D noise on the sphere (`terrainColor`) for the outer `terrainDepth`, rock below (the text: a colour per letter).
 - Only **exposed** voxels (with an empty neighbour) are instances of the `InstancedMesh`; when a voxel is eaten, its hidden neighbours are added. This keeps tens of thousands of instances instead of hundreds of thousands.
 - **Pieces that come loose** (`Fragments.js`). Every eaten voxel is noted; once per frame the eaten voxels are grouped into connected clusters, and for each cluster the solid voxels next to it — which were all one body through it — get one flood fill each, run in turns, one voxel at a time. Fills that meet merge. As soon as at most one fill is still growing, every fill that ran out is a closed part smaller than the rest and comes loose; if all of them ran out, the biggest stays, and so do parts of equal biggest size. The work is capped at `fragments.maxSteps` voxels (then no split is found). A loose part's voxels leave the static grid (`hp` 0 there, so collisions, the surface and instancing ignore them; `left` doesn't change — coming loose is not eating) and keep their indices: their strength lives in the fragment's own small grid, drawn by its own `PlanetSurface` (one chunk). A fragment has a position, rotation, velocity and spin; a voxel's place is position + rotation × (its grid centre − the fragment's original centre). `cellCenter`, `solid`, `bite`, `biteSphere`, `remove`, `exposedNear`, `nearestFree` and `findMatter` all know about fragment voxels, so the swarm claims, chases, lands on and eats them like any other; `fragments.at(p)` lets collisions stop units at a fragment (through a spatial hash of 8-unit cells). A unit landed on a drifting bite moves with it. Voxels eaten off a fragment are checked the same way in the fragment's own grid (`splitFragment`); a part that comes loose becomes a new fragment (its voxels move over from the parent, not eaten) that starts where it was in the parent, with the parent's velocity at that point (incl. the turn), a small push away, and a slightly different spin. `origin` (where it came off) limits its drift to `maxDistance`.
 - `seed` makes the planet reproducible. `log` collects eaten voxels for the network; `eatenRuns()` / `applyEatenRuns()` transfer the eaten voxels to a guest who joins mid-planet (run lengths over the grid — small even for large grids).

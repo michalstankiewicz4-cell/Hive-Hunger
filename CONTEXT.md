@@ -4,12 +4,19 @@ A recovery file: everything needed to pick the project up again — what it is, 
 
 ## What it is
 
-**Hive Hunger** — a free 3D browser game: a swarm that behaves like a flock of birds eats a voxel planet. Single player by default; multiplayer (Co-op / PvP, up to 4) over WebRTC.
+**Hive Hunger** — a free 3D browser game: a swarm that behaves like a flock of birds eats voxel planets. Single player goes through missions on a solar system map (only the Kuiper Belt and Earth can be played so far) with a saved game; multiplayer (Co-op / PvP, up to 4) over WebRTC, the missions in order. 13 ship types, an upgrade tree, a start screen with the owner's picture.
 
 - Play: https://michalstankiewicz4-cell.github.io/Hive-Hunger/
 - Repository: https://github.com/michalstankiewicz4-cell/Hive-Hunger (branch `main`)
 - Owner: Michał (michalstankiewicz4-cell), Warsaw. Talks in Polish; the game, code comments and docs are in **English**.
 - Current version: see `js/version.js` and `CHANGELOG.md`.
+
+## Where we left off (2026-10-16, end of the day)
+
+- Live version: 0.42.1 (see `js/version.js`); everything is pushed to `main`; the owner still has to add the tags v0.32.0 … v0.42.1 in his clone (see Publishing).
+- **Next, when the owner asks:** the upgrade tree's logic. The new layout is in `js/core/SkillTree.js` (ships = hexagons, their properties = circles, the swarm's traits = diamonds, levels 0–5, links across branches); only Brood, Wings, Jaws and the lightning work, everything else is `soon`. Open questions for him: (1) what buying a ship does — unlock the type (but every player now starts with 2 of each), +2 ships, or only open its properties; (2) the list of properties; (3) the cross links. A drawn proposal was shown to him (same layout as the game's tree).
+- Other open things: the rest of the solar system's bodies are on the map as "coming soon" (only the Kuiper Belt and Earth have levels); unlocking missions in order is chosen but switched off for now (every playable mission is open); the "fast swarms can't finish a planet" limitation (see Known limitations).
+- How to work: answer in Polish, write game / code / docs in English; propose ideas, don't add them on your own; ask with a few options when a request leaves real choices; run all five test suites before every publish; keep README, CHANGELOG, this file, `docs/*` and `tests/README.md` up to date; one publish = one version bump.
 
 ## How the game is meant to behave (decisions so far)
 
@@ -56,7 +63,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **100% means every voxel is gone.** Then the ships jump to hyperspace and only then does the next planet appear (0.25.0; before that they flew home).
 - **Defaults:** units 26 (2 of each type), speed 0.05, power 0.5, turning 0.12. "Reset to default" restores them.
 - **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player **Esc** pauses and opens it, Esc again carries on (no Menu button — removed on request). No atmosphere glow (removed on request).
-- **Fair rooms:** creating a Co-op/PvP room starts from scratch (planet 1, no points/upgrades/eaten voxels from single player); only the settings panel stays.
+- **Fair rooms:** creating a Co-op/PvP room starts from scratch (the first mission, no points/upgrades/eaten voxels from single player); only the settings panel stays.
 - **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (voxels eaten of the planet per player, share, total, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
 - **SEO:** in English; 0.41.0 (owner): Polish keywords and a Polish paragraph in the hidden text too. Title, description, keywords (including "incremental free"; 0.40.0: solar system, 13 ship types, co-op/PvP), Open Graph/Twitter thumbnail (0.40.0, owner: the start screen — `og-image.jpg`, rendered from the page at 1200 × 630 without the version; before: a picture of the game), `VideoGame` JSON-LD, sitemap.
 
@@ -82,9 +89,11 @@ Licence: MIT (`LICENSE`), chosen by the owner.
 
 - GitHub Pages deploys automatically from `main` via `.github/workflows/static.yml` (whole repository is the site).
 - Versioning: bump `js/version.js`, add a `CHANGELOG.md` entry, tag the commit `vX.Y.Z`.
-- The owner's clone is `C:\Users\micha\vsrepos\Hive-Hunger` (Windows). The Claude GitHub app has no write access to the repository, so pushes go out from his machine with his own git credentials.
+- The owner's clone is `C:\Users\micha\vsrepos\Hive-Hunger` (Windows).
+- **Since 0.32.0 (2026-10-16) the cloud workspace can push `main` itself**: the owner connected GitHub to Claude. `git push origin main` works (the remote is `https://github.com/michalstankiewicz4-cell/Hive-Hunger.git`; the old lowercase name redirects). **Tags can't be pushed from there** (the proxy refuses tag refs and the GitHub API) — tell the owner the command for his clone: `git pull`, `git tag vX.Y.Z <commit>`, `git push origin --tags`. Tags still to add there at the end of 2026-10-16: v0.32.0 … v0.42.1 (see `git tag` in the workspace for the commits).
+- Each publish: run the five test suites, update the docs, bump the version (one publish = one version), commit, tag, push `main`, give the owner the tag commands.
 
-How an assistant working in a cloud workspace publishes (as done for 0.12.0):
+Older way, when the workspace had no write access (as done for 0.12.0–0.31.1):
 
 1. Commit and tag in the cloud workspace, then `git bundle create hh.bundle vPREV..main vNEW`.
 2. Copy the bundle into the owner's clone folder on his computer (a file transfer to the connected folder).
@@ -94,7 +103,7 @@ Older way (0.6.0–0.11.1), only as a fallback: fast-forwarding through the Linu
 
 ## Testing
 
-Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` (the same files as `js/vendor/`), a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the level cycle and the smooth / wedge surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). `test_fragments.py` checks pieces coming loose, drifting and being eaten. Run all five after every change to the game. A refactor that should not change anything can also be checked by comparing with the previous version in a `git worktree`: geometry checksums of the smooth surface, screenshots of the panels with the canvas hidden.
+Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` (the same files as `js/vendor/`), a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the missions (the Kuiper Belt band and Earth), the map's bodies and the smooth surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks the tree's nodes, points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). `test_fragments.py` checks pieces coming loose, drifting and being eaten. Run all five after every change to the game. A refactor that should not change anything can also be checked by comparing with the previous version in a `git worktree`: geometry checksums of the smooth surface, screenshots of the panels with the canvas hidden.
 
 Lessons from writing them:
 
@@ -173,10 +182,11 @@ Lessons from writing them:
 | 0.37.0 | tag `v0.37.0` | no automatic camera turning (planet spin off) |
 | 0.38.0 | tag `v0.38.0` | Three.js and PeerJS in the repository (`js/vendor/`), no CDNs |
 | 0.39.0 | tag `v0.39.0` | the Kuiper Belt seen at an angle |
+| 0.40.0 | tag `v0.40.0` | Esc menu with Save and exit; Continue / New game; Delete save game; SEO and the start screen as the link preview |
+| 0.41.0 | tag `v0.41.0` | Save game in the Esc menu; Polish keywords and description for search |
 | 0.41.1 | tag `v0.41.1` | Tab pauses single player while the tree is open |
 | 0.42.0 | tag `v0.42.0` | new tree layout: ships, their properties, swarm traits on levels 0–5 (logic later) |
-| 0.41.0 | tag `v0.41.0` | Save game in the Esc menu; Polish keywords and description for search |
-| 0.40.0 | tag `v0.40.0` | Esc menu with Save and exit; Continue / New game; Delete save game; SEO and the start screen as the link preview |
+| 0.42.1 | tag `v0.42.1` | documentation brought up to date; where the work stopped |
 
 ## Known limitations
 

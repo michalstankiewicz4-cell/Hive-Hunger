@@ -1,8 +1,8 @@
 # Hive Hunger
 
-A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
+A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats planets made of voxels — mission by mission across the solar system, from the Kuiper Belt in to the Sun — alone (with a saved game), or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.42.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.42.1 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -27,7 +27,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 - **Tab** (or a click on the points counter) — upgrade tree (Esc closes it); in single player the game stands still while it is open
 - **Space** — single player: pause (nothing moves, the camera still turns; "Paused" at the bottom), Space again carries on
 - **Esc** — single player: pause — **Resume** (or Esc again), **Save game** (saves and stays paused), **Save and exit** (keeps the game in this browser and goes to the main menu), **Exit to main menu** (without saving), **Settings**. With a saved game, **Single player** says so under it (*New game or continue your saved game*) and asks: **Continue** (the same planet with the voxels eaten so far, your points, upgrades and settings) or **New game** (the save and the map's ticks are deleted). **Settings → Delete save game** deletes them too (it asks once more). Esc also closes the upgrade tree
-- **Ship guide** (start screen) — every ship type with a small picture and what it does, attack and support ships apart, all on one screen; pointing at a ship plays its shot.
+- **Ship guide** (start screen) — every ship type with a small picture and what it does, attack and support ships apart, in a window that fits the screen (only the ships scroll; the title and Back stay); pointing at a ship plays its shot.
 - **Settings** (start screen, waiting room, or the room panel during a match) — **Mouse** (what it does, camera turning and zoom speed), **Keyboard** (the keys) and **Graphics** (FPS counter, render resolution 50 / 75 / 100% / native, smooth edges, amount of effects Low / Medium / High). They apply at once and are remembered in your browser; **Reset settings** restores them. The game screen itself shows no description of the controls — they are listed here. — the three side by side
 - **Panel in the top-right corner** — adjust your swarm live:
   - **Units** — number of units in the swarm (10–100; upgrades can't take it past 100)
@@ -52,7 +52,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 
 ## Multiplayer
 
-The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). A room always starts from scratch — a fresh planet 1, no points or upgrades — even if you were playing single player before (only your settings panel stays). The match begins when every player in the room has pressed **Start** (**Not ready** takes it back).
+The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). A room always starts from scratch — the first mission (the Kuiper Belt), no points or upgrades — even if you were playing single player before (only your settings panel stays). The match begins when every player in the room has pressed **Start** (**Not ready** takes it back).
 
 - **Co-op** — everyone eats the same planet together; the scoreboard shows how many voxels each player has eaten (the summary after each planet shows the shares).
 - **PvP** — a race on the same planet: whoever eats more of it wins the planet.

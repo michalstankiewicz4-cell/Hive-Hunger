@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.42.1] — 2026-10-16
+
+### Changed
+- Documentation brought up to date: README (intro, Ship guide, rooms), CONTEXT (where the work stopped and what is next, how publishing works now — `main` is pushed from the workspace, tags by the owner — the version table in order), ARCHITECTURE (game states with the map and the pause menu, shapes, voxel counts), CONFIG (the upgrade tree).
+
 ## [0.42.0] — 2026-10-16
 
 ### Added

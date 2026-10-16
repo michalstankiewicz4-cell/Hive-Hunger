@@ -229,17 +229,15 @@ Slider ranges and steps (`min`, `max`, `step`, `decimals`): Units, Speed, Power,
 
 ## Upgrades and lightning (`js/core/SkillTree.js`)
 
-Every node is bought once and needs its parent; effects add up on top of the sliders.
+Every node is bought once and needs a parent (`parents`: any one of them, or every one with `all`); effects add up on top of the sliders. Nodes have a `kind` — `swarm` (diamond), `ship` (hexagon), `prop` (a ship's property, circle) — and a level `depth` 0–5. The ships, their properties, Agility and Swarm sense are `soon` (shown, not for sale yet: their logic comes later). What can be bought:
 
 | Branch | Nodes | Costs (points) | Effect per node |
 | --- | --- | --- | --- |
-| Brood | I–V | 40, 90, 180, 360, 700 | +10 units |
-| Wings | I–V | 40, 90, 180, 360, 700 | +10% speed |
-| Jaws | I–V | 40, 90, 180, 360, 700 | +0.2 bite radius |
+| Brood | I–III | 40, 90, 180 | +10 units |
+| Wings | I–II | 40, 90 | +10% speed |
+| Jaws | I–III | 40, 90, 180 | +0.2 bite radius |
 | Chain lightning | 1 | 250 | unlocks the bolt |
-| Arcs | I–III | 150, 300, 600 | +2 jumps |
-| Voltage | I–III | 150, 300, 600 | +0.15 strength drained per voxel |
-| Capacitor | I–III | 150, 300, 600 | a bolt 1 s more often |
+| Arcs → Voltage → Capacitor | one each, in a chain | 150, 300, 600 | +2 jumps; +0.15 strength drained per voxel; a bolt 1 s more often |
 
 `BOLT_BASE` — the bolt before upgrades: every 6 s, 4 jumps, drains 0.25 of a voxel's strength (never below 5%), jumps up to 9 units between drones.
 
