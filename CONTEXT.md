@@ -58,8 +58,10 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player **Esc** pauses and opens it, Esc again carries on (no Menu button — removed on request). No atmosphere glow (removed on request).
 - **Fair rooms:** creating a Co-op/PvP room starts from scratch (planet 1, no points/upgrades/eaten voxels from single player); only the settings panel stays.
 - **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (voxels eaten of the planet per player, share, total, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
-- **SEO:** title, description, keywords (including "incremental free"; 0.40.0: solar system, 13 ship types, co-op/PvP), Open Graph/Twitter thumbnail (0.40.0, owner: the start screen — `og-image.jpg`, rendered from the page at 1200 × 630 without the version; before: a picture of the game), `VideoGame` JSON-LD, sitemap.
+- **SEO:** in English; 0.41.0 (owner): Polish keywords and a Polish paragraph in the hidden text too. Title, description, keywords (including "incremental free"; 0.40.0: solar system, 13 ship types, co-op/PvP), Open Graph/Twitter thumbnail (0.40.0, owner: the start screen — `og-image.jpg`, rendered from the page at 1200 × 630 without the version; before: a picture of the game), `VideoGame` JSON-LD, sitemap.
 
+- **"New or continue" note (0.41.0, owner):** under Single player in the main menu when a save exists, so the player knows before pressing.
+- **Save game (0.41.0, owner):** under Resume in the Esc menu; it stays paused and the note says "Saved ✓" with the time (assistant's choice).
 - **Saving (0.40.0, owner):** Esc in single player shows "Save and exit" or simply "Exit to main menu"; then Single player asks whether to continue or start a new game; Settings get "Delete save game". Assistant's choices: Resume and Settings kept in the Esc menu (Esc used to toggle the menu), one save slot in localStorage (mission, seed, eaten voxels as run lengths, points, upgrades, panel settings; drifting pieces go back in place, the swarm restarts from its tunnel), the question only when a save exists, New game and Delete save game also clear the map's ticks, Delete asks once more, Exit without saving drops that game's points and upgrades.
 - **Kuiper Belt at an angle (0.39.0, owner):** "in single player at least", like the owner's screenshot (the band running off diagonally). The band is tipped back 1 rad (`pitch`, every mode) and single player starts with the camera turned 0.35 rad (`view`); turning the band itself would have tripled its grid (≈ 8 million voxels), so the camera turns instead (assistant's choice).
 - **Offline (0.38.0, owner):** the libraries are kept in the repo (`js/vendor/`) so nothing is loaded from the internet; multiplayer still needs it for PeerJS signalling.
@@ -170,6 +172,7 @@ Lessons from writing them:
 | 0.37.0 | tag `v0.37.0` | no automatic camera turning (planet spin off) |
 | 0.38.0 | tag `v0.38.0` | Three.js and PeerJS in the repository (`js/vendor/`), no CDNs |
 | 0.39.0 | tag `v0.39.0` | the Kuiper Belt seen at an angle |
+| 0.41.0 | tag `v0.41.0` | Save game in the Esc menu; Polish keywords and description for search |
 | 0.40.0 | tag `v0.40.0` | Esc menu with Save and exit; Continue / New game; Delete save game; SEO and the start screen as the link preview |
 
 ## Known limitations

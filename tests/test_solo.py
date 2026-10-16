@@ -160,8 +160,11 @@ async def main():
         await page.wait_for_timeout(800)
         b = await page.evaluate(STATE)
         pz = await page.evaluate("() => ({ title: document.getElementById('menu-title').textContent, choices: [...document.querySelectorAll('#menu .menu-choice-label')].map((e) => e.textContent) })")
-        t.ok(not b['started'] and a['cx'] == b['cx'] and pz['title'] == 'Paused' and pz['choices'] == ['Resume', 'Save and exit', 'Exit to main menu', 'Settings'],
-             'Esc pauses: Resume, Save and exit, Exit to main menu', pz)
+        t.ok(not b['started'] and a['cx'] == b['cx'] and pz['title'] == 'Paused' and pz['choices'] == ['Resume', 'Save game', 'Save and exit', 'Exit to main menu', 'Settings'],
+             'Esc pauses: Resume, Save game, Save and exit, Exit to main menu', pz)
+        await page.click('#menu .menu-choice >> text=Save game')
+        sg = await page.evaluate("() => [document.getElementById('menu-title').textContent, document.querySelectorAll('#menu .menu-choice-note')[1].textContent, Boolean(localStorage.getItem('hive-hunger-save'))]")
+        t.ok(sg[0] == 'Paused' and sg[1].startswith('Saved') and sg[2], 'Save game: saved, still paused', sg)
         await page.keyboard.press('Escape')
         t.ok((await page.evaluate(STATE))['started'] and await page.locator('#menu').is_hidden(), 'Esc again carries on')
         # play a little, then Save and exit; Single player asks: Continue or New game; Continue carries on from the save
@@ -172,6 +175,8 @@ async def main():
         await page.click('#menu .menu-choice >> text=Save and exit')
         saved = await page.evaluate("() => ({ title: document.getElementById('menu-title').textContent, save: Boolean(localStorage.getItem('hive-hunger-save')), started: window.__dbg.started })")
         t.ok(saved['save'] and saved['title'].startswith('Hive Hunger') and not saved['started'], 'Save and exit: saved, back on the main menu', saved)
+        sn = await page.evaluate("() => document.querySelector('#menu .menu-choice .menu-choice-note').textContent")
+        t.ok(sn.startswith('New game or continue') and 'Kuiper Belt' in sn, 'with a save, Single player says before it is pressed: new game or continue', sn)
         await page.click('.menu-choice >> nth=0')
         cq = await page.evaluate("() => [document.getElementById('menu-title').textContent, [...document.querySelectorAll('#menu .menu-choice-label')].map((e) => e.textContent), document.querySelector('#menu .menu-choice-note').textContent]")
         t.ok(cq[0] == 'Single player' and cq[1] == ['Continue', 'New game'] and 'Kuiper Belt' in cq[2], 'Single player with a save: Continue or New game?', cq)

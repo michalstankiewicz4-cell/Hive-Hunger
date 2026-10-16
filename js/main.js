@@ -118,6 +118,13 @@ if (!window.THREE) {
       if (!save) return showSoloMap();
       menu.showContinue({ mission: bodyById(save.mission)?.name || '', points: (save.score || 0) - (save.tree?.spent || 0), at: save.at });
     },
+    // the note under Single player when there is a saved game
+    saveNote: () => {
+      const save = savedGame.read();
+      if (!save) return '';
+      const name = bodyById(save.mission)?.name;
+      return `New game or continue your saved game${name ? ` (${name})` : ''}.`;
+    },
     onContinue: () => {
       const save = savedGame.read();
       if (save && game.loadSave(save)) {
@@ -136,6 +143,7 @@ if (!window.THREE) {
       game.started = true;
       menu.hide();
     },
+    onSave: () => savedGame.write(game.saveData(true)),
     onSaveExit: () => {
       savedGame.write(game.saveData(true));
       soloPlayed = false;

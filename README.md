@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.40.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.41.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -26,7 +26,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 - **Mouse wheel** — zoom
 - **Tab** (or a click on the points counter) — upgrade tree (Esc closes it)
 - **Space** — single player: pause (nothing moves, the camera still turns; "Paused" at the bottom), Space again carries on
-- **Esc** — single player: pause — **Resume** (or Esc again), **Save and exit** (keeps the game in this browser and goes to the main menu), **Exit to main menu** (without saving), **Settings**. With a saved game, **Single player** asks: **Continue** (the same planet with the voxels eaten so far, your points, upgrades and settings) or **New game** (the save and the map's ticks are deleted). **Settings → Delete save game** deletes them too (it asks once more). Esc also closes the upgrade tree
+- **Esc** — single player: pause — **Resume** (or Esc again), **Save game** (saves and stays paused), **Save and exit** (keeps the game in this browser and goes to the main menu), **Exit to main menu** (without saving), **Settings**. With a saved game, **Single player** says so under it (*New game or continue your saved game*) and asks: **Continue** (the same planet with the voxels eaten so far, your points, upgrades and settings) or **New game** (the save and the map's ticks are deleted). **Settings → Delete save game** deletes them too (it asks once more). Esc also closes the upgrade tree
 - **Ship guide** (start screen) — every ship type with a small picture and what it does, attack and support ships apart, all on one screen; pointing at a ship plays its shot.
 - **Settings** (start screen, waiting room, or the room panel during a match) — **Mouse** (what it does, camera turning and zoom speed), **Keyboard** (the keys) and **Graphics** (FPS counter, render resolution 50 / 75 / 100% / native, smooth edges, amount of effects Low / Medium / High). They apply at once and are remembered in your browser; **Reset settings** restores them. The game screen itself shows no description of the controls — they are listed here. — the three side by side
 - **Panel in the top-right corner** — adjust your swarm live:
@@ -132,7 +132,7 @@ Almost all tunable values (planet size, voxel size, levels, flock weights, eatin
 
 ## Search & sharing
 
-The page has a search title and description, keywords, a canonical URL, Open Graph / Twitter link previews with `og-image.jpg` (the start screen), `VideoGame` structured data (JSON-LD: genres, single player / multiplayer / co-op, 1–4 players), and a sitemap. Because the game is a 3D canvas, a short visually hidden description gives search engines text to index.
+The page has a search title and description, keywords, a canonical URL, Open Graph / Twitter link previews with `og-image.jpg` (the start screen), `VideoGame` structured data (JSON-LD: genres, single player / multiplayer / co-op, 1–4 players), and a sitemap. The page is in English; Polish keywords and a short Polish description (in the hidden text, `lang="pl"`) help it be found in Polish searches too. Because the game is a 3D canvas, a short visually hidden description gives search engines text to index.
 
 To get indexed faster, add the site in [Google Search Console](https://search.google.com/search-console) and submit `https://michalstankiewicz4-cell.github.io/Hive-Hunger/sitemap.xml`.
 

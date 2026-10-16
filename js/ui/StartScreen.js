@@ -52,7 +52,8 @@ export class StartScreen {
       return b;
     };
     this.card.append(
-      choice('Single player', 'The solar system map: from its edge in to the Sun.', onSolo),
+      // with a saved game the player sees before pressing that it asks: a new game or continue
+      choice('Single player', this.opts.saveNote?.() || 'The solar system map: from its edge in to the Sun.', onSolo),
       choice('Multiplayer · Co-op', 'Eat the planet together (up to 4 players).', () => onCreate('coop'), !available),
       choice('Multiplayer · PvP', 'Whoever eats more of the planet wins it (up to 4 players).', () => onCreate('pvp'), !available),
       choice('Ship guide', 'Every ship type: what it does, and its shot.', () => this.showGuide(), false, 'menu-choice menu-extra menu-guide'),
@@ -63,15 +64,20 @@ export class StartScreen {
   }
 
   /**
-   * Single player, Esc during a mission: the game is paused — Resume (or Esc), Save and exit, Exit to
-   * main menu (without saving), Settings.
+   * Single player, Esc during a mission: the game is paused — Resume (or Esc), Save game (stays paused;
+   * says when it is saved), Save and exit, Exit to main menu (without saving), Settings.
    */
   showPause() {
     this.open('Paused');
     this.inPause = true;
-    const { onResume, onSaveExit, onExit } = this.opts;
+    const { onResume, onSave, onSaveExit, onExit } = this.opts;
+    const save = this.choice('Save game', 'Keep this game in this browser.', () => {
+      const ok = onSave();
+      save.querySelector('.menu-choice-note').textContent = ok ? `Saved ✓ (${new Date().toLocaleTimeString()})` : 'Could not save (this browser keeps nothing).';
+    });
     this.card.append(
       this.choice('Resume', 'Back to the game (Esc).', onResume),
+      save,
       this.choice('Save and exit', 'Keep this game and go to the main menu.', onSaveExit),
       this.choice('Exit to main menu', 'Leave without saving.', onExit),
       this.choice('Settings', 'Mouse, keyboard and graphics.', () => this.showSettings(() => this.showPause()), false, 'menu-choice menu-extra menu-settings'),

@@ -2,6 +2,15 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.41.0] — 2026-10-16
+
+### Added
+- **Save game** in the Esc menu, under Resume: saves and stays paused (it says when it was saved).
+- With a saved game, the main menu says under **Single player**: *New game or continue your saved game (its mission)* — before it is pressed.
+
+### Changed
+- Search: Polish keywords and a short Polish description of the game (in the text for search engines), so it can be found in Polish searches too; the page stays in English.
+
 ## [0.40.0] — 2026-10-16
 
 ### Added
