@@ -2,6 +2,14 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.18.2] — 2026-10-16
+
+### Changed
+- Eaters (blue ships) also turn to face their bite before they start eating it, like laser ships (within `swarm.aimAngle`, 12°).
+
+### Added
+- **Turning** slider under Power: how fast ships turn their nose (0.02–0.3, default 0.12; lower = slower). Since ships eat only once they face their bite, slower turning also means a short wait before each bite.
+
 ## [0.18.1] — 2026-10-16
 
 ### Changed

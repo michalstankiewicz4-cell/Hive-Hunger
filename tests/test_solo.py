@@ -24,6 +24,23 @@ STATE = """() => {
 }"""
 
 
+# a ship that has landed is turned away from its bite: it must face it again before eating
+AIM = """(laser) => { const g = window.__dbg, s = g.localPlayer.swarm, pl = g.planet;
+            const pick = () => { for (let k = laser ? 0 : s.lasers; k < (laser ? s.lasers : s.count); k++) if (s.landed[k] && s.food[k] >= 0 && s.aimed[k]) return k; return -1; };
+            let i = pick(); for (let f = 0; i < 0 && f < 300; f++) { g.update(); i = pick(); }
+            if (i < 0) return { found: false };
+            // turn it away from its bite: it stops firing until it faces it again
+            // (a direction at right angles to the one to its bite)
+            const i3 = i * 3, d = [s.dir[i3], s.dir[i3 + 1], s.dir[i3 + 2]];
+            const side = Math.abs(d[0]) < 0.9 ? [0, d[2], -d[1]] : [-d[2], 0, d[0]], sl = Math.hypot(...side);
+            s.look[i3] = side[0] / sl; s.look[i3 + 1] = side[1] / sl; s.look[i3 + 2] = side[2] / sl;
+            const food = s.food[i], hp0 = pl.strengthOf(food);
+            g.update(); s.render(g.camera);
+            const turning = { aimed: s.aimed[i], firing: s.firing[i], hp: pl.strengthOf(food) };
+            let frames = 0; while (!s.aimed[i] && frames < 120 && s.landed[i]) { g.update(); frames++; }
+            return { found: true, hp0, turning, frames, aimedLater: s.aimed[i] }; }"""
+
+
 async def main():
     h.check_setup()
     url = h.start_static_server()
@@ -109,22 +126,18 @@ async def main():
           return { laser: L.length ? Math.min(...L) : 0, eater: E.length ? Math.max(...E) : 9, beams: s.beamCount, red, blue }; }""")
         t.ok(lz['laser'] > 1.5 and lz['eater'] < 1.5 and lz['beams'] > 0, 'laser ships eat from a distance (with a beam), eaters up close', lz)
         t.ok(lz['red'] and lz['blue'], 'laser ships are red', lz)
-        aim = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm, pl = g.planet;
-          let i = -1; for (let k = 0; k < s.lasers; k++) if (s.landed[k] && s.food[k] >= 0) { i = k; break; }
-          if (i < 0) return { found: false };
-          // turn it away from its bite: it stops firing until it faces it again
-          // (a direction at right angles to the one to its bite)
-          const i3 = i * 3, d = [s.dir[i3], s.dir[i3 + 1], s.dir[i3 + 2]];
-          const side = Math.abs(d[0]) < 0.9 ? [0, d[2], -d[1]] : [-d[2], 0, d[0]], sl = Math.hypot(...side);
-          s.look[i3] = side[0] / sl; s.look[i3 + 1] = side[1] / sl; s.look[i3 + 2] = side[2] / sl;
-          const food = s.food[i], hp0 = pl.strengthOf(food);
-          g.update(); s.render(g.camera);
-          const turning = { aimed: s.aimed[i], firing: s.firing[i], hp: pl.strengthOf(food) };
-          let frames = 0; while (!s.aimed[i] && frames < 120 && s.landed[i]) { g.update(); frames++; }
-          return { found: true, hp0, turning, frames, aimedLater: s.aimed[i] }; }""")
-        t.ok(aim.get('found') and aim['turning']['aimed'] == 0 and aim['turning']['firing'] == 0 and aim['turning']['hp'] == aim['hp0'],
-             'a laser ship does not fire while it turns towards its bite', aim)
-        t.ok(aim['aimedLater'] == 1 and 5 < aim['frames'] < 60, 'it fires once it faces its bite', aim)
+        frames = {}
+        for kind in ("laser", "eater"):
+            aim = await page.evaluate(AIM, kind == "laser")
+            t.ok(aim.get('found') and aim['turning']['aimed'] == 0 and aim['turning']['firing'] == 0 and aim['turning']['hp'] == aim['hp0'],
+                 f'a {kind} ship does not eat while it turns towards its bite', aim)
+            t.ok(aim.get('aimedLater') == 1 and 5 < aim.get('frames', 0) < 60, f'a {kind} ship eats once it faces its bite', aim)
+            frames[kind] = aim.get('frames', 0)
+        # slider Turning: slower turning → it takes longer to face the bite
+        await page.evaluate("() => window.__dbg.localPlayer.setSetting('turn', 0.04)")
+        slow = await page.evaluate(AIM, True)
+        t.ok(slow.get('found') and slow['frames'] > 2 * frames['laser'], 'Turning slider: slower ships take longer to face their bite', f"{frames['laser']} → {slow['frames']} frames")
+        await page.evaluate("() => window.__dbg.localPlayer.setSetting('turn', window.__dbg.cfg.swarm.turnSmoothing)")
         await page.click('.control-levels button >> nth=0')
         await page.evaluate("() => window.__dbg.localPlayer.setSetting('lasers', 1)")
 

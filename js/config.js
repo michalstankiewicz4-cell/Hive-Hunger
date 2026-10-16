@@ -98,7 +98,7 @@ export const CONFIG = Object.freeze({
     perception: 3,           // how far a unit sees its neighbours
     separationDistance: 1.5, // distance below which units push each other away
     turnRate: 0.07,          // how fast a unit can turn
-    turnSmoothing: 0.12,     // how quickly the drawn heading follows the flying direction (lower = smoother)
+    turnSmoothing: 0.12,     // how quickly a ship turns its nose to the flying direction (slider Turning; lower = slower, smoother)
     weights: {
       separation: 1.8,       // keep your distance
       alignment: 1.0,        // fly the same way as your neighbours
@@ -117,9 +117,9 @@ export const CONFIG = Object.freeze({
     eatFrames: 25,           // frames a unit sits on its bite before it is eaten
     // ship types: red laser ships eat their bite from `reach` away (5 voxels of 0.5) and fly
     // `speedFactor` × the speed; `count` = how many of the units are lasers at the start
-    // A laser ship fires only once it faces its bite (within aimAngle degrees). The beam is a
-    // glowing band `width` wide with a glow of `hitSize` where it hits.
-    laser: { count: 1, reach: 2.5, speedFactor: 0.9, aimAngle: 12, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
+    // The beam is a glowing band `width` wide with a glow of `hitSize` where it hits.
+    laser: { count: 1, reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
+    aimAngle: 12,            // a ship eats (a laser ship fires) only once it faces its bite within this many degrees
     // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
     // (0.5 s), then takes another bite — or the same one if there is no other
     retarget: { frames: 600, pauseFrames: 30 },
@@ -135,6 +135,7 @@ export const CONFIG = Object.freeze({
     { id: 'count',  label: 'Units',    min: 10,   max: 1500, step: 10,   decimals: 0 },
     { id: 'speed',  label: 'Speed',    min: 0.05, max: 0.6,  step: 0.01, decimals: 2 },
     { id: 'power',  label: 'Power',    min: 0.5,  max: 3,    step: 0.1,  decimals: 1 },
+    { id: 'turn',   label: 'Turning',  min: 0.02, max: 0.3,  step: 0.01, decimals: 2 }, // how fast ships turn their nose (turnSmoothing)
     { id: 'spacing',  label: 'Spacing',  min: 0.3, max: 3,   step: 0.1, decimals: 1 },
     { id: 'cohesion', label: 'Cohesion', min: 0,   max: 3,   step: 0.1, decimals: 1 },
     { id: 'nearest', type: 'toggle', label: 'Eat nearest block' },

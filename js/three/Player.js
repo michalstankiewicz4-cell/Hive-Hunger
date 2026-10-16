@@ -183,6 +183,7 @@ export class Player {
       this.applyUpgrades();
     } else if (key === 'spacing') s.separationDistance = value;
     else if (key === 'cohesion') s.cohesion = value;
+    else if (key === 'turn') s.turnSmoothing = value;
     else if (key === 'nearest') this.setNearestMode(value);
     else if (key === 'lasers') {
       this.lasers = Math.max(0, Math.round(value));
@@ -193,7 +194,7 @@ export class Player {
   getSetting(key) {
     const s = this.swarm;
     return { count: this.base.count, speed: this.base.speed, power: this.base.power, spacing: s.separationDistance,
-      cohesion: s.cohesion, nearest: this.swarmWorld.nearestMode, lasers: this.lasers }[key];
+      cohesion: s.cohesion, nearest: this.swarmWorld.nearestMode, lasers: this.lasers, turn: s.turnSmoothing }[key];
   }
 
   /** Points to spend in the upgrade tree: 1 eaten voxel = 1 point. */

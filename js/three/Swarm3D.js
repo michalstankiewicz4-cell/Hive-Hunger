@@ -90,6 +90,7 @@ export class Swarm3D {
 
     // parameters changed by sliders
     this.separationDistance = cfg.separationDistance;
+    this.turnSmoothing = cfg.turnSmoothing; // how fast a ship turns its nose (slider Turning)
     this.cohesion = cfg.weights.cohesion;
 
     this.head = new Int32Array(HASH_SIZE);
@@ -157,13 +158,14 @@ export class Swarm3D {
   }
 
   /**
-   * Laser ship i, landed at range: turns towards its bite; true once its (drawn) heading faces
-   * it within `laser.aimAngle` — then it fires.
+   * Ship i, landed on (or, a laser ship, at range from) its bite: turns towards it; true once
+   * its (drawn) heading faces it within `aimAngle` — then it eats.
    */
   aim(i) {
     const i3 = i * 3, pos = this.pos, fp = this.foodPos, dir = this.dir, look = this.look;
     let tx = fp[i3] - pos[i3], ty = fp[i3 + 1] - pos[i3 + 1], tz = fp[i3 + 2] - pos[i3 + 2];
-    const tl = Math.hypot(tx, ty, tz) || 1;
+    const tl = Math.hypot(tx, ty, tz);
+    if (tl < 1e-3) { this.aimed[i] = 1; return true; } // right on it: nothing to face
     tx /= tl; ty /= tl; tz /= tl;
     dir[i3] = tx; dir[i3 + 1] = ty; dir[i3 + 2] = tz;
     const ok = look[i3] * tx + look[i3 + 1] * ty + look[i3 + 2] * tz >= this.aimCos;
@@ -172,7 +174,7 @@ export class Swarm3D {
   }
 
   get aimCos() {
-    return Math.cos((this.cfg.laser.aimAngle * Math.PI) / 180);
+    return Math.cos((this.cfg.aimAngle * Math.PI) / 180);
   }
 
   /**
@@ -181,7 +183,7 @@ export class Swarm3D {
    * because a laser ship aims with it; on a guest it runs while drawing.
    */
   turnLook() {
-    const k = this.cfg.turnSmoothing, look = this.look, dir = this.dir;
+    const k = this.turnSmoothing, look = this.look, dir = this.dir;
     for (let i = 0; i < this.count; i++) {
       const i3 = i * 3;
       // turning right round: start the turn to one side (straight back it would never turn)
@@ -325,9 +327,8 @@ export class Swarm3D {
           const fc = world.cellCenter(food[i]);
           pos[i3] += fc.x - foodPos[i3]; pos[i3 + 1] += fc.y - foodPos[i3 + 1]; pos[i3 + 2] += fc.z - foodPos[i3 + 2];
           foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
-          // a laser ship first turns to face its bite and fires only then (as an eater, which is
-          // already at its bite, it eats right away)
-          if (i < this.lasers && !this.aim(i)) continue;
+          // every ship first turns to face its bite and eats (a laser ship: fires) only then
+          if (!this.aim(i)) continue;
           world.bite(food[i], food[i]);
           this.hungry[i] = 0;
           continue;

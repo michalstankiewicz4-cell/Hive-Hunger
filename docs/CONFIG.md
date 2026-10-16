@@ -64,7 +64,8 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `perception` | 3 | how far a unit sees neighbours (at least 1.3 × spacing) | larger = smoother flock, slower |
 | `separationDistance` | 1.5 | *slider Spacing* | |
 | `turnRate` | 0.07 | how sharply a unit can change direction per frame | higher = twitchier, lower = wide arcs, may miss targets |
-| `turnSmoothing` | 0.12 | how quickly the **drawn** heading follows the real one (looks only) | lower = smoother, lazier rotation |
+| `turnSmoothing` | 0.12 | *slider Turning* — how quickly a ship turns its nose to its flying direction; a landed ship eats only once its nose faces its bite | lower = slower turning, a longer wait before each bite |
+| `aimAngle` | 12 | a ship eats (a laser ship fires) only when its nose is within this many degrees of its bite | |
 | `weights.separation` | 1.8 | keep your distance | |
 | `weights.alignment` | 1.0 | fly like your neighbours | |
 | `weights.cohesion` | 1 | *slider Cohesion* — stay with the group | |
@@ -85,7 +86,6 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `laser.count` | 1 | laser ships at the start (Ship types panel) | |
 | `laser.reach` | 2.5 | how far from its bite a laser ship eats (5 voxels of 0.5) | |
 | `laser.speedFactor` | 0.9 | laser ships' speed × the swarm speed | |
-| `laser.aimAngle` | 12 | a laser ship fires only when its heading is within this many degrees of its bite | |
 | `laser.color` | red | laser ship colour | |
 | `laser.width`, `laser.hitSize` | 0.5, 1.4 | width of the glowing beam, size of the glow where it hits | |
 | `retarget.frames`, `retarget.pauseFrames` | 600, 30 | a unit with a bite that has not eaten for 10 s stops for 0.5 s, then takes another bite (the same one if there is no other) | lower = gives up sooner |

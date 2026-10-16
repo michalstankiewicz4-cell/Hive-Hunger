@@ -95,7 +95,7 @@ body {
   }
 
   .hud {
-    top: calc(275px + var(--safe-top));
+    top: calc(297px + var(--safe-top));
     max-width: calc(100% - 32px);
   }
 }
