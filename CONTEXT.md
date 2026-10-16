@@ -16,7 +16,7 @@ A recovery file: everything needed to pick the project up again — what it is, 
 These came from the owner's requests; keep them unless he asks otherwise.
 
 - **3D only** (a 2D version existed early on and was removed on request).
-- **Points & upgrades:** 1 voxel = 1 point (counter at the top). Tab opens a pixel-art upgrade tree growing upwards: units, speed, power, chain lightning (+ jumps / voltage / capacitor). Upgrades add to the sliders (sliders stay). Saved only by Save and exit (0.40.0; before: reset on reload); in multiplayer every player has their own. Lightning fires on its own every few seconds and only weakens voxels. Voxels have a destruction animation (on the smooth surface: it sinks in and darkens); they are still one bite for now (harder voxels planned later).
+- **Points & upgrades:** 1 voxel = 1 point (counter at the top). Tab opens a pixel-art upgrade tree growing upwards (single player stands still meanwhile, 0.41.1, owner): units, speed, power, chain lightning (+ jumps / voltage / capacitor). Upgrades add to the sliders (sliders stay). Saved only by Save and exit (0.40.0; before: reset on reload); in multiplayer every player has their own. Lightning fires on its own every few seconds and only weakens voxels. Voxels have a destruction animation (on the smooth surface: it sinks in and darkens); they are still one bite for now (harder voxels planned later).
 - **Ship guide window (0.36.1, owner):** it must fit the screen; the window and the title "Ship guide" stay put and so does Back — only the content scrolls, with a scroll bar.
 - **Settings layout (0.36.0, owner):** "too tall" — split horizontally into three parts: mouse, keyboard, graphics (stacked on narrow screens: assistant's choice).
 - **Start screen (0.35.0, owner):** the owner's picture (a voxel ship's beam cutting into a voxel planet) as the start screen, a title and the menu over it, a loader if the graphics need loading. Assistant's choices: the menu on the right over the sky (bottom on phones), a darker gradient behind it, the orange glowing title, the picture also behind the Ship guide and Settings opened from the start; the loader counts the picture, the 3D library, PeerJS and the game, over a 48 × 32 blurred copy of the picture inlined in the page; the picture saved as JPEG (280 KB instead of a 2.7 MB PNG).
@@ -172,6 +172,7 @@ Lessons from writing them:
 | 0.37.0 | tag `v0.37.0` | no automatic camera turning (planet spin off) |
 | 0.38.0 | tag `v0.38.0` | Three.js and PeerJS in the repository (`js/vendor/`), no CDNs |
 | 0.39.0 | tag `v0.39.0` | the Kuiper Belt seen at an angle |
+| 0.41.1 | tag `v0.41.1` | Tab pauses single player while the tree is open |
 | 0.41.0 | tag `v0.41.0` | Save game in the Esc menu; Polish keywords and description for search |
 | 0.40.0 | tag `v0.40.0` | Esc menu with Save and exit; Continue / New game; Delete save game; SEO and the start screen as the link preview |
 

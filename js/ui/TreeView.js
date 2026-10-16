@@ -32,9 +32,12 @@ const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[
 export class TreeView {
   /**
    * @param {HTMLElement} root
-   * @param {{getTree:()=>import('../core/SkillTree.js').SkillTree|null, getPoints:()=>number, onBuy:(id:string)=>void}} opts
+   * @param {{getTree:()=>import('../core/SkillTree.js').SkillTree|null, getPoints:()=>number, onBuy:(id:string)=>void,
+   *   onOpen?:()=>void, onClose?:()=>void}} opts  onOpen / onClose: single player pauses while it is open
    */
-  constructor(root, { getTree, getPoints, onBuy }) {
+  constructor(root, opts) {
+    const { getTree, getPoints, onBuy } = opts;
+    this.opts = opts;
     this.root = root;
     this.getTree = getTree;
     this.getPoints = getPoints;
@@ -81,6 +84,7 @@ export class TreeView {
     if (!this.getTree()) return;
     this.root.hidden = false;
     document.body.classList.add('tree-open');
+    this.opts.onOpen?.();
     this.layout();
     const loop = () => {
       if (!this.isOpen) return;
@@ -92,6 +96,7 @@ export class TreeView {
   }
 
   close() {
+    if (this.isOpen) this.opts.onClose?.();
     this.root.hidden = true;
     document.body.classList.remove('tree-open');
     this.tip.hidden = true;

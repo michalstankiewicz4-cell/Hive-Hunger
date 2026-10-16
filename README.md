@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.41.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.41.1 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -24,7 +24,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 - **Click the tunnel** (the small blue vortex at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
 - **Right mouse button / two fingers** — turn the camera, any way round (it can go over the poles)
 - **Mouse wheel** — zoom
-- **Tab** (or a click on the points counter) — upgrade tree (Esc closes it)
+- **Tab** (or a click on the points counter) — upgrade tree (Esc closes it); in single player the game stands still while it is open
 - **Space** — single player: pause (nothing moves, the camera still turns; "Paused" at the bottom), Space again carries on
 - **Esc** — single player: pause — **Resume** (or Esc again), **Save game** (saves and stays paused), **Save and exit** (keeps the game in this browser and goes to the main menu), **Exit to main menu** (without saving), **Settings**. With a saved game, **Single player** says so under it (*New game or continue your saved game*) and asks: **Continue** (the same planet with the voxels eaten so far, your points, upgrades and settings) or **New game** (the save and the map's ticks are deleted). **Settings → Delete save game** deletes them too (it asks once more). Esc also closes the upgrade tree
 - **Ship guide** (start screen) — every ship type with a small picture and what it does, attack and support ships apart, all on one screen; pointing at a ship plays its shot.

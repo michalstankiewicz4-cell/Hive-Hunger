@@ -42,6 +42,10 @@ async def main():
         # the tree opens with Tab
         await page.keyboard.press('Tab')
         t.ok(await page.locator('#tree').is_visible(), 'Tab opens the upgrade tree')
+        tp = await page.evaluate("() => { const g = window.__dbg, x = g.localPlayer.swarm.pos[0]; return { paused: g.paused, x }; }")
+        await page.wait_for_timeout(500)
+        tp2 = await page.evaluate("() => window.__dbg.localPlayer.swarm.pos[0]")
+        t.ok(tp['paused'] and tp['x'] == tp2, 'single player: the game stands still while the tree is open', [tp, tp2])
         await page.wait_for_timeout(400)
         pix = await page.evaluate("() => { const c = document.querySelector('.tree-canvas'); return [c.width, c.height, getComputedStyle(c).imageRendering]; }")
         t.ok(pix[0] < 500 and pix[2] in ('pixelated', 'crisp-edges'), 'drawn small and scaled up without smoothing (pixel art)', pix)
@@ -68,6 +72,7 @@ async def main():
             await page.screenshot(path=os.path.join(shots, 'tree.png'))
         await page.keyboard.press('Escape')
         t.ok(await page.locator('#tree').is_hidden(), 'Esc closes it')
+        t.ok(not await page.evaluate('() => window.__dbg.paused'), 'and the game carries on')
 
         # chain lightning: fires on its own, weakens voxels (never destroys them by itself)
         before = await page.evaluate('() => window.__dbg.lightning.shown')

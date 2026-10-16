@@ -196,7 +196,18 @@ if (!window.THREE) {
     getTree: () => game.localPlayer?.tree || null,
     getPoints: () => game.localPlayer?.points ?? 0,
     onBuy: (id) => game.buyUpgrade(id),
+    // single player: the game stands still while the tree is open (and carries on when it closes,
+    // unless it was paused before)
+    onOpen: () => {
+      treePaused = game.role === 'solo' && !game.paused;
+      if (treePaused) game.paused = true;
+    },
+    onClose: () => {
+      if (treePaused) game.paused = false;
+      treePaused = false;
+    },
   });
+  let treePaused = false;
   pointsEl.addEventListener('click', () => tree.toggle());
   // Tab: upgrade tree. Esc: closes the tree; in single player it opens the start screen
   // (the game pauses) and closes it again (the game carries on)
