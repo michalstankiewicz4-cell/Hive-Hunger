@@ -54,7 +54,8 @@ export const Destruction = {
 
   /**
    * A piercer (unit i of `player`) at (x, y, z) firing along its locked line (direction D[i*3…]):
-   * the first `piercer.pierce` (3) solid grid voxels on the line, out to `piercer.length`, are each
+   * the first `piercer.pierce` (3) solid grid voxels on the line — all the way to the far side of the
+   * planet (its whole grid), however far — are each
    * bitten for `piercer.damage` × an eater's rate (claimed by other ships or not), a point each when
    * gone. E[i*3…] is set to the nearest one hit (where the beam ends); none hit — it is through —
    * returns false and E stays where the last one was.
@@ -63,7 +64,9 @@ export const Destruction = {
     const pl = this.planet, c = this.cfg.swarm.piercer, i3 = i * 3;
     const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage;
     const p = PIERCE_P.set(x, y, z), step = pl.s * 0.5, hit = [];
-    for (let k = 0, steps = Math.ceil(c.length / step); k < steps && hit.length < c.pierce; k++) {
+    // all the way: out past the far side of the whole grid (whatever its shape), however far that is
+    const reach = Math.hypot(x, y, z) + pl.half * 1.8;
+    for (let k = 0, steps = Math.ceil(reach / step); k < steps && hit.length < c.pierce; k++) {
       p.x += D[i3] * step; p.y += D[i3 + 1] * step; p.z += D[i3 + 2] * step;
       const n = pl.cellAt(p);
       if (n < 0 || pl.hp[n] <= 0 || hit.includes(n)) continue; // (claimed or not: whatever is on the line)

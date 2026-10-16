@@ -345,7 +345,12 @@ export class Swarm3D {
         this.hungry[i] = 0;
         dir[i3] = this.pierceDir[i3]; dir[i3 + 1] = this.pierceDir[i3 + 1]; dir[i3 + 2] = this.pierceDir[i3 + 2];
         if (hit) this.pierceAfter[i] = 0; // (E: the nearest voxel hit)
-        else if (++this.pierceAfter[i] >= c.piercer.afterFrames) { this.pierceOn[i] = 0; best[i] = Infinity; stuck[i] = 0; }
+        else {
+          // through: for `afterFrames` (2 s) more the beam goes out through the hole and on into space
+          const far = c.piercer.farLength, D = this.pierceDir;
+          E[i3] = pos[i3] + D[i3] * far; E[i3 + 1] = pos[i3 + 1] + D[i3 + 1] * far; E[i3 + 2] = pos[i3 + 2] + D[i3 + 2] * far;
+          if (++this.pierceAfter[i] >= c.piercer.afterFrames) { this.pierceOn[i] = 0; best[i] = Infinity; stuck[i] = 0; }
+        }
         continue;
       }
       // a sniper: from anywhere at its bite — stop, charge `sniper.chargeFrames` (5 s) facing it, fire,
@@ -507,13 +512,19 @@ export class Swarm3D {
           stuck[i] = 0;
         }
       }
-      if (food[i] >= 0) {
+      if (food[i] >= 0 && !sniper) {
         const fc = world.cellCenter(food[i]); // a fragment's voxels move
         foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
         tx = foodPos[i3]; ty = foodPos[i3 + 1]; tz = foodPos[i3 + 2];
         targetWeight = w.feed;
         // no free flying — only separation stays, the unit flies straight to its voxel
         flocking = 0;
+      }
+      // a sniper never closes in (it fires from anywhere): between shots it moves with the swarm but
+      // stays as far from the planet as it is — heading for the point over the swarm target at its own height
+      if (sniper) {
+        const r = Math.hypot(px, py, pz), tl = Math.hypot(tx, ty, tz) || 1;
+        tx = (tx / tl) * r; ty = (ty / tl) * r; tz = (tz / tl) * r;
       }
       // a tug flies to its piece (or, towing it, ahead of it towards home)
       if (tug && this.tugHas[i]) {
@@ -538,7 +549,7 @@ export class Swarm3D {
         const fx0 = foodPos[i3] - px, fy0 = foodPos[i3 + 1] - py, fz0 = foodPos[i3 + 2] - pz;
         // a laser ship stops at laser range and eats from there
         // (a sniper doesn't land: it stops wherever its move ends — see above)
-        const reach = sniper ? -1 : (orb ? c.orb.range : piercer ? c.piercer.reach : ranged ? c.laser.reach : c.reachDistance) + speed;
+        const reach = sniper ? 0 : (orb ? c.orb.range : piercer ? c.piercer.reach : ranged ? c.laser.reach : c.reachDistance) + speed;
         if (fx0 * fx0 + fy0 * fy0 + fz0 * fz0 < reach * reach) {
           landed[i] = 1;
           this.aimed[i] = 0; // a new bite: it must turn to it first
@@ -599,6 +610,15 @@ export class Swarm3D {
       let dx = dir[i3] + fx * c.turnRate, dy = dir[i3 + 1] + fy * c.turnRate, dz = dir[i3 + 2] + fz * c.turnRate;
       let l = Math.hypot(dx, dy, dz) || 1;
       dx /= l; dy /= l; dz /= l;
+      // a sniper never flies in towards the planet (it has just faced its bite): no inward part
+      if (sniper) {
+        const r = Math.hypot(px, py, pz) || 1, inward = (dx * px + dy * py + dz * pz) / r;
+        if (inward < 0) {
+          dx -= (inward * px) / r; dy -= (inward * py) / r; dz -= (inward * pz) / r;
+          const m = Math.hypot(dx, dy, dz);
+          if (m > 1e-6) { dx /= m; dy /= m; dz /= m; } else { dx = -py / r; dy = px / r; dz = 0; } // straight down: any way along
+        }
+      }
 
       // Move axis by axis; at high speed split into substeps so a voxel can't be skipped.
       // A solid voxel stops movement along that axis — no bounce and no passing through:

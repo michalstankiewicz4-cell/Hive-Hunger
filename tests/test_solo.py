@@ -365,7 +365,7 @@ async def main():
           const c = g.cfg.swarm.piercer, T = window.THREE;
           const P = new T.Vector3(s.pos[i*3], s.pos[i*3+1], s.pos[i*3+2]), d = new T.Vector3(s.pierceDir[i*3], s.pierceDir[i*3+1], s.pierceDir[i*3+2]);
           // the first 3 voxels on the line
-          const line = () => { const row = [], q = P.clone(); for (let k = 0; k < c.length / (pl.s * 0.5) && row.length < c.pierce; k++) { q.addScaledVector(d, pl.s * 0.5); const n = pl.cellAt(q); if (n >= 0 && pl.hp[n] > 0 && !row.includes(n)) row.push(n); } return row; };
+          const line = () => { const row = [], q = P.clone(); for (let k = 0; k < (P.length() + pl.half * 1.8) / (pl.s * 0.5) && row.length < c.pierce; k++) { q.addScaledVector(d, pl.s * 0.5); const n = pl.cellAt(q); if (n >= 0 && pl.hp[n] > 0 && !row.includes(n)) row.push(n); } return row; };
           const row = line(), dist = row.length ? pl.cellCenter(row[0], new T.Vector3()).distanceTo(P) : 0;
           const before = row.map((n) => pl.strengthOf(n)), shown = s.piercerBolts.shown;
           g.update(); for (let k = 0; k < 4; k++) s.render(g.camera);
@@ -373,10 +373,11 @@ async def main():
           const eater = g.cfg.planet.strength / g.cfg.swarm.eatFrames;
           const orange = s.piercerBeamCount > 0, spirals = s.piercerBolts.shown - shown;
           // it fires until it is through, then 2 s more, then switches off
-          let lastHit = 0, off = -1, still = true;
+          let lastHit = 0, off = -1, still = true, farEnd = 0;
           for (let k = 1; k < 20000 && off < 0; k++) {
             g.update();
             if (s.pierceOn[i] && s.pierceAfter[i] === 0) lastHit = k;
+            if (s.pierceOn[i] && s.pierceAfter[i] > 0) farEnd = Math.max(farEnd, Math.hypot(s.pierceEnd[i*3] - P.x, s.pierceEnd[i*3+1] - P.y, s.pierceEnd[i*3+2] - P.z));
             if (s.pierceOn[i] && Math.hypot(s.pos[i*3] - P.x, s.pos[i*3+1] - P.y, s.pos[i*3+2] - P.z) > 1e-6) still = false;
             if (!s.pierceOn[i]) off = k;
           }
@@ -384,11 +385,12 @@ async def main():
           // then it goes on: a new bite (flying to it, or from here if it is in range) and a new line
           let next = false;
           for (let k = 0; k < 600 && !next; k++) { g.update(); next = s.food[i] >= 0 || (s.pierceOn[i] && s.pierceDir[i*3] * d.x + s.pierceDir[i*3+1] * d.y + s.pierceDir[i*3+2] * d.z < 0.9999); }
-          return { fired: true, copper, dist, row: row.length, lost, want: eater * c.damage, orange, spirals, after: off - lastHit, through, still, next }; }""")
+          return { fired: true, copper, dist, row: row.length, lost, want: eater * c.damage, orange, spirals, after: off - lastHit, through, still, next, farEnd, planetSize: pl.half * 2 }; }""")
         t.ok(pc.get('fired') and pc['copper'] and pc['dist'] > 4, 'a copper piercer fires from a distance (up to 20 voxels)', pc)
         t.ok(pc.get('row') == 3 and all(abs(x - pc['want']) < 1e-4 for x in pc['lost']), 'its beam goes through 3 voxels in a row and eats them at once (0.8 × an eater)', pc)
         t.ok(pc.get('orange') and pc.get('spirals', 0) > 0, 'an orange beam with a yellow spiral lightning round it', pc)
         t.ok(pc.get('through') and pc.get('still') and 118 <= pc.get('after', 0) <= 122, 'it fires along the locked line until it is through, then 2 s more, staying put', pc)
+        t.ok(pc.get('farEnd', 0) > pc.get('planetSize', 1) * 2, 'once through, the beam goes on out through the hole into space', pc)
         t.ok(pc.get('next'), 'then it switches off and goes on to its next bite', pc)
         await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('piercers', 0); }")
         # sniper: from any distance — stops, charges 5 s facing its bite, fires a shot that speeds up 5%
@@ -411,15 +413,19 @@ async def main():
           const last = speeds[speeds.length - 1] || [0, 0];
           const want = c.speed * Math.pow(c.accel, last[1] / pl.s);
           // after the shot: it flies on for 1 s, then stops to charge again
+          const r0 = Math.hypot(s.pos[i*3], s.pos[i*3+1], s.pos[i*3+2]);
           let stopAt = -1; for (let k = 0; k < 400 && stopAt < 0; k++) { g.update(); if (s.snipePhase[i] === 1) stopAt = k; }
+          // three more shots: it never closes in on the planet
+          let rMin = r0; const f1 = g.shots.fired; for (let k = 0; k < 1500 && g.shots.fired < f1 + 3; k++) { g.update(); rMin = Math.min(rMin, Math.hypot(s.pos[i*3], s.pos[i*3+1], s.pos[i*3+2])); }
           return { fired: true, teal, charge: f - charge, dist, hit: hitF >= 0, gone: !pl.solid(target), eaten: left0 - pl.left,
             faster: last[0] > speeds[0][0] * 1.5, rate: Math.abs(last[0] - want) < 1e-6, cap: Boolean(shot.cap), moving: moved.length > 30 && moved[30] > 0.05,
-            stopAt, moveFrames: c.moveFrames }; }""")
+            stopAt, moveFrames: c.moveFrames, r0, rMin, shots: g.shots.fired - f1 }; }""")
         t.ok(sn.get('fired') and sn['teal'] and sn['dist'] > 20, 'a teal sniper fires from far away (any distance)', sn)
         t.ok(sn.get('charge', 0) >= 299 and sn.get('charge', 0) <= 302, 'it stops and charges for 5 s before the shot', sn)
         t.ok(sn.get('faster') and sn.get('rate') and sn.get('cap'), 'the shot speeds up 5% per voxel, a rounded glowing cap in front', sn)
         t.ok(sn.get('hit') and sn.get('gone') and sn.get('eaten', 0) >= 1, 'it always destroys the voxel it hits', sn)
         t.ok(sn.get('moving'), 'after the shot it flies on', sn)
+        t.ok(sn.get('shots', 0) >= 3 and sn.get('rMin', 0) > sn.get('r0', 9) - 1, 'and keeps its distance from the planet (it fires from anywhere)', sn)
         await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('snipers', 0); g.start(); }")
         # Space pauses single player (nothing moves, "Paused" at the bottom) and carries on
         await page.mouse.move(500, 300)

@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.31.1] — 2026-10-16
+
+### Changed
+- **Piercers go right through the planet**: the line is followed all the way to the far side of the whole planet (before: 70 units), and once through, for the 2 more seconds the beam goes out of the hole and on into space (its spiral up to 90 units).
+- **Snipers keep their distance**: between shots they no longer fly in towards their bite — they move with the swarm at their own height and never closer to the planet, and fire from there.
+
 ## [0.31.0] — 2026-10-16
 
 ### Added

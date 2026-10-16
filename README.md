@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.31.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.31.1 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -45,8 +45,8 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Support** ships don't eat: every 3 seconds each fires a white lightning bolt at your own ships — it jumps between them in a random order (up to 6 jumps) over 1.5 s and is gone after the last one; every voxel on its way is destroyed (a point each). The bolt is irregularly bent, with energy flowing along it and small branches.
   - **Cleaners** eat only drifting pieces of 1, 2 or 3 voxels, the nearest first — never the planet or bigger pieces. With no such piece about they fly with the swarm.
   - **Drills** fly to the nearest voxel, turn their nose towards the planet's centre (a little off it, at random) and drill a straight tunnel in, with a turning orange spiral bit: everything around the bit is gone — 0.75 × your Power (about 0.75 voxels at the default Power), a point each. Once through (or after 60 units) they fly on to their next bite. Tunnels often cut pieces loose for the tugs and cleaners. On a drifting piece a drill eats like an eater.
-  - **Piercers** fire from up to 20 voxels away: an orange laser with a yellow lightning winding round it in a spiral. Once aimed at a bite, a piercer locks the line through it and fires along it until it is right through — the beam always eats the 3 nearest voxels on the line at once, each a little slower than an eater (0.8 ×) — everything on the line, whoever claimed it — then keeps firing for 2 more seconds, switches off and goes on to its next bite.
-  - **Snipers** fire from any distance: a sniper stops, charges for 5 seconds facing its bite and fires a thin shot that speeds up 5% for every voxel it flies, with a rounded glowing cap in front like a meteor's; it always destroys the voxel it hits. Then it flies on for a second, stops and charges again.
+  - **Piercers** fire from up to 20 voxels away: an orange laser with a yellow lightning winding round it in a spiral. Once aimed at a bite, a piercer locks the line through it and fires along it until it is right through — the beam always eats the 3 nearest voxels on the line at once, each a little slower than an eater (0.8 ×) — everything on the line, whoever claimed it — then keeps firing for 2 more seconds, the beam going out through the hole into space, switches off and goes on to its next bite.
+  - **Snipers** fire from any distance: a sniper stops, charges for 5 seconds facing its bite and fires a thin shot that speeds up 5% for every voxel it flies, with a rounded glowing cap in front like a meteor's; it always destroys the voxel it hits. Then it moves on with the swarm for a second — never closer to the planet — stops and charges again.
 
 ## Multiplayer
 

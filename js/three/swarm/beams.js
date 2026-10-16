@@ -84,9 +84,11 @@ export const Beams = {
       const i3 = i * 3;
       const px = this.pos[i3], py = this.pos[i3 + 1], pz = this.pos[i3 + 2];
       let dx = this.beamTo[i3] - px, dy = this.beamTo[i3 + 1] - py, dz = this.beamTo[i3 + 2] - pz;
-      const len = Math.hypot(dx, dy, dz);
-      if (len < 1e-3) continue;
-      dx /= len; dy /= len; dz /= len;
+      const full = Math.hypot(dx, dy, dz);
+      if (full < 1e-3) continue;
+      dx /= full; dy /= full; dz /= full;
+      // (a beam gone through into space: the spiral goes only part of the way)
+      const len = Math.min(full, c.spiralMaxLength);
       // two directions across the beam
       SP_D.set(dx, dy, dz);
       SP_U.set(Math.abs(dy) < 0.9 ? 0 : 1, Math.abs(dy) < 0.9 ? 1 : 0, 0).cross(SP_D).normalize();

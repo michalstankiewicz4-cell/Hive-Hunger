@@ -184,10 +184,11 @@ export const CONFIG = Object.freeze({
     // The spiral: `spiralRadius` around the beam, `spiralTurns` turns per unit, a fresh flash every
     // `flashEvery` frames lasting `flashFrames`, with a `glowPx` glow (like the support ships' bolt)
     // Once aimed it locks the line through its bite and fires along it until it is through (no voxel
-    // left on it within `length`), then `afterFrames` (2 s) more; then it switches off and flies on.
-    piercer: { count: START_EACH, reach: 10, pierce: 3, damage: 0.8, length: 70, afterFrames: 120, color: 0xc0703a,
+    // left on it, all the way to the far side), then `afterFrames` (2 s) more with the beam going on
+    // `farLength` into space (the spiral round it `spiralMaxLength` at most); then it switches off and flies on.
+    piercer: { count: START_EACH, reach: 10, pierce: 3, damage: 0.8, afterFrames: 120, farLength: 400, color: 0xc0703a,
       width: 0.4, hitSize: 1.2, beamColors: ['rgba(110,40,0,1)', 'rgba(255,140,30,1)', 'rgba(255,240,200,1)'], hitColors: ['rgba(255,235,200,1)', 'rgba(255,140,40,0.9)', 'rgba(170,70,0,0.35)'],
-      spiralColor: 0xffe03a, spiralRadius: 0.22, spiralTurns: 0.64, spiralPoints: 10, flashEvery: 3, flashFrames: 5, glowPx: 4 },
+      spiralColor: 0xffe03a, spiralRadius: 0.22, spiralTurns: 0.64, spiralPoints: 10, spiralMaxLength: 90, flashEvery: 3, flashFrames: 5, glowPx: 4 },
     // teal snipers: from any distance, at their bite: stop, charge `chargeFrames` (5 s) facing it, fire,
     // fly on for `moveFrames` (1 s), stop and charge again. The shot: a thin streak (`shotSize`, a
     // little smaller than an eater) starting at `speed`, `accel` × faster for every voxel flown (5%),
