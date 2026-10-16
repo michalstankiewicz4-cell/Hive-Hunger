@@ -6,6 +6,7 @@ import { ClickMarker } from './ClickMarker.js';
 import { Player } from './Player.js';
 import { Lightning3D } from './Lightning3D.js';
 import { BlackHoles } from './BlackHoles.js';
+import { Orbs } from './Orbs.js';
 
 /** How many voxels a crater of radius `r` voxels covers (what a bite of that power hits). */
 const craterCache = new Map();
@@ -94,6 +95,7 @@ export class Game3D {
     this.marker = new ClickMarker(this.scene, this.cfg.marker);
     this.lightning = new Lightning3D(this.scene);
     this.holes = new BlackHoles(this.cfg.holes);
+    this.orbs = new Orbs(this.scene, this.cfg.swarm.orb, this.cfg.planet.voxelSize);
     this.onTreeChange = null; // () => void — the upgrade tree view refreshes
 
     this.resize(); // camera aspect is needed to keep the spawn point on screen
@@ -205,7 +207,7 @@ export class Game3D {
     // a room starts from scratch — nothing carries over from single player (planet, points,
     // upgrades, swarm), so co-op and PvP are fair; only the settings panel values stay
     const old = this.localPlayer;
-    const keep = ['count', 'speed', 'power', 'turn', 'lasers', 'storms', 'tugs', 'bombers'].map((k) => [k, old.getSetting(k)]);
+    const keep = ['count', 'speed', 'power', 'turn', 'lasers', 'storms', 'tugs', 'bombers', 'orbs'].map((k) => [k, old.getSetting(k)]);
     this.removePlayer(0);
     this.planet.dispose();
     this.level = 0;
@@ -385,7 +387,18 @@ export class Game3D {
    * opens there for a while (and on the guests' screens). Returns the number of voxels destroyed.
    */
   explode(x, y, z, player) {
-    const pl = this.planet, R = this.cfg.swarm.bomber.radius, s = pl.s, v = this.tmp;
+    const n = this.destroySphere(x, y, z, this.cfg.swarm.bomber.radius, player, this.cfg.swarm.bomber.debris);
+    this.holes.add({ x, y, z }, player);
+    if (this.role === 'host') this.net?.broadcastHole([x, y, z]);
+    return n;
+  }
+
+  /**
+   * Every voxel within `R` of (x, y, z) — in the planet and on drifting pieces, claimed or not —
+   * is gone, a point each to `player`; at most `debrisMax` pieces of debris. Returns how many.
+   */
+  destroySphere(x, y, z, R, player, debrisMax) {
+    const pl = this.planet, s = pl.s, v = this.tmp;
     const hit = [];
     const [ci, cj, ck] = [x, y, z].map((c) => Math.floor((c + pl.half) / s));
     const rv = Math.ceil(R / s);
@@ -404,16 +417,35 @@ export class Game3D {
         }
       });
     }
-    const every = Math.max(1, Math.floor(hit.length / this.cfg.swarm.bomber.debris));
+    const every = Math.max(1, Math.floor(hit.length / debrisMax));
     hit.forEach((idx, n) => {
       if (n % every === 0) this.debris.emit(pl.cellCenter(idx, v), pl.voxelColor(idx), 1);
       pl.remove(idx);
     });
-    player.score += hit.length;
-    player.planetScore += hit.length;
-    this.holes.add({ x, y, z }, player);
-    if (this.role === 'host') this.net?.broadcastHole([x, y, z]);
+    if (player) { player.score += hit.length; player.planetScore += hit.length; }
     return hit.length;
+  }
+
+  /** An orb ship of `player` (unit i) fires at voxel `idx` from (x, y, z); returns the orb's id. */
+  fireOrb(player, i, idx, x, y, z) {
+    const to = this.planet.cellCenter(idx, this.tmp);
+    const orb = this.orbs.fire({ x, y, z }, to, { target: idx, owner: player, unit: i });
+    if (this.role === 'host') this.net?.broadcastOrb([x, y, z], [to.x, to.y, to.z]);
+    return orb.id;
+  }
+
+  /** An orb reached its target: everything within `orb.blast` (2 voxels) is gone. */
+  orbBurst(o) {
+    const p = o.group.position;
+    if (o.owner) {
+      this.destroySphere(p.x, p.y, p.z, this.cfg.swarm.orb.blast, o.owner, this.cfg.swarm.orb.debris);
+      o.owner.orbDone(o.id);
+    }
+  }
+
+  /** Guest: an orb ship fired on the host — the same orb here (its burst arrives in snapshots). */
+  onOrb(a, b) {
+    this.orbs.fire({ x: a[0], y: a[1], z: a[2] }, { x: b[0], y: b[1], z: b[2] });
   }
 
   /** A black hole swallowed a drifting piece: its voxels are gone, a point each to the hole's owner. */
@@ -516,6 +548,8 @@ export class Game3D {
         this.net?.broadcastPlanet(this);
       }
     }
+    // orbs fly (following a target on a drifting piece) and burst
+    if (this.started) this.orbs.update((o) => this.orbBurst(o), (o, out) => { if (this.planet.solid(o.target)) this.planet.cellCenter(o.target, out); });
     // black holes pull in debris and pieces (and swallow them)
     if (this.started) this.holes.update(this.debris, this.planet.alive ? this.planet.fragments : null, (f, owner) => this.swallow(f, owner));
     // bitten-off pieces drift and turn; new splits are found
@@ -629,6 +663,7 @@ export class Game3D {
         this.planet.shatter((idx, color) => this.debris.emit(this.planet.cellCenter(idx, this.tmp), color, this.cfg.debris.perCellOnFinish));
       }
       if (this.started) this.holes.update(this.debris); // (pieces move as the host sends them)
+      this.orbs.update();
       this.planet.fragments?.step(this.started && this.planet.alive);
       this.planet.sync();
     }
@@ -711,7 +746,7 @@ export class Game3D {
       p.score = ps.score;
       p.planetScore = ps.planetScore;
       p.wins = ps.wins;
-      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts, ps.tugs, ps.tows, ps.bombers);
+      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts, ps.tugs, ps.tows, ps.bombers, ps.orbs);
     }
     const pl = this.planet;
     if (pl && pl.alive) {

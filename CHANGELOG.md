@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.23.0] — 2026-10-16
+
+### Added
+- **Orb ships** (magenta): a sixth ship type. From 10 voxels away an orb ship fires a voxel-sized plasma orb with a pulsing glow and a fiery tail (sparks from white-yellow to orange to dark red) — one at a time, the next only after it has burst. The orb flies slowly to the bite (following it on a drifting piece) and bursts with a flash: everything within 2 voxels is gone, a point each. Guests see the same orbs.
+- The Ship types panel has a sixth slider, **Orbs**. At the start the 20 units are split as evenly as possible: 4 eaters, 4 lasers, 3 storms, 3 tugs, 3 bombers, 3 orb ships.
+
 ## [0.22.0] — 2026-10-16
 
 ### Added

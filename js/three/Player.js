@@ -32,6 +32,7 @@ export class Player {
     this.storms = CONFIG.swarm.storm.count; // … and how many are blue storm ships
     this.tugs = CONFIG.swarm.tug.count;     // … and green tugs
     this.bombers = CONFIG.swarm.bomber.count; // … and purple bombers
+    this.orbs = CONFIG.swarm.orb.count;     // … and magenta orb ships
     this.towing = new Map();                // tug unit → { f: fragment, on: tractor beam holds it }
     this.tree = new SkillTree();
     this.bolt = null;       // chain lightning settings once bought
@@ -51,6 +52,7 @@ export class Player {
     this.swarm.storms = Math.min(this.storms, this.swarm.count - this.swarm.lasers);
     this.swarm.tugs = Math.min(this.tugs, this.swarm.count - this.swarm.lasers - this.swarm.storms);
     this.swarm.bombers = Math.min(this.bombers, this.swarm.count - this.swarm.lasers - this.swarm.storms - this.swarm.tugs);
+    this.swarm.orbs = Math.min(this.orbs, this.swarm.count - this.swarm.lasers - this.swarm.storms - this.swarm.tugs - this.swarm.bombers);
     this.swarm.fragmentById = (id) => game.planet?.fragments?.byId.get(id);
     this.swarm.fragments = () => game.planet?.fragments || null;
 
@@ -88,6 +90,7 @@ export class Player {
       bite: (idx, ownFood) => game.biteCell(idx, ownFood, this),
       storm: (idx, ownFood) => game.stormCell(idx, ownFood, this),
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
+      fireOrb: (i, idx, x, y, z) => game.fireOrb(this, i, idx, x, y, z),
     };
   }
 
@@ -167,7 +170,7 @@ export class Player {
       this.applyUpgrades();
     }
     else if (key === 'turn') s.turnSmoothing = value;
-    else if (key === 'lasers' || key === 'storms' || key === 'tugs' || key === 'bombers') {
+    else if (key === 'lasers' || key === 'storms' || key === 'tugs' || key === 'bombers' || key === 'orbs') {
       this[key] = Math.max(0, Math.round(value));
       this.applyUpgrades();
     }
@@ -175,7 +178,7 @@ export class Player {
 
   getSetting(key) {
     const s = this.swarm;
-    return { count: this.base.count, speed: this.base.speed, power: this.base.power, lasers: this.lasers, storms: this.storms, tugs: this.tugs, bombers: this.bombers, turn: s.turnSmoothing }[key];
+    return { count: this.base.count, speed: this.base.speed, power: this.base.power, lasers: this.lasers, storms: this.storms, tugs: this.tugs, bombers: this.bombers, orbs: this.orbs, turn: s.turnSmoothing }[key];
   }
 
   /** Points to spend in the upgrade tree: 1 eaten voxel = 1 point. */
@@ -200,6 +203,7 @@ export class Player {
     s.storms = Math.min(this.storms, s.count - s.lasers);
     s.tugs = Math.min(this.tugs, s.count - s.lasers - s.storms);
     s.bombers = Math.min(this.bombers, s.count - s.lasers - s.storms - s.tugs);
+    s.orbs = Math.min(this.orbs, s.count - s.lasers - s.storms - s.tugs - s.bombers);
     s.speed = this.base.speed * (1 + e.speed);
     this.biteRadius = this.base.power + e.power;
     this.bolt = e.bolt;
@@ -370,8 +374,10 @@ export class Player {
     // highest first, so moving one doesn't move another that is still to go
     for (const i of [...new Set(s.dying)].sort((a, b) => b - a)) {
       const bEnd = s.lasers + s.storms + s.tugs + s.bombers;
-      s.swapUnits(i, bEnd - 1);      // the last bomber's place
-      s.swapUnits(bEnd - 1, s.count - 1); // the last unit's place (an eater, if any)
+      const oEnd = bEnd + s.orbs;
+      s.swapUnits(i, bEnd - 1);           // the last bomber's place
+      s.swapUnits(bEnd - 1, oEnd - 1);    // past the orb ships (the last of them takes the bomber's place)
+      s.swapUnits(oEnd - 1, s.count - 1); // the last unit's place (an eater, if any)
       if (s.food[s.count - 1] >= 0) this.game.planet.release(s.food[s.count - 1]);
       s.food[s.count - 1] = -1;
       this.bombers = Math.max(0, this.bombers - 1);
@@ -380,6 +386,12 @@ export class Player {
     }
     s.dying.length = 0;
     this.onLost?.();
+  }
+
+  /** An orb burst: the ship that fired it may fire again. */
+  orbDone(id) {
+    const s = this.swarm;
+    for (let i = 0; i < s.count; i++) if (s.orbOut[i] === id) s.orbOut[i] = 0;
   }
 
   /** A towed piece reached the beacon: it is gone, and its voxels are worth `tug.reward` × the points. */

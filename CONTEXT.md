@@ -30,6 +30,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Storm ships (0.19.0):** blue; from laser range, a bolt (the chain-lightning look) forking at 70% into three: bite 40% of a laser's damage (whole crater, Power), two nearest voxels 30% each (owner: "identical damage to the laser, split over 3 blocks", sides slightly weaker). Normal speed. Same retarget rules as every ship (owner). Colours by type for every player: eaters yellow, lasers red, storms blue (owner's choice, also in multiplayer); lightning glow ~2 px. Start: units split as evenly as possible (7/7/6).
 - **Tugs (0.20.0, the owner's idea):** green; fly only to drifting pieces; from 10 voxels a tractor beam (green cone of light streaks, brightest at the tug — from a reference picture the owner sent) takes the whole piece and tows it to the player's beacon; there it is gone and the player gets 5× the points of what is left (planet share counts the voxels once). Others may eat it while towed — "the cost, but the value is bigger if it gets there" (owner). Every ship type always has its own slider (owner). Start: even split, 5 of each.
 - **Bombers (0.22.0, owner):** purple; touching a voxel they destroy everything within 10 voxels (points) and die for good (Units −1; owner's choice). A black hole for ~4 s (1 s grow, 2 s hold, 1 s shrink) with lensing; it pulls debris and drifting pieces within 15 voxels, gently (owner), and swallows them (pieces' voxels count for the bomber's owner). Every ship-type slider has a lock checkbox (owner). Start: 4 of each of five types.
+- **Orb ships (0.23.0, owner):** magenta; from 10 voxels fire a voxel-sized orb with a pulsing glow (+ a fiery tail, owner) that flies slowly to the target and destroys everything within 2 voxels. One orb at a time per ship (assistant's choice). Normal speed. Start: 4/4/3/3/3/3.
 - **Level switch (0.17.0):** single player only, buttons 1–5 in the settings panel; the swarm restarts from its beacon (owner: so it never gets stuck inside a shape). Hidden in multiplayer.
 - **100% means every voxel is gone.** Then the swarm returns home and only then does the next planet appear.
 - **Defaults:** units 20, speed 0.05, power 0.5, turning 0.12. "Reset to default" restores them.
@@ -121,6 +122,7 @@ Lessons from writing them:
 | 0.21.0 | tag `v0.21.0` | eating the nearest block always on; old eating mode, Spacing and Cohesion sliders removed |
 | 0.21.1 | tag `v0.21.1` | tractor beam shaped to the piece's outline, 5% larger |
 | 0.22.0 | tag `v0.22.0` | bombers with black holes (lensing, pull); lock checkboxes for the ship-type sliders |
+| 0.23.0 | tag `v0.23.0` | orb ships (plasma orbs with a fiery tail) |
 
 ## Known limitations
 

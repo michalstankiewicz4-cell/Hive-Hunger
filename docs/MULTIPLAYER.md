@@ -47,7 +47,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'ready', ready}` | I pressed Start (`true`) or Not ready (`false`) |
 | guest → host | `{t:'cmd', kind:'click', p:{x,y,z}}` | send my swarm to this point (planet frame) |
 | guest → host | `{t:'cmd', kind:'recall'}` | call my swarm back to its beacon |
-| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `turn`, `bombers`, `lasers`, `storms`, `tugs` |
+| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `turn`, `bombers`, `orbs`, `lasers`, `storms`, `tugs` |
 | host → guest | `{t:'ping', ts}` | every `net.pingMs` (2 s); `ts` = host time |
 | guest → host | `{t:'pong', ts}` | answer to a ping; the host's round trip `now − ts` is the guest's **ping** |
 | guest → host | `{t:'ping'}` | "still here", every `net.pingMs` |
@@ -58,6 +58,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | host → guest | `{t:'tree', tree:{owned, spent}}` | your upgrade tree after a purchase |
 | host → guest | `{t:'bolt', index, p:[x,y,z,…]}` | a chain-lightning bolt of player `index` to draw |
 | host → guest | `{t:'frags', list:[[id, px, py, pz, qx, qy, qz, qw, vx, vy, vz, towed], …]}` | where the drifting pieces are and how they move, every `fragments.syncEvery` frames (30; `towSyncEvery` = 6 while one is towed); guests move them with the same physics in between |
+| host → guest | `{t:'orb', a:[x,y,z], b:[x,y,z]}` | an orb ship fired from a at b: the guest flies the same orb (its burst's voxels arrive in snapshots) |
 | host → guest | `{t:'hole', p:[x,y,z]}` | a bomber blew up there: the guest opens the same black hole (the destroyed voxels arrive in snapshots) |
 | host → guest | `{t:'settings', values:{count, bombers}}` | the guest's bombers blew up: its Units and Bombers settings are lower now |
 | host → guest | `{t:'notice', text}` | "Pink joined", "Pink left the room", "Pink: connection lost" — shown in the HUD for `net.noticeMs` |
@@ -93,7 +94,7 @@ per player: u8 index | u8 home (0 none, 1 recall, 2 return) | u32 score | u32 pl
             | u16 storms (the next `storms` units are storm ships)
             | u16 bolts | bolts × (u16 unit | u8 sides | 3 × i16 bite | sides × 3 × i16 side voxel)
             | u16 tugs (the next `tugs` units are tugs) | u16 tows | tows × (u16 unit | u32 piece id)
-            | u16 bombers (the next `bombers` units are bombers)
+            | u16 bombers (the next `bombers` units are bombers) | u16 orbs (the next `orbs` units are orb ships)
 u32 removed | removed × u32 voxel index (eaten since the last snapshot)
 ```
 If a guest's connection is backed up (`bufferedAmount > net.maxBuffered`), the host skips a snapshot; eaten voxels stay queued for the next one, so nothing is lost.

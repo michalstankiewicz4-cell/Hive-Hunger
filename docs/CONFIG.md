@@ -81,9 +81,12 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count` | 20, 4, 4, 4, 4 | units at the start and how many are lasers / storms / tugs — computed in `config.js` from `START_UNITS` as an even split (the rest are eaters) | |
+| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count` | 20, 4, 3, 3, 3, 3 | units at the start and how many are lasers / storms / tugs — computed in `config.js` from `START_UNITS` as an even split (the rest are eaters) | |
 | `bomber.radius` | 5 | a bomber destroys everything within this (10 voxels) | |
 | `bomber.color`, `bomber.debris` | purple, 300 | colour; most debris pieces thrown by a blast | |
+| `orb.range`, `orb.speed`, `orb.blast` | 5, 0.045, 1 | firing distance (10 voxels), orb speed per frame, burst radius (2 voxels) | |
+| `orb.color`, `orb.glowColor`, `orb.glowSize`, `orb.pulse` | magenta | orb ship and orb colours, glow size (× voxel) and pulse speed | |
+| `orb.tailPerFrame`, `orb.tailFrames`, `orb.tailSize`, `orb.tailJitter` | 3, 22, 1.6, 0.12 | the fiery tail: sparks per frame, how long they live, size, spread | |
 | `minCount` | 0 | fewest units (the Units slider starts at 10; bombers that blew up can take the swarm lower) | |
 | `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
 | `tug.pull` | 0.9 | a towed piece's speed × the swarm speed | |

@@ -235,6 +235,13 @@ export class NetHost {
     for (const conn of this.guests.keys()) this.send(conn, msg);
   }
 
+  /** An orb ship fired: the guests fly the same orb. */
+  broadcastOrb(a, b) {
+    const r = (p) => p.map((v) => Math.round(v * 100) / 100);
+    const msg = JSON.stringify({ t: 'orb', a: r(a), b: r(b) });
+    for (const conn of this.guests.keys()) this.send(conn, msg);
+  }
+
   /** Settings the host changed for one guest (its bombers blew up: fewer units). */
   sendSettings(index, values) {
     for (const [conn, i] of this.guests) if (i === index) this.send(conn, JSON.stringify({ t: 'settings', values }));
@@ -332,6 +339,7 @@ export class NetGuest {
       else if (json.t === 'summary') g.setSummary(json.summary);
       else if (json.t === 'bolt') g.onBolt(json);
       else if (json.t === 'hole') g.onHole(json.p);
+      else if (json.t === 'orb') g.onOrb(json.a, json.b);
       else if (json.t === 'settings') g.onSettings?.(json.values);
       else if (json.t === 'frags') g.planet?.fragments?.applyMotions(json.list);
       else if (json.t === 'tree') g.onTree(json.tree);

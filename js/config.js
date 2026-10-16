@@ -1,8 +1,8 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
-// units at the start, split as evenly as possible between the five ship types
-// (eaters, laser ships, storm ships, tugs, bombers; what doesn't divide goes to eaters, then lasers, …)
+// units at the start, split as evenly as possible between the six ship types
+// (eaters, laser ships, storm ships, tugs, bombers, orb ships; what doesn't divide goes to eaters, then lasers, …)
 const START_UNITS = 20;
-const FIFTH = Math.floor(START_UNITS / 5), REST = START_UNITS % 5;
+const SHARE = Math.floor(START_UNITS / 6), REST = START_UNITS % 6;
 
 export const CONFIG = Object.freeze({
   background: 0x0b0c14,
@@ -121,20 +121,27 @@ export const CONFIG = Object.freeze({
     // ship types: red laser ships eat their bite from `reach` away (5 voxels of 0.5) and fly
     // `speedFactor` × the speed; `count` = how many of the units are lasers at the start
     // The beam is a glowing band `width` wide with a glow of `hitSize` where it hits.
-    laser: { count: FIFTH + (REST > 1 ? 1 : 0), reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
+    laser: { count: SHARE + (REST > 1 ? 1 : 0), reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
     // blue storm ships: from laser range, a bolt that forks at `fork` (70%) of the way into three —
     // `centre` of a laser's damage on the bite, `side` on each of the two nearest voxels; a new
     // flash every `flashEvery` frames, `flashFrames` long; side bolts drawn at `sideGlow` brightness
-    storm: { count: FIFTH + (REST > 2 ? 1 : 0), centre: 0.4, side: 0.3, fork: 0.7, color: 0x8fd0ff, boltColor: 0x6fbaff, flashEvery: 4, flashFrames: 6, sideGlow: 0.6 },
+    storm: { count: SHARE + (REST > 2 ? 1 : 0), centre: 0.4, side: 0.3, fork: 0.7, color: 0x8fd0ff, boltColor: 0x6fbaff, flashEvery: 4, flashFrames: 6, sideGlow: 0.6 },
     // green tugs: fly only to drifting pieces; within `range` (10 voxels) a tractor beam holds the whole
     // piece and they tow it home at `pull` × their speed; at the beacon (`deliver` units from it) the
     // piece is gone and the player gets `reward` × its points. `streaks` = light streaks in the beam;
     // the beam ends on the piece's outline as seen from the tug, `outlineScale` × its size
-    tug: { count: FIFTH + (REST > 3 ? 1 : 0), range: 5, pull: 0.9, deliver: 2, reward: 5, color: 0x6dff7a, beamColor: 0x3dff86, streaks: 14,
+    tug: { count: SHARE + (REST > 3 ? 1 : 0), range: 5, pull: 0.9, deliver: 2, reward: 5, color: 0x6dff7a, beamColor: 0x3dff86, streaks: 14,
       outlineScale: 1.05, outlinePoints: 160, rimMax: 64 }, // the beam: the piece's outline 5% larger (from up to 160 of its voxels)
     // purple bombers: fly to the nearest voxel; touching it, they blow up every voxel within `radius`
     // (10 voxels) — a point each — and die for good; `debris` = pieces of debris thrown (at most)
-    bomber: { count: FIFTH, radius: 5, color: 0xb36bff, debris: 300 },
+    bomber: { count: SHARE + (REST > 4 ? 1 : 0), radius: 5, color: 0xb36bff, debris: 300 },
+    // magenta orb ships: from `range` (10 voxels) fire a voxel-sized plasma orb with a pulsing glow,
+    // one at a time; it flies at `speed` and bursts at the target, destroying everything within
+    // `blast` (2 voxels)
+    orb: { count: SHARE, range: 5, speed: 0.045, blast: 1, color: 0xff3ed8, glowColor: 0xff5ae6, glowSize: 3.2, pulse: 0.25,
+      flashFrames: 14, flashSize: 6, debris: 30,
+      // the fiery tail: sparks per frame, frames they live, their size (× voxel), spread
+      tailPerFrame: 3, tailFrames: 22, tailSize: 1.6, tailJitter: 0.12, tailMax: 4000 },
     aimAngle: 12,            // a ship eats (a laser ship fires) only once it faces its bite within this many degrees
     // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
     // (0.5 s), then takes another bite — or the same one if there is no other
