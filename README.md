@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.18.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.18.1 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -35,7 +35,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Eat nearest block** (test mechanic) — when on, every unit flies straight from the voxel it just ate to the nearest uneaten, unclaimed voxel; no free flying, only spacing between units is kept
   - **Reset to default** — restore all settings to their starting values
   - **Level 1–5** (single player) — jump straight to that level; the swarm starts again from its beacon
-- **Ship types panel in the bottom-right corner** — how many of your units are **Eaters** and how many are red **Lasers** (the two sliders are linked; together they are all your units; 1 laser by default). A laser ship eats its bite from 5 voxels away with a red beam, but flies 10% slower
+- **Ship types panel in the bottom-right corner** — how many of your units are **Eaters** and how many are red **Lasers** (the two sliders are linked; together they are all your units; 1 laser by default). A laser ship eats its bite from 5 voxels away with a glowing red beam — once it has turned to face it — but flies 10% slower
 
 ## Multiplayer
 

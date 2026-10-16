@@ -682,7 +682,7 @@ export class Game3D {
     const loop = () => {
       if (!this.running) return;
       this.update();
-      for (const p of this.activePlayers()) p.swarm.render();
+      for (const p of this.activePlayers()) p.swarm.render(this.camera);
       this.renderer.render(this.scene, this.camera);
       this.frame = requestAnimationFrame(loop);
     };

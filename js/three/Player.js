@@ -323,7 +323,7 @@ export class Player {
   dispose() {
     this.dropAllBites(0);
     this.game.scene.remove(this.swarm.mesh);
-    this.game.scene.remove(this.swarm.beams);
+    this.game.scene.remove(this.swarm.beams.band, this.swarm.beams.hits);
     this.beacon.group.parent?.remove(this.beacon.group);
   }
 }

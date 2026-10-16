@@ -2,6 +2,13 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.18.1] — 2026-10-16
+
+### Changed
+- A laser ship fires only once it has turned to face its bite (within 12°), not while it is still turning.
+- A nicer laser: a glowing band with a white-hot core fading to red, turned towards the camera, shimmering slightly, with a soft glow where it hits.
+- The ships' drawn heading is now turned in the simulation (laser ships aim with it); guests still smooth it while drawing.
+
 ## [0.18.0] — 2026-10-16
 
 ### Added

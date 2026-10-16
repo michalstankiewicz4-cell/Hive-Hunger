@@ -102,13 +102,29 @@ async def main():
           return { laser: Math.max(...L), eater: Math.max(...E) }; }""")
         t.ok(abs(sp['laser'] - 0.27) < 0.005 and abs(sp['eater'] - 0.3) < 0.005, 'laser ships fly 10% slower', sp)
         await h.fast_forward(page, 500)
-        lz = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm; s.render();
+        lz = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm; s.render(g.camera);
           const d = (i) => { const i3 = i * 3; return Math.hypot(s.pos[i3] - s.foodPos[i3], s.pos[i3 + 1] - s.foodPos[i3 + 1], s.pos[i3 + 2] - s.foodPos[i3 + 2]); };
           const L = [], E = []; for (let i = 0; i < s.count; i++) if (s.landed[i] && s.food[i] >= 0) (i < s.lasers ? L : E).push(d(i));
           const red = s.mesh.instanceColor.getX(0) > 0.9 && s.mesh.instanceColor.getY(0) < 0.5, blue = s.mesh.instanceColor.getZ(s.count - 1) > 0.9;
-          return { laser: L.length ? Math.min(...L) : 0, eater: E.length ? Math.max(...E) : 9, beams: s.beams.geometry.drawRange.count / 2, red, blue }; }""")
+          return { laser: L.length ? Math.min(...L) : 0, eater: E.length ? Math.max(...E) : 9, beams: s.beamCount, red, blue }; }""")
         t.ok(lz['laser'] > 1.5 and lz['eater'] < 1.5 and lz['beams'] > 0, 'laser ships eat from a distance (with a beam), eaters up close', lz)
         t.ok(lz['red'] and lz['blue'], 'laser ships are red', lz)
+        aim = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm, pl = g.planet;
+          let i = -1; for (let k = 0; k < s.lasers; k++) if (s.landed[k] && s.food[k] >= 0) { i = k; break; }
+          if (i < 0) return { found: false };
+          // turn it away from its bite: it stops firing until it faces it again
+          // (a direction at right angles to the one to its bite)
+          const i3 = i * 3, d = [s.dir[i3], s.dir[i3 + 1], s.dir[i3 + 2]];
+          const side = Math.abs(d[0]) < 0.9 ? [0, d[2], -d[1]] : [-d[2], 0, d[0]], sl = Math.hypot(...side);
+          s.look[i3] = side[0] / sl; s.look[i3 + 1] = side[1] / sl; s.look[i3 + 2] = side[2] / sl;
+          const food = s.food[i], hp0 = pl.strengthOf(food);
+          g.update(); s.render(g.camera);
+          const turning = { aimed: s.aimed[i], firing: s.firing[i], hp: pl.strengthOf(food) };
+          let frames = 0; while (!s.aimed[i] && frames < 120 && s.landed[i]) { g.update(); frames++; }
+          return { found: true, hp0, turning, frames, aimedLater: s.aimed[i] }; }""")
+        t.ok(aim.get('found') and aim['turning']['aimed'] == 0 and aim['turning']['firing'] == 0 and aim['turning']['hp'] == aim['hp0'],
+             'a laser ship does not fire while it turns towards its bite', aim)
+        t.ok(aim['aimedLater'] == 1 and 5 < aim['frames'] < 60, 'it fires once it faces its bite', aim)
         await page.click('.control-levels button >> nth=0')
         await page.evaluate("() => window.__dbg.localPlayer.setSetting('lasers', 1)")
 

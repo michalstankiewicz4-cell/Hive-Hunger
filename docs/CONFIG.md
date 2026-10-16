@@ -85,7 +85,9 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `laser.count` | 1 | laser ships at the start (Ship types panel) | |
 | `laser.reach` | 2.5 | how far from its bite a laser ship eats (5 voxels of 0.5) | |
 | `laser.speedFactor` | 0.9 | laser ships' speed × the swarm speed | |
-| `laser.color`, `laser.beamColor` | red | ship and beam colour | |
+| `laser.aimAngle` | 12 | a laser ship fires only when its heading is within this many degrees of its bite | |
+| `laser.color` | red | laser ship colour | |
+| `laser.width`, `laser.hitSize` | 0.5, 1.4 | width of the glowing beam, size of the glow where it hits | |
 | `retarget.frames`, `retarget.pauseFrames` | 600, 30 | a unit with a bite that has not eaten for 10 s stops for 0.5 s, then takes another bite (the same one if there is no other) | lower = gives up sooner |
 | `biteRadius` | 0.5 | *slider Power* — crater radius per bite | |
 | `spawnSpread` | 4 | size of the cloud new units appear in | |

@@ -84,6 +84,7 @@ export class Swarm3D {
     // laser beams being fired: per unit 1/0 and the point it hits (set by the simulation, or on a
     // guest from the host's snapshot)
     this.firing = new Uint8Array(this.max);
+    this.aimed = new Uint8Array(this.max); // a landed laser ship faces its bite (it only fires then)
     this.beamTo = new Float32Array(this.max * 3);
     this.remote = false; // a guest's copy (positions from the host)
 
@@ -108,15 +109,10 @@ export class Swarm3D {
     this.laserColor = new THREE.Color(cfg.laser.color);
     this.coloredLasers = -1; // lasers shown in red last time (colours are set again when it changes)
 
-    // laser beams: a line per firing laser ship
-    const beamGeo = new THREE.BufferGeometry();
-    beamGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.max * 6), 3).setUsage(THREE.DynamicDrawUsage));
-    beamGeo.setDrawRange(0, 0);
-    this.beams = new THREE.LineSegments(beamGeo, new THREE.LineBasicMaterial({
-      color: cfg.laser.beamColor, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false,
-    }));
-    this.beams.frustumCulled = false;
-    scene.add(this.beams);
+    // laser beams: a glowing band per firing laser ship (a quad turned towards the camera, a
+    // white-hot core fading to red at the edges) and a glow where it hits
+    this.beams = makeBeams(this.max, cfg.laser);
+    scene.add(this.beams.band, this.beams.hits);
 
     this.dummy = new THREE.Object3D();
     this.v = new THREE.Vector3();
@@ -158,6 +154,48 @@ export class Swarm3D {
     }
     this.count = n;
     this.mesh.count = n;
+  }
+
+  /**
+   * Laser ship i, landed at range: turns towards its bite; true once its (drawn) heading faces
+   * it within `laser.aimAngle` — then it fires.
+   */
+  aim(i) {
+    const i3 = i * 3, pos = this.pos, fp = this.foodPos, dir = this.dir, look = this.look;
+    let tx = fp[i3] - pos[i3], ty = fp[i3 + 1] - pos[i3 + 1], tz = fp[i3 + 2] - pos[i3 + 2];
+    const tl = Math.hypot(tx, ty, tz) || 1;
+    tx /= tl; ty /= tl; tz /= tl;
+    dir[i3] = tx; dir[i3 + 1] = ty; dir[i3 + 2] = tz;
+    const ok = look[i3] * tx + look[i3 + 1] * ty + look[i3 + 2] * tz >= this.aimCos;
+    this.aimed[i] = ok ? 1 : 0;
+    return ok;
+  }
+
+  get aimCos() {
+    return Math.cos((this.cfg.laser.aimAngle * Math.PI) / 180);
+  }
+
+  /**
+   * The drawn heading follows the flying direction smoothly (turnSmoothing), so sharp changes —
+   * sliding along a wall, landing on a bite — don't look like snapping. Part of the simulation,
+   * because a laser ship aims with it; on a guest it runs while drawing.
+   */
+  turnLook() {
+    const k = this.cfg.turnSmoothing, look = this.look, dir = this.dir;
+    for (let i = 0; i < this.count; i++) {
+      const i3 = i * 3;
+      // turning right round: start the turn to one side (straight back it would never turn)
+      if (look[i3] * dir[i3] + look[i3 + 1] * dir[i3 + 1] + look[i3 + 2] * dir[i3 + 2] < -0.999) {
+        look[i3] += dir[i3 + 1] * 0.1; look[i3 + 1] -= dir[i3] * 0.1; look[i3 + 2] += 0.05;
+      }
+      let lx = look[i3] + (dir[i3] - look[i3]) * k;
+      let ly = look[i3 + 1] + (dir[i3 + 1] - look[i3 + 1]) * k;
+      let lz = look[i3 + 2] + (dir[i3 + 2] - look[i3 + 2]) * k;
+      const l = Math.hypot(lx, ly, lz);
+      if (l < 1e-4) { lx = dir[i3]; ly = dir[i3 + 1]; lz = dir[i3 + 2]; }
+      else { lx /= l; ly /= l; lz /= l; }
+      look[i3] = lx; look[i3 + 1] = ly; look[i3 + 2] = lz;
+    }
   }
 
   /** Laser ships among the units (the first `lasers` of them). */
@@ -269,6 +307,7 @@ export class Swarm3D {
     const p = { x: 0, y: 0, z: 0 };
 
     this.buildGrid();
+    this.turnLook(); // the heading drawn — and the one a laser ship aims with
 
     for (let i = 0; i < this.count; i++) {
       const i3 = i * 3;
@@ -286,6 +325,9 @@ export class Swarm3D {
           const fc = world.cellCenter(food[i]);
           pos[i3] += fc.x - foodPos[i3]; pos[i3 + 1] += fc.y - foodPos[i3 + 1]; pos[i3 + 2] += fc.z - foodPos[i3 + 2];
           foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
+          // a laser ship first turns to face its bite and fires only then (as an eater, which is
+          // already at its bite, it eats right away)
+          if (i < this.lasers && !this.aim(i)) continue;
           world.bite(food[i], food[i]);
           this.hungry[i] = 0;
           continue;
@@ -492,30 +534,49 @@ export class Swarm3D {
     this.stuck[i] = 0;
   }
 
-  /** Laser beams: from every laser ship eating its bite to the bite. */
-  renderBeams() {
+  /** Laser beams: from every laser ship eating its bite (and facing it) to the bite. */
+  renderBeams(camera) {
     const firing = this.firing, to = this.beamTo;
     if (!this.remote) {
-      // here the simulation runs: a laser ship that has landed (at range) is firing
+      // here the simulation runs: a landed laser ship that faces its bite is firing
       for (let i = 0; i < this.count; i++) {
-        const on = i < this.lasers && this.landed[i] && this.food[i] >= 0 ? 1 : 0;
+        const on = i < this.lasers && this.landed[i] && this.aimed[i] && this.food[i] >= 0 ? 1 : 0;
         firing[i] = on;
         if (on) { to[i * 3] = this.foodPos[i * 3]; to[i * 3 + 1] = this.foodPos[i * 3 + 1]; to[i * 3 + 2] = this.foodPos[i * 3 + 2]; }
       }
     }
-    const attr = this.beams.geometry.attributes.position, a = attr.array;
+    const { band, hits, cfg } = this.beams;
+    const P = band.geometry.attributes.position.array, H = hits.geometry.attributes.position.array;
+    const cam = camera ? camera.position : null;
+    const t = performance.now() * 0.02;
     let n = 0;
-    const flicker = 0.75 + Math.random() * 0.25;
     for (let i = 0; i < this.count; i++) {
       if (!firing[i]) continue;
       const i3 = i * 3;
-      a[n] = this.pos[i3]; a[n + 1] = this.pos[i3 + 1]; a[n + 2] = this.pos[i3 + 2];
-      a[n + 3] = to[i3]; a[n + 4] = to[i3 + 1]; a[n + 5] = to[i3 + 2];
-      n += 6;
+      const ax = this.pos[i3], ay = this.pos[i3 + 1], az = this.pos[i3 + 2];
+      const bx = to[i3], by = to[i3 + 1], bz = to[i3 + 2];
+      // across the beam, facing the camera: beam × (camera → middle)
+      let dx = bx - ax, dy = by - ay, dz = bz - az;
+      let vx = (ax + bx) / 2 - (cam ? cam.x : 0), vy = (ay + by) / 2 - (cam ? cam.y : 0), vz = (az + bz) / 2 - (cam ? cam.z : 100);
+      let sx = dy * vz - dz * vy, sy = dz * vx - dx * vz, sz = dx * vy - dy * vx;
+      const sl = Math.hypot(sx, sy, sz) || 1;
+      const w = cfg.width * (0.85 + 0.15 * Math.sin(t + i * 1.7)) / 2; // a slight shimmer
+      sx = (sx / sl) * w; sy = (sy / sl) * w; sz = (sz / sl) * w;
+      const o = n * 12;
+      P[o] = ax - sx; P[o + 1] = ay - sy; P[o + 2] = az - sz;
+      P[o + 3] = ax + sx; P[o + 4] = ay + sy; P[o + 5] = az + sz;
+      P[o + 6] = bx - sx; P[o + 7] = by - sy; P[o + 8] = bz - sz;
+      P[o + 9] = bx + sx; P[o + 10] = by + sy; P[o + 11] = bz + sz;
+      H[n * 3] = bx; H[n * 3 + 1] = by; H[n * 3 + 2] = bz;
+      n++;
     }
-    this.beams.material.opacity = 0.85 * flicker;
-    this.beams.geometry.setDrawRange(0, n / 3);
-    attr.needsUpdate = true;
+    band.geometry.setDrawRange(0, n * 6);
+    band.geometry.attributes.position.needsUpdate = true;
+    hits.geometry.setDrawRange(0, n);
+    hits.geometry.attributes.position.needsUpdate = true;
+    hits.material.size = cfg.hitSize * (0.8 + 0.4 * Math.random());
+    band.material.opacity = 0.85 + 0.15 * Math.random();
+    this.beamCount = n;
   }
 
   /** Units currently firing their laser, with the point they hit: [[unit, x, y, z], …] */
@@ -528,25 +589,17 @@ export class Swarm3D {
   }
 
   /**
-   * Draws the units. The drawn heading follows the flying direction smoothly (turnSmoothing),
-   * so sharp changes — sliding along a wall, landing on a bite — don't look like snapping.
-   * Only the look is smoothed; movement and collisions use the real direction.
+   * Draws the units with their smoothed heading (see turnLook) and the laser beams.
    */
-  render() {
+  render(camera) {
     this.updateColors();
-    this.renderBeams();
+    this.renderBeams(camera);
+    if (this.remote) this.turnLook(); // a guest's copy: no simulation turns it
     const dm = this.dummy;
-    const k = this.cfg.turnSmoothing;
     const look = this.look;
     for (let i = 0; i < this.count; i++) {
       const i3 = i * 3;
-      let lx = look[i3] + (this.dir[i3] - look[i3]) * k;
-      let ly = look[i3 + 1] + (this.dir[i3 + 1] - look[i3 + 1]) * k;
-      let lz = look[i3 + 2] + (this.dir[i3 + 2] - look[i3 + 2]) * k;
-      const l = Math.hypot(lx, ly, lz);
-      if (l < 1e-4) { lx = this.dir[i3]; ly = this.dir[i3 + 1]; lz = this.dir[i3 + 2]; }
-      else { lx /= l; ly /= l; lz /= l; }
-      look[i3] = lx; look[i3 + 1] = ly; look[i3 + 2] = lz;
+      const lx = look[i3], ly = look[i3 + 1], lz = look[i3 + 2];
       dm.position.set(this.pos[i3], this.pos[i3 + 1], this.pos[i3 + 2]);
       dm.quaternion.setFromUnitVectors(FORWARD, this.v.set(lx, ly, lz));
       dm.updateMatrix();
@@ -554,4 +607,59 @@ export class Swarm3D {
     }
     this.mesh.instanceMatrix.needsUpdate = true;
   }
+}
+
+/** Laser beam meshes: glowing bands (camera-facing quads) and a glow at each hit point. */
+function makeBeams(max, cfg) {
+  // across the band: transparent edge → red glow → white-hot core → red glow → edge
+  const c = document.createElement('canvas');
+  c.width = 4; c.height = 64;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, 64);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(0.22, 'rgba(120,0,0,1)');
+  grad.addColorStop(0.42, 'rgba(255,60,40,1)');
+  grad.addColorStop(0.5, 'rgba(255,235,225,1)');
+  grad.addColorStop(0.58, 'rgba(255,60,40,1)');
+  grad.addColorStop(0.78, 'rgba(120,0,0,1)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 4, 64);
+  const bandTex = new THREE.CanvasTexture(c);
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(max * 12), 3).setUsage(THREE.DynamicDrawUsage));
+  const uv = new Float32Array(max * 8), index = [];
+  for (let n = 0; n < max; n++) {
+    uv.set([0, 0, 0, 1, 1, 0, 1, 1], n * 8);
+    const v = n * 4;
+    index.push(v, v + 2, v + 1, v + 1, v + 2, v + 3);
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  geo.setIndex(index);
+  geo.setDrawRange(0, 0);
+  const band = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+    map: bandTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+  }));
+  band.frustumCulled = false;
+
+  // where it hits: a soft round glow
+  const h = document.createElement('canvas');
+  h.width = h.height = 64;
+  const hg = h.getContext('2d');
+  const rad = hg.createRadialGradient(32, 32, 0, 32, 32, 32);
+  rad.addColorStop(0, 'rgba(255,240,230,1)');
+  rad.addColorStop(0.25, 'rgba(255,80,50,0.9)');
+  rad.addColorStop(0.6, 'rgba(160,10,0,0.35)');
+  rad.addColorStop(1, 'rgba(0,0,0,0)');
+  hg.fillStyle = rad;
+  hg.fillRect(0, 0, 64, 64);
+  const hitGeo = new THREE.BufferGeometry();
+  hitGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(max * 3), 3).setUsage(THREE.DynamicDrawUsage));
+  hitGeo.setDrawRange(0, 0);
+  const hits = new THREE.Points(hitGeo, new THREE.PointsMaterial({
+    map: new THREE.CanvasTexture(h), size: cfg.hitSize, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  hits.frustumCulled = false;
+  return { band, hits, cfg };
 }
