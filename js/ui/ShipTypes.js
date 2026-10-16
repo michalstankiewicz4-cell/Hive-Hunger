@@ -11,7 +11,7 @@ import { SHIP_KINDS } from '../config.js';
  *    them to the eaters (if the eaters are locked: to the other types, the last one first).
  *  - Eaters are the rest: moving Eaters up takes from the other types, the last one first.
  */
-const LABELS = { eaters: 'Eaters', lasers: 'Lasers', storms: 'Storms', tugs: 'Tugs', bombers: 'Bombers', orbs: 'Orbs', supports: 'Support', cleaners: 'Cleaners' };
+const LABELS = { eaters: 'Eaters', lasers: 'Lasers', storms: 'Storms', tugs: 'Tugs', bombers: 'Bombers', orbs: 'Orbs', supports: 'Support', cleaners: 'Cleaners', drills: 'Drills' };
 const OTHERS = SHIP_KINDS;
 const TYPES = ['eaters', ...OTHERS].map((k) => [k, LABELS[k] || k]);
 const LAST_FIRST = [...OTHERS].reverse();

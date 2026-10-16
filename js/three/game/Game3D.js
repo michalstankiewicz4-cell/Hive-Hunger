@@ -47,6 +47,7 @@ export class Game3D {
     this.level = 0;
     this.running = false;    // the render loop is on
     this.started = false;    // the match has begun (start screen / waiting room before that)
+    this.paused = false;     // single player: paused with Space
     this.spin = 0;           // planet rotation angle (radians)
     this.remoteSpin = 0;     // guest: spin from the host
     this.returnFrames = 0;
@@ -195,6 +196,7 @@ export class Game3D {
   /** Switch to hosting a room: starts from scratch (new planet 1 and host player), keeps the settings panel values. */
   becomeHost(mode) {
     this.role = 'host';
+    this.paused = false;
     this.mode = mode;
     // a room starts from scratch — nothing carries over from single player (planet, points,
     // upgrades, swarm), so co-op and PvP are fair; only the settings panel values stay
@@ -264,6 +266,12 @@ export class Game3D {
   }
 
   update() {
+    // single player paused (Space): nothing moves; the camera can still turn
+    if (this.paused && this.role === 'solo') {
+      this.updateCamera();
+      this.updateHud();
+      return;
+    }
     this.frameNo++;
     if (this.role === 'guest') this.updateGuest();
     else this.updateSim();

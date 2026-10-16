@@ -7,11 +7,13 @@ export const RemoteSwarm = {
    * Multiplayer guest: show positions and headings received from the host instead of
    * simulating. Units move smoothly towards the received positions between updates.
    */
-  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null, bombers = 0, orbs = 0, supports = 0, cleaners = 0) {
+  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null, bombers = 0, orbs = 0, supports = 0, cleaners = 0, drills = 0, drilling = null) {
     this.bombers = bombers;
     this.orbs = orbs;
     this.supports = supports;
     this.cleaners = cleaners;
+    this.drills = drills;
+    this.remoteDrilling = drilling || [];
     this.remote = true;
     this.lasers = lasers;
     this.storms = storms;

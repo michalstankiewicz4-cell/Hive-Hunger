@@ -2,6 +2,16 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.27.0] — 2026-10-16
+
+### Added
+- **Drills** (orange): a ninth ship type. A drill flies to the nearest voxel, turns its nose towards the planet's centre (a little off it, at random) and drills a straight tunnel in at 0.08 units per frame: everything within 1.5 voxels of the bit is gone, a point each. It stops once it is through (empty space for a moment after the last voxel) or has drilled 60 units, then picks its next bite. While drilling, an orange spiral bit turns at its nose. On a drifting piece it eats like an eater. Guests see the same drills and bits.
+- The Ship types panel has a ninth slider, **Drills**.
+
+### Changed
+- Every player starts with **2 ships of every type** — 18 units (`START_EACH` in `config.js`).
+- **Space** pauses single player: nothing moves (the camera still turns), "Paused · press Space to continue" at the bottom; Space again carries on. "Press Space to pause" is shown there while playing (not on touch screens).
+
 ## [0.26.0] — 2026-10-16
 
 ### Added

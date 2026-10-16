@@ -67,3 +67,36 @@
   color: var(--accent);
   opacity: 0.85;
 }
+
+/* single player: "Press Space to pause" at the bottom */
+.pause-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  color: var(--hud-dim);
+  font: 12px monospace;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pause-hint.is-paused {
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--panel-bg);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.pause-hint[hidden] {
+  display: none;
+}
+
+/* no keyboard: no Space */
+@media (hover: none) {
+  .pause-hint {
+    display: none;
+  }
+}

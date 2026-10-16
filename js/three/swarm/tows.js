@@ -98,6 +98,7 @@ export const TowBeams = {
     this.towBeams = [];
     for (const b of this.warpTrails || []) this.scene.remove(b.group);
     this.warpTrails = [];
+    this.disposeDrills();
   },
 };
 

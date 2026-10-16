@@ -110,10 +110,25 @@ if (!window.THREE) {
   pointsEl.addEventListener('click', () => tree.toggle());
   // Tab: upgrade tree. Esc: closes the tree; in single player it opens the start screen
   // (the game pauses) and closes it again (the game carries on)
+  // single player: "Press Space to pause" at the bottom (and "Paused" while it is)
+  const pauseHint = document.getElementById('pause-hint');
+  const showPauseHint = () => {
+    pauseHint.hidden = !(game.role === 'solo' && game.started && menuEl.hidden);
+    pauseHint.classList.toggle('is-paused', game.paused);
+    pauseHint.textContent = game.paused ? 'Paused · press Space to continue' : 'Press Space to pause';
+  };
+  setInterval(showPauseHint, 300);
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Tab' && game.started && menuEl.hidden) {
       e.preventDefault();
       tree.toggle();
+    } else if (e.code === 'Space' && game.role === 'solo' && game.started && menuEl.hidden && !tree.isOpen) {
+      // single player: Space pauses and carries on (the picture stays; the camera still turns)
+      if (e.target instanceof HTMLInputElement && e.target.type === 'text') return;
+      e.preventDefault();
+      game.paused = !game.paused;
+      showPauseHint();
     } else if (e.key === 'Escape') {
       if (tree.isOpen) tree.close();
       else if (game.role === 'solo' && game.started) {

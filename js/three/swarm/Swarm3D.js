@@ -5,6 +5,7 @@ import { RemoteSwarm } from './remote.js';
 import { Hyperspace } from './warp.js';
 import { Beams, makeBeams } from './beams.js';
 import { TowBeams } from './tows.js';
+import { DrillBits } from './drills.js';
 
 const THREE = window.THREE;
 const FORWARD = new THREE.Vector3(0, 0, 1);
@@ -77,6 +78,16 @@ export class Swarm3D {
     // the next `cleaners` units are grey cleaners: they eat only drifting pieces of at most
     // `cleaner.maxPiece` voxels (world.pickScrap / isScrap); with none about they fly with the swarm
     this.cleaners = 0;
+    // the next `drills` units are orange drills: landed on their bite, they drill straight towards the
+    // planet's centre (drillDir) for at most `drill.maxLength` (drillLeft), destroying everything
+    // around the bit (world.drill); drillIdle counts frames without a voxel since the last one, drillHit
+    // says one was hit at all. The bit is drawn in drills.js
+    this.drills = 0;
+    this.drillLeft = new Float32Array(this.max);
+    this.drillDir = new Float32Array(this.max * 3);
+    this.drillIdle = new Uint16Array(this.max);
+    this.drillHit = new Uint8Array(this.max);
+    this.drillAim = new Uint8Array(this.max); // its drilling direction is picked (turning to it)
     // arrival and departure: `hidden` ships are not out of the tunnel yet / gone to hyperspace
     // (not simulated, not drawn); a ship jumping to hyperspace waits `warpDelay` frames, then
     // speeds up along `warpDir` for `warp.frames` frames (warpT counts them) and is gone, leaving a streak
@@ -164,6 +175,8 @@ export class Swarm3D {
         this.hidden[i] = 0;
         this.warpDelay[i] = -1;
         this.warpT[i] = 0;
+        this.drillLeft[i] = 0;
+        this.drillAim[i] = 0;
       }
     }
     // removed units release their claims
@@ -189,6 +202,12 @@ export class Swarm3D {
     const ok = look[i3] * tx + look[i3 + 1] * ty + look[i3 + 2] * tz >= this.aimCos;
     this.aimed[i] = ok ? 1 : 0;
     return ok;
+  }
+
+  /** A drill turning its (drawn) nose towards its drilling direction; true once it faces it. */
+  aimDrill(i) {
+    const i3 = i * 3, look = this.look, D = this.drillDir;
+    return look[i3] * D[i3] + look[i3 + 1] * D[i3 + 1] + look[i3 + 2] * D[i3 + 2] >= this.aimCos;
   }
 
   get aimCos() {
@@ -278,6 +297,22 @@ export class Swarm3D {
 
       if (this.hidden[i] || this.warpT[i] > 0) continue; // not here (yet / any more), or jumping away
       if (this.dying.length && this.dying.includes(i)) continue; // blew up this frame
+      // drilling: straight on through the voxels, eating everything around the bit
+      if (this.drillLeft[i] > 0) {
+        if (!this.isDrill(i) || world.holding) { this.drillLeft[i] = 0; continue; } // another type now / called back
+        const dc = c.drill, D = this.drillDir;
+        pos[i3] += D[i3] * dc.speed; pos[i3 + 1] += D[i3 + 1] * dc.speed; pos[i3 + 2] += D[i3 + 2] * dc.speed;
+        dir[i3] = D[i3]; dir[i3 + 1] = D[i3 + 1]; dir[i3 + 2] = D[i3 + 2];
+        // the bit is just ahead of the ship
+        const ahead = dc.radius * 0.6;
+        const n = world.drill(i, pos[i3] + D[i3] * ahead, pos[i3 + 1] + D[i3 + 1] * ahead, pos[i3 + 2] + D[i3 + 2] * ahead);
+        if (n > 0) { this.drillHit[i] = 1; this.drillIdle[i] = 0; } else this.drillIdle[i]++;
+        this.drillLeft[i] -= dc.speed;
+        // through: empty space for a while after the last voxel (or nothing at all from the start)
+        if (this.drillIdle[i] > dc.emptyFrames) this.drillLeft[i] = 0;
+        if (this.drillLeft[i] <= 0) { this.drillLeft[i] = 0; best[i] = Infinity; stuck[i] = 0; }
+        continue;
+      }
       // giving up on a bite it couldn't reach: stays still for a moment, then picks another
       if (this.pause[i] > 0) {
         if (--this.pause[i] === 0) this.retarget(i, world);
@@ -292,6 +327,29 @@ export class Swarm3D {
             world.bomb(i, foodPos[i3], foodPos[i3 + 1], foodPos[i3 + 2]);
             this.dying.push(i);
             landed[i] = 0;
+            continue;
+          }
+          // a drill on its bite: turns towards the planet's centre (a little off it, at random, so the
+          // way back out isn't the same tunnel) and starts drilling (its bite goes with the rest); on a
+          // drifting piece it eats like an eater
+          if (this.isDrill(i) && !world.isFloating(food[i])) {
+            if (this.drillLeft[i] === 0 && !this.drillAim[i]) {
+              const l = Math.hypot(pos[i3], pos[i3 + 1], pos[i3 + 2]) || 1, t = c.drill.spread;
+              let x = -pos[i3] / l + (Math.random() * 2 - 1) * t, y = -pos[i3 + 1] / l + (Math.random() * 2 - 1) * t, z = -pos[i3 + 2] / l + (Math.random() * 2 - 1) * t;
+              const m = Math.hypot(x, y, z) || 1;
+              this.drillDir[i3] = x / m; this.drillDir[i3 + 1] = y / m; this.drillDir[i3 + 2] = z / m;
+              this.drillAim[i] = 1;
+            }
+            dir[i3] = this.drillDir[i3]; dir[i3 + 1] = this.drillDir[i3 + 1]; dir[i3 + 2] = this.drillDir[i3 + 2];
+            if (!this.aimDrill(i)) continue; // turns its nose to the centre first
+            world.release(food[i]);
+            food[i] = -1;
+            landed[i] = 0;
+            this.drillAim[i] = 0;
+            this.drillLeft[i] = c.drill.maxLength;
+            this.drillIdle[i] = 0;
+            this.drillHit[i] = 0;
+            this.hungry[i] = 0;
             continue;
           }
           // a bite on a drifting fragment moves: the unit holds on and moves with it
@@ -315,6 +373,7 @@ export class Swarm3D {
           continue;
         }
         landed[i] = 0;
+        this.drillAim[i] = 0; // (a drill picks its direction again next time)
       }
 
       const px = pos[i3], py = pos[i3 + 1], pz = pos[i3 + 2];
@@ -547,6 +606,7 @@ export class Swarm3D {
     this.renderTows();
     this.renderTrails(camera);
     if (this.remote) this.turnLook(); // a guest's copy: no simulation turns it
+    this.renderDrills(); // after turnLook: the bits follow the drawn heading
     const dm = this.dummy;
     const look = this.look;
     for (let i = 0; i < this.count; i++) {
@@ -566,6 +626,6 @@ const HIDDEN = new THREE.Matrix4().makeScale(0, 0, 0);
 
 // the rest of the swarm, one file per part: ship types, a guest's copy, hyperspace, laser beams and
 // storm bolts, tractor beams
-for (const part of [ShipTypes, RemoteSwarm, Hyperspace, Beams, TowBeams]) {
+for (const part of [ShipTypes, RemoteSwarm, Hyperspace, Beams, TowBeams, DrillBits]) {
   Object.defineProperties(Swarm3D.prototype, Object.getOwnPropertyDescriptors(part));
 }

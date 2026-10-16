@@ -1,16 +1,15 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
-// units at the start, split as evenly as possible between the eight ship types
-// (eaters, laser ships, storm ships, tugs, bombers, orb ships, support ships, cleaners; what doesn't
-// divide goes to eaters, then lasers, …)
-const START_UNITS = 20;
-const SHARE = Math.floor(START_UNITS / 8), REST = START_UNITS % 8;
+// at the start every player has START_EACH ships of every type (eaters, laser ships, storm ships,
+// tugs, bombers, orb ships, support ships, cleaners, drills): 2 × 9 = 18 units
+const START_EACH = 2;
+const START_UNITS = START_EACH * 9;
 
 /**
  * Ship types other than eaters, in the order their units come in the swarm: units 0 … lasers−1 are
  * laser ships, then storm ships, and so on; the rest are eaters. Each key is also the setting (and
  * the Ship types slider) with how many there are.
  */
-export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners'];
+export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills'];
 /** The CONFIG.swarm entry of a ship type: 'lasers' → 'laser', 'supports' → 'support', … */
 export const kindConfig = (kind) => kind.slice(0, -1);
 
@@ -131,24 +130,24 @@ export const CONFIG = Object.freeze({
     // ship types: red laser ships eat their bite from `reach` away (5 voxels of 0.5) and fly
     // `speedFactor` × the speed; `count` = how many of the units are lasers at the start
     // The beam is a glowing band `width` wide with a glow of `hitSize` where it hits.
-    laser: { count: SHARE + (REST > 1 ? 1 : 0), reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
+    laser: { count: START_EACH, reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
     // blue storm ships: from laser range, a bolt that forks at `fork` (70%) of the way into three —
     // `centre` of a laser's damage on the bite, `side` on each of the two nearest voxels; a new
     // flash every `flashEvery` frames, `flashFrames` long; side bolts drawn at `sideGlow` brightness
-    storm: { count: SHARE + (REST > 2 ? 1 : 0), centre: 0.4, side: 0.3, fork: 0.7, color: 0x8fd0ff, boltColor: 0x6fbaff, flashEvery: 4, flashFrames: 6, sideGlow: 0.6 },
+    storm: { count: START_EACH, centre: 0.4, side: 0.3, fork: 0.7, color: 0x8fd0ff, boltColor: 0x6fbaff, flashEvery: 4, flashFrames: 6, sideGlow: 0.6 },
     // green tugs: fly only to drifting pieces; within `range` (10 voxels) a tractor beam holds the whole
     // piece and they tow it home at `pull` × their speed; at the tunnel (`deliver` units from it) the
     // piece is gone and the player gets `reward` × its points. `streaks` = light streaks in the beam;
     // the beam ends on the piece's outline as seen from the tug, `outlineScale` × its size
-    tug: { count: SHARE + (REST > 3 ? 1 : 0), range: 5, pull: 0.9, deliver: 2, reward: 5, color: 0x6dff7a, beamColor: 0x3dff86, streaks: 14,
+    tug: { count: START_EACH, range: 5, pull: 0.9, deliver: 2, reward: 5, color: 0x6dff7a, beamColor: 0x3dff86, streaks: 14,
       outlineScale: 1.05, outlinePoints: 160, rimMax: 64 }, // the beam: the piece's outline 5% larger (from up to 160 of its voxels)
     // purple bombers: fly to the nearest voxel; touching it, they blow up every voxel within `radius`
     // (10 voxels) — a point each — and die for good; `debris` = pieces of debris thrown (at most)
-    bomber: { count: SHARE + (REST > 4 ? 1 : 0), radius: 5, color: 0xb36bff, debris: 300 },
+    bomber: { count: START_EACH, radius: 5, color: 0xb36bff, debris: 300 },
     // magenta orb ships: from `range` (10 voxels) fire a voxel-sized plasma orb with a pulsing glow,
     // one at a time; it flies at `speed` and bursts at the target, destroying everything within
     // `blast` (2 voxels)
-    orb: { count: SHARE + (REST > 5 ? 1 : 0), range: 5, speed: 0.045, blast: 1, color: 0xff3ed8, glowColor: 0xff5ae6, glowSize: 3.2, pulse: 0.25,
+    orb: { count: START_EACH, range: 5, speed: 0.045, blast: 1, color: 0xff3ed8, glowColor: 0xff5ae6, glowSize: 3.2, pulse: 0.25,
       flashFrames: 14, flashSize: 6, debris: 30,
       // the fiery tail: sparks per frame, frames they live, their size (× voxel), spread
       tailPerFrame: 3, tailFrames: 22, tailSize: 1.6, tailJitter: 0.12, tailMax: 4000 },
@@ -157,12 +156,19 @@ export const CONFIG = Object.freeze({
     // destroys every voxel on its way. The bolt lives `life` frames (1.5 s): a white core with a
     // `glowPx` glow and energy flowing along it, bent (`bend`, `jag`), with `branches` forked side
     // bolts per jump (`branchGlowPx` glow) that do nothing
-    support: { count: SHARE + (REST > 6 ? 1 : 0), every: 180, jumps: 6, jumpRange: 10, color: 0xffffff, glowColor: 0xdfe8ff,
+    support: { count: START_EACH, every: 180, jumps: 6, jumpRange: 10, color: 0xffffff, glowColor: 0xdfe8ff,
       life: 90, fadeOut: 25, points: 24, bend: 0.09, jag: 0.025, glowPx: 4, branchGlowPx: 2,
       branches: 3, branchLength: 1.6, branchBrightness: 0.6, flowWaves: 3, flowSpeed: 0.05 },
     // grey cleaners: eat only drifting pieces of at most `maxPiece` (3) voxels, the nearest first;
     // with none about they fly with the swarm
-    cleaner: { count: SHARE, maxPiece: 3, color: 0x9aa3ad },
+    cleaner: { count: START_EACH, maxPiece: 3, color: 0x9aa3ad },
+    // orange drills: fly to the nearest voxel like eaters; there they drill straight towards the
+    // planet's centre (off it by up to `spread` at random) at `speed`, everything within `radius` (1.5 voxels) of the bit gone (a point
+    // each), until they have been in empty space for `emptyFrames` after the last voxel or drilled
+    // `maxLength`; then they fly on as usual. The bit: a spiral cone (`bitLength`, `bitRadius`)
+    // turning `bitSpin` radians per frame, shown while drilling
+    drill: { count: START_EACH, speed: 0.08, radius: 0.75, emptyFrames: 25, maxLength: 60, spread: 0.35, debris: 4, color: 0xff8a1f,
+      bitColor: 0xff9a2e, bitDark: 0x7a2c00, bitLength: 0.6, bitRadius: 0.16, bitSpin: 0.6 },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
     // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames

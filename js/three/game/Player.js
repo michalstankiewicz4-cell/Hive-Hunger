@@ -119,6 +119,9 @@ export class Player {
       storm: (idx, ownFood) => game.stormCell(idx, ownFood, this),
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
       fireOrb: (i, idx, x, y, z) => game.fireOrb(this, i, idx, x, y, z),
+      // drills: everything around the bit at (x, y, z) is gone; returns how many voxels
+      drill: (i, x, y, z) => game.destroySphere(x, y, z, CONFIG.swarm.drill.radius, this, CONFIG.swarm.drill.debris),
+      isFloating: (idx) => (game.planet.fragments?.fragOf[idx] ?? -1) >= 0,
     };
   }
 
