@@ -118,6 +118,7 @@ Lessons from writing them:
 | 0.19.0 | tag `v0.19.0` | storm ships (forked lightning); colours by ship type; even split at the start; thin lightning glow |
 | 0.20.0 | tag `v0.20.0` | tugs towing drifting pieces home for 5× points; four ship-type sliders |
 | 0.21.0 | tag `v0.21.0` | eating the nearest block always on; old eating mode, Spacing and Cohesion sliders removed |
+| 0.21.1 | tag `v0.21.1` | tractor beam shaped to the piece's outline, 5% larger |
 
 ## Known limitations
 

@@ -50,6 +50,7 @@ export class Player {
     this.swarm.storms = Math.min(this.storms, this.swarm.count - this.swarm.lasers);
     this.swarm.tugs = Math.min(this.tugs, this.swarm.count - this.swarm.lasers - this.swarm.storms);
     this.swarm.fragmentById = (id) => game.planet?.fragments?.byId.get(id);
+    this.swarm.fragments = () => game.planet?.fragments || null;
 
     // exposed voxels near the swarm target — computed once per frame
     this.candidates = [];

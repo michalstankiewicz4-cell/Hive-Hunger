@@ -128,8 +128,10 @@ export const CONFIG = Object.freeze({
     storm: { count: QUARTER + (REST > 2 ? 1 : 0), centre: 0.4, side: 0.3, fork: 0.7, color: 0x8fd0ff, boltColor: 0x6fbaff, flashEvery: 4, flashFrames: 6, sideGlow: 0.6 },
     // green tugs: fly only to drifting pieces; within `range` (10 voxels) a tractor beam holds the whole
     // piece and they tow it home at `pull` × their speed; at the beacon (`deliver` units from it) the
-    // piece is gone and the player gets `reward` × its points. `streaks` = light streaks in the beam
-    tug: { count: QUARTER, range: 5, pull: 0.9, deliver: 2, reward: 5, color: 0x6dff7a, beamColor: 0x3dff86, streaks: 14 },
+    // piece is gone and the player gets `reward` × its points. `streaks` = light streaks in the beam;
+    // the beam ends on the piece's outline as seen from the tug, `outlineScale` × its size
+    tug: { count: QUARTER, range: 5, pull: 0.9, deliver: 2, reward: 5, color: 0x6dff7a, beamColor: 0x3dff86, streaks: 14,
+      outlineScale: 1.05, outlinePoints: 160, rimMax: 64 }, // the beam: the piece's outline 5% larger (from up to 160 of its voxels)
     aimAngle: 12,            // a ship eats (a laser ship fires) only once it faces its bite within this many degrees
     // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
     // (0.5 s), then takes another bite — or the same one if there is no other

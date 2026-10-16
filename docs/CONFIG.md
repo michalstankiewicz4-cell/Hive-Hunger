@@ -87,6 +87,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `tug.deliver` | 2 | how close (beyond the piece's radius) to the beacon a piece counts as home | |
 | `tug.reward` | 5 | points per voxel of a piece brought home | |
 | `tug.color`, `tug.beamColor`, `tug.streaks` | green, 14 | tug and beam colour, light streaks in the beam | |
+| `tug.outlineScale`, `tug.outlinePoints`, `tug.rimMax` | 1.05, 160, 64 | the beam ends on the piece's outline this much larger; voxels sampled for it; most outline points | |
 | `eaterColor` | yellow | eaters' colour (every player); `color` stays the swarm's colour in single player (beacon, click marker) | |
 | `storm.centre`, `storm.side` | 0.4, 0.3 | a storm ship's damage on its bite / on each of the two nearest voxels, as a share of what a laser does (its whole crater) | |
 | `storm.fork` | 0.7 | where the bolt forks (share of the way to the bite) | |
