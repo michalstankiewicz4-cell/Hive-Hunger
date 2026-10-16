@@ -83,7 +83,12 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `nearestMode` | true | *toggle Eat nearest block* | |
 | `feedFlocking` | 0.35 | how much alignment/cohesion remains while feeding (with Eat nearest block it is 0) | higher = units pull each other off their bites |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `laser.count` | 1 | laser ships at the start (Ship types panel) | |
+| `count`, `laser.count`, `storm.count` | 20, 7, 6 | units at the start and how many are lasers / storms — computed in `config.js` from `START_UNITS` as an even split (the rest are eaters) | |
+| `eaterColor` | yellow | eaters' colour (every player); `color` stays the swarm's colour in single player (beacon, click marker) | |
+| `storm.centre`, `storm.side` | 0.4, 0.3 | a storm ship's damage on its bite / on each of the two nearest voxels, as a share of what a laser does (its whole crater) | |
+| `storm.fork` | 0.7 | where the bolt forks (share of the way to the bite) | |
+| `storm.color`, `storm.boltColor` | blue | storm ship and lightning colour | |
+| `storm.flashEvery`, `storm.flashFrames`, `storm.sideGlow` | 4, 6, 0.6 | a new flash every 4 frames, 6 frames long; side bolts at 60% brightness | |
 | `laser.reach` | 2.5 | how far from its bite a laser ship eats (5 voxels of 0.5) | |
 | `laser.speedFactor` | 0.9 | laser ships' speed × the swarm speed | |
 | `laser.color` | red | laser ship colour | |

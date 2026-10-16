@@ -26,7 +26,7 @@ STATE = """() => {
 
 # a ship that has landed is turned away from its bite: it must face it again before eating
 AIM = """(laser) => { const g = window.__dbg, s = g.localPlayer.swarm, pl = g.planet;
-            const pick = () => { for (let k = laser ? 0 : s.lasers; k < (laser ? s.lasers : s.count); k++) if (s.landed[k] && s.food[k] >= 0 && s.aimed[k]) return k; return -1; };
+            const pick = () => { for (let k = laser ? 0 : s.lasers + s.storms; k < (laser ? s.lasers : s.count); k++) if (s.landed[k] && s.food[k] >= 0 && s.aimed[k] && pl.solid(s.food[k]) && pl.strengthOf(s.food[k]) > 0.5) return k; return -1; };
             let i = pick(); for (let f = 0; i < 0 && f < 300; f++) { g.update(); i = pick(); }
             if (i < 0) return { found: false };
             // turn it away from its bite: it stops firing until it faces it again
@@ -104,28 +104,51 @@ async def main():
         t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'boxes'], 'back to level 1')
 
         # ship types (bottom-right): 1 red laser ship by default; lasers eat from 5 voxels away, 10% slower
-        ui = await page.evaluate("() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, window.__dbg.localPlayer.swarm.lasers]")
-        t.ok(ui == [19, 1, 1], 'ship types: 19 eaters and 1 red laser ship by default', ui)
+        ui = await page.evaluate("""() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, +document.getElementById('ships-storms').value, window.__dbg.localPlayer.swarm.lasers, window.__dbg.localPlayer.swarm.storms]""")
+        t.ok(ui == [7, 7, 6, 7, 6], 'ship types at the start, as even as possible: 7 eaters, 7 red laser ships, 6 blue storm ships', ui)
         await page.click('.control-levels button >> nth=1')
-        await page.evaluate("""() => { const e = document.getElementById('ships-eaters'); e.value = 12; e.dispatchEvent(new Event('input'));
+        await page.evaluate("""() => { const e = document.getElementById('ships-lasers'); e.value = 8; e.dispatchEvent(new Event('input'));
           window.__dbg.localPlayer.setSetting('speed', 0.3); }""")
         await page.wait_for_timeout(400)
-        ui = await page.evaluate("() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, window.__dbg.localPlayer.swarm.lasers]")
-        t.ok(ui == [12, 8, 8], 'the sliders are linked: 12 eaters → 8 lasers', ui)
+        ui = await page.evaluate("""() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, +document.getElementById('ships-storms').value, window.__dbg.localPlayer.swarm.lasers, window.__dbg.localPlayer.swarm.storms]""")
+        t.ok(ui == [6, 8, 6, 8, 6], 'the sliders are linked: 8 lasers → 6 eaters', ui)
+        ui2 = await page.evaluate("""() => { const e = document.getElementById('ships-eaters'); e.value = 15; e.dispatchEvent(new Event('input')); return 0; }""")
+        ui2 = await page.evaluate("""() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, +document.getElementById('ships-storms').value, window.__dbg.localPlayer.swarm.lasers, window.__dbg.localPlayer.swarm.storms]""")
+        t.ok(ui2 == [15, 5, 0, 5, 0], '15 eaters take the storm ship first, then lasers', ui2)
+        await page.evaluate("""() => { const e = document.getElementById('ships-lasers'); e.value = 8; e.dispatchEvent(new Event('input'));
+          const st = document.getElementById('ships-storms'); st.value = 1; st.dispatchEvent(new Event('input')); }""")
         sp = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm; g.update();
           const before = Array.from(s.pos); g.update();
           const step = (i) => Math.hypot(s.pos[i * 3] - before[i * 3], s.pos[i * 3 + 1] - before[i * 3 + 1], s.pos[i * 3 + 2] - before[i * 3 + 2]);
-          const L = [], E = []; for (let i = 0; i < s.count; i++) (i < s.lasers ? L : E).push(step(i));
+          const L = [], E = []; for (let i = 0; i < s.count; i++) (i < s.lasers ? L : E).push(step(i)); // storm ships fly at full speed
           return { laser: Math.max(...L), eater: Math.max(...E) }; }""")
         t.ok(abs(sp['laser'] - 0.27) < 0.005 and abs(sp['eater'] - 0.3) < 0.005, 'laser ships fly 10% slower', sp)
         await h.fast_forward(page, 500)
         lz = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm; s.render(g.camera);
           const d = (i) => { const i3 = i * 3; return Math.hypot(s.pos[i3] - s.foodPos[i3], s.pos[i3 + 1] - s.foodPos[i3 + 1], s.pos[i3 + 2] - s.foodPos[i3 + 2]); };
-          const L = [], E = []; for (let i = 0; i < s.count; i++) if (s.landed[i] && s.food[i] >= 0) (i < s.lasers ? L : E).push(d(i));
-          const red = s.mesh.instanceColor.getX(0) > 0.9 && s.mesh.instanceColor.getY(0) < 0.5, blue = s.mesh.instanceColor.getZ(s.count - 1) > 0.9;
-          return { laser: L.length ? Math.min(...L) : 0, eater: E.length ? Math.max(...E) : 9, beams: s.beamCount, red, blue }; }""")
+          const L = [], E = []; for (let i = 0; i < s.count; i++) if (s.landed[i] && s.food[i] >= 0 && !s.isStorm(i)) (i < s.lasers ? L : E).push(d(i));
+          const red = s.mesh.instanceColor.getX(0) > 0.9 && s.mesh.instanceColor.getY(0) < 0.5, yellow = s.mesh.instanceColor.getX(s.count - 1) > 0.9 && s.mesh.instanceColor.getZ(s.count - 1) < 0.5;
+          return { laser: L.length ? Math.min(...L) : 0, eater: E.length ? Math.max(...E) : 9, beams: s.beamCount, red, yellow }; }""")
         t.ok(lz['laser'] > 1.5 and lz['eater'] < 1.5 and lz['beams'] > 0, 'laser ships eat from a distance (with a beam), eaters up close', lz)
-        t.ok(lz['red'] and lz['blue'], 'laser ships are red', lz)
+        t.ok(lz['red'] and lz['yellow'], 'laser ships are red, eaters yellow', lz)
+        # storm ship: from laser range, a forked bolt — 40% of a laser's damage on the bite, 30% on each of the two nearest voxels
+        st = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm, pl = g.planet, i = s.lasers;
+          const blue = s.mesh.instanceColor.getZ(i) > 0.9 && s.mesh.instanceColor.getX(i) < 0.7;
+          const ready = () => s.landed[i] && s.aimed[i] && s.food[i] >= 0 && pl.strengthOf(s.food[i]) > 0.3 && pl.nearestAround(s.food[i], 2, s.food[i]).every((x) => pl.strengthOf(x) > 0.3);
+          let f = 0; while (!ready() && f < 900) { g.update(); f++; }
+          if (!ready()) return { found: false, blue };
+          const c = s.food[i], sides = pl.nearestAround(c, 2, c), hp = (x) => pl.strengthOf(x);
+          const c0 = hp(c), s0 = sides.map(hp), shown = s.stormBolts.shown;
+          const pos = [s.pos[i * 3], s.pos[i * 3 + 1], s.pos[i * 3 + 2]], fp = [s.foodPos[i * 3], s.foodPos[i * 3 + 1], s.foodPos[i * 3 + 2]];
+          g.update(); for (let n = 0; n < 4; n++) s.render(g.camera);
+          const total = (g.cfg.planet.strength / g.cfg.swarm.eatFrames) * 7; // power 0.5 → a 7-voxel crater
+          return { found: true, blue, dist: Math.hypot(pos[0] - fp[0], pos[1] - fp[1], pos[2] - fp[2]), sides: sides.length,
+            centre: c0 - hp(c), side: sides.map((x, k) => s0[k] - hp(x)), want: [total * 0.4, total * 0.3], bolts: s.stormBolts.shown - shown }; }""")
+        t.ok(st.get('blue'), 'the storm ship is blue', st)
+        t.ok(st.get('found') and st['dist'] > 1.5 and st['sides'] == 2 and abs(st['centre'] - st['want'][0]) < 1e-4
+             and all(x >= st['want'][1] - 1e-4 for x in st['side']),
+             'a storm ship hits its bite (40%) and the two nearest voxels (30% each) from laser range', st)
+        t.ok(st.get('bolts', 0) == 3, 'its lightning forks into three bolts', st)
         frames = {}
         for kind in ("laser", "eater"):
             aim = await page.evaluate(AIM, kind == "laser")

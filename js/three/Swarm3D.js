@@ -1,3 +1,5 @@
+import { Lightning3D } from './Lightning3D.js';
+
 const THREE = window.THREE;
 const FORWARD = new THREE.Vector3(0, 0, 1);
 const HASH_SIZE = 4096; // power of two
@@ -81,6 +83,11 @@ export class Swarm3D {
     // ship types: units 0 … lasers−1 are red laser ships — they eat their bite from a distance
     // (`laser.reach`) and fly `laser.speedFactor` slower; the rest eat it up close
     this.lasers = 0;
+    // units lasers … lasers+storms−1 are blue storm ships: from laser range their lightning
+    // forks into three — the bite and the two voxels nearest to it (see Game3D.stormCell)
+    this.storms = 0;
+    this.stormSides = new Float32Array(this.max * 6); // where the two side bolts hit
+    this.stormSideN = new Uint8Array(this.max);
     // laser beams being fired: per unit 1/0 and the point it hits (set by the simulation, or on a
     // guest from the host's snapshot)
     this.firing = new Uint8Array(this.max);
@@ -106,8 +113,14 @@ export class Swarm3D {
     this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(this.max * 3), 3);
     this.mesh.frustumCulled = false;
     scene.add(this.mesh);
-    this.baseColor = new THREE.Color(cfg.color);
+    // colours by ship type, the same for every player: eaters, laser ships, storm ships
+    this.baseColor = new THREE.Color(cfg.eaterColor);
     this.laserColor = new THREE.Color(cfg.laser.color);
+    this.stormColor = new THREE.Color(cfg.storm.color);
+    this.coloredStorms = -1;
+    // the storm ships' lightning (the chain-lightning look, short-lived flashes)
+    this.stormBolts = new Lightning3D(scene, { life: cfg.storm.flashFrames, jag: 0.25, pieces: 4 });
+    this.stormClock = 0;
     this.coloredLasers = -1; // lasers shown in red last time (colours are set again when it changes)
 
     // laser beams: a glowing band per firing laser ship (a quad turned towards the camera, a
@@ -207,21 +220,29 @@ export class Swarm3D {
 
   /** Units in red (lasers) and in the swarm's colour (eaters). */
   updateColors() {
-    const n = Math.min(this.lasers, this.count);
-    if (n === this.coloredLasers && this.colorsFor === this.count) return;
+    const n = Math.min(this.lasers, this.count), m = Math.min(n + this.storms, this.count);
+    if (n === this.coloredLasers && m === this.coloredStorms && this.colorsFor === this.count) return;
     this.coloredLasers = n;
+    this.coloredStorms = m;
     this.colorsFor = this.count;
-    for (let i = 0; i < this.count; i++) this.mesh.setColorAt(i, i < n ? this.laserColor : this.baseColor);
+    for (let i = 0; i < this.count; i++) this.mesh.setColorAt(i, i < n ? this.laserColor : i < m ? this.stormColor : this.baseColor);
     this.mesh.instanceColor.needsUpdate = true;
+  }
+
+  /** Storm ships among the units (after the laser ships). */
+  isStorm(i) {
+    return i >= this.lasers && i < this.lasers + this.storms;
   }
 
   /**
    * Multiplayer guest: show positions and headings received from the host instead of
    * simulating. Units move smoothly towards the received positions between updates.
    */
-  setRemote(count, pos, dir, lasers = 0, beams = null) {
+  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null) {
     this.remote = true;
     this.lasers = lasers;
+    this.storms = storms;
+    this.remoteBolts = bolts || [];
     this.firing.fill(0);
     if (beams) for (const [i, x, y, z] of beams) {
       if (i >= this.max) continue;
@@ -329,7 +350,11 @@ export class Swarm3D {
           foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
           // every ship first turns to face its bite and eats (a laser ship: fires) only then
           if (!this.aim(i)) continue;
-          world.bite(food[i], food[i]);
+          if (this.isStorm(i)) {
+            const at = world.storm(food[i], food[i]);
+            this.stormSideN[i] = at.length / 3;
+            for (let k = 0; k < at.length; k++) this.stormSides[i * 6 + k] = at[k];
+          } else world.bite(food[i], food[i]);
           this.hungry[i] = 0;
           continue;
         }
@@ -338,6 +363,7 @@ export class Swarm3D {
 
       const px = pos[i3], py = pos[i3 + 1], pz = pos[i3 + 2];
       const laser = i < this.lasers;
+      const ranged = laser || this.isStorm(i); // laser and storm ships eat from laser range
       const speed = laser ? this.speed * c.laser.speedFactor : this.speed;
       let sx = 0, sy = 0, sz = 0;   // separation
       let ax = 0, ay = 0, az = 0;   // alignment
@@ -406,7 +432,7 @@ export class Swarm3D {
       if (food[i] >= 0) {
         const fx0 = foodPos[i3] - px, fy0 = foodPos[i3 + 1] - py, fz0 = foodPos[i3 + 2] - pz;
         // a laser ship stops at laser range and eats from there
-        const reach = (laser ? c.laser.reach : c.reachDistance) + speed;
+        const reach = (ranged ? c.laser.reach : c.reachDistance) + speed;
         if (fx0 * fx0 + fy0 * fy0 + fz0 * fz0 < reach * reach) {
           landed[i] = 1;
           this.redirect[i] = 0;
@@ -580,6 +606,38 @@ export class Swarm3D {
     this.beamCount = n;
   }
 
+  /**
+   * Storm ships' lightning, a fresh flash every `storm.flashEvery` frames: straight at the bite,
+   * forking at `storm.fork` of the way into the bolt to the bite and two weaker ones to the side voxels.
+   */
+  renderStorms(camera) {
+    const sc = this.cfg.storm;
+    this.stormBolts.update(camera);
+    if (++this.stormClock % sc.flashEvery !== 0) return;
+    for (const [i, x, y, z, sides] of this.stormList()) {
+      if (i >= this.count) continue;
+      const i3 = i * 3, px = this.pos[i3], py = this.pos[i3 + 1], pz = this.pos[i3 + 2];
+      const fx = px + (x - px) * sc.fork, fy = py + (y - py) * sc.fork, fz = pz + (z - pz) * sc.fork;
+      this.stormBolts.show([px, py, pz, fx, fy, fz, x, y, z], sc.boltColor, 1);
+      for (let k = 0; k + 2 < sides.length; k += 3) {
+        this.stormBolts.show([fx, fy, fz, sides[k], sides[k + 1], sides[k + 2]], sc.boltColor, sc.sideGlow);
+      }
+    }
+  }
+
+  /** Storm ships firing now: [[unit, x, y, z, [side points…]], …] (on a guest: from the host). */
+  stormList() {
+    if (this.remote) return this.remoteBolts || [];
+    const out = [];
+    const end = Math.min(this.lasers + this.storms, this.count);
+    for (let i = this.lasers; i < end; i++) {
+      if (!(this.landed[i] && this.aimed[i] && this.food[i] >= 0)) continue;
+      const i3 = i * 3, n = this.stormSideN[i] * 3;
+      out.push([i, this.foodPos[i3], this.foodPos[i3 + 1], this.foodPos[i3 + 2], Array.from(this.stormSides.subarray(i * 6, i * 6 + n))]);
+    }
+    return out;
+  }
+
   /** Units currently firing their laser, with the point they hit: [[unit, x, y, z], …] */
   beamList() {
     const out = [];
@@ -595,6 +653,7 @@ export class Swarm3D {
   render(camera) {
     this.updateColors();
     this.renderBeams(camera);
+    this.renderStorms(camera);
     if (this.remote) this.turnLook(); // a guest's copy: no simulation turns it
     const dm = this.dummy;
     const look = this.look;

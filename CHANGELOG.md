@@ -2,6 +2,17 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.19.0] — 2026-10-16
+
+### Added
+- **Storm ships** (blue): a third ship type. From laser range (5 voxels) it fires lightning straight at its bite; at 70% of the way the bolt forks into three — the bite gets 40% of the damage a laser would do (its whole crater, Power included), the two voxels nearest to it 30% each, with slightly weaker bolts. When the bite is gone, it picks the next one by the same rules as every other ship. It flies at the normal speed.
+- The Ship types panel has a third slider, **Storms**. Lasers and Storms take their ships from the eaters; Eaters take theirs from the storm ships first, then from the lasers.
+
+### Changed
+- Ship colours by type, the same for every player: eaters yellow, laser ships red, storm ships blue (in multiplayer, players are told apart by their beacons and the scoreboard).
+- At the start the units are split as evenly as possible between the three types: 7 eaters, 7 lasers, 6 storms.
+- Lightning (storm ships and chain lightning) has only a thin glow now — about 2 pixels on each side of its white core, the same on screen at any distance.
+
 ## [0.18.2] — 2026-10-16
 
 ### Changed

@@ -19,7 +19,7 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/three/shapes.js` | Which voxels are solid for a level's `shape`: `sphere`, `cube`, `text` (voxel letters with a colour per letter) |
 | `js/core/SkillTree.js` | Upgrade tree data and rules: nodes (branch, parent, cost, effect, layout), buying, adding up the effects |
 | `js/ui/TreeView.js` | The tree view (Tab): drawn on a small canvas and scaled up without smoothing (pixel art); hover tooltip, click to buy |
-| `js/three/Lightning3D.js` | Chain-lightning bolts (jagged additive lines that flicker out) |
+| `js/three/Lightning3D.js` | Lightning bolts (chain lightning, storm ships): a jagged 1-px white core with a thin glow ribbon (`glowPx` = 2 px each side, turned to the camera every frame), flickering out |
 | `js/three/Debris3D.js` | Debris point cloud |
 | `js/three/Space3D.js` | Sky sphere with nebulae + star layers (one group, turned by the spin) |
 | `js/three/SpawnBeacon.js` | Clickable beacon at each player's spawn point |
@@ -108,6 +108,8 @@ Until the match has started (`game.started`: Single player chosen, or every play
 - **Collisions:** movement goes axis by axis in substeps; a solid voxel stops movement on that axis — no bounce and no passing through; the unit slides along the surface. Units in passing never eat.
 - **Long trips:** `aroundPlanet()` gives a waypoint over the surface when the straight path would go through the planet, or straight up when the unit is down in a pit.
 - **Laser ships:** units `0 … lasers−1` (`Swarm3D.lasers`, from the player's `lasers` setting, at most all units) are red laser ships: they land at `laser.reach` (2.5) from their bite instead of `reachDistance`, eat it from there — but only once their heading (`look`, turned in the simulation by `turnLook`) faces the bite within `aimAngle` (`aim()`; eaters too) — and fly at `laser.speedFactor` (0.9) × the speed. `render(camera)` colours the units (instance colours) and draws a glowing band (a camera-facing quad with a white-core-to-red gradient, additive) from every firing laser ship to its bite, plus a glow sprite where it hits; on a guest the beams come from the snapshot.
+- **Storm ships:** the next `storms` units after the laser ships. They land at laser range like laser ships and, once aimed, call `world.storm` → `Game3D.stormCell` instead of `bite`: the damage a laser would do this frame (`strength / eatFrames` × the voxels of a Power crater) is split — `storm.centre` (0.4) on the bite, `storm.side` (0.3) on each of the two nearest unclaimed voxels of the same body (`VoxelPlanet.nearestAround`). `renderStorms` shows a flash every `storm.flashEvery` frames with the chain-lightning look (`Lightning3D`): ship → fork point at `storm.fork` (70%) → bite, and two weaker bolts from the fork to the side voxels.
+- **Colours:** by ship type for every player (`eaterColor`, `laser.color`, `storm.color`).
 - **Giving up on a bite:** a unit with a bite that hasn't eaten for `retarget.frames` (600 = 10 s) stops for `retarget.pauseFrames` (30 = 0.5 s), then `retarget()` picks another free bite while still holding the old one (so the old one isn't picked again); with no other, it keeps the old one.
 - **Getting unstuck:** no progress for `stuck.frames` while touching a wall → bite through the blocking voxel (if unclaimed) or turn in a random direction.
 

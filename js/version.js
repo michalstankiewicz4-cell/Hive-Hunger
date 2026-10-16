@@ -1,2 +1,2 @@
 // Game version — keep in sync with CHANGELOG.md (semantic versioning: MAJOR.MINOR.PATCH)
-export const VERSION = '0.18.2';
+export const VERSION = '0.19.0';

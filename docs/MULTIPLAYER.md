@@ -47,7 +47,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'ready', ready}` | I pressed Start (`true`) or Not ready (`false`) |
 | guest → host | `{t:'cmd', kind:'click', p:{x,y,z}}` | send my swarm to this point (planet frame) |
 | guest → host | `{t:'cmd', kind:'recall'}` | call my swarm back to its beacon |
-| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `spacing`, `cohesion`, `nearest`, `lasers` |
+| guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `spacing`, `cohesion`, `nearest`, `lasers`, `storms`, `turn` |
 | host → guest | `{t:'ping', ts}` | every `net.pingMs` (2 s); `ts` = host time |
 | guest → host | `{t:'pong', ts}` | answer to a ping; the host's round trip `now − ts` is the guest's **ping** |
 | guest → host | `{t:'ping'}` | "still here", every `net.pingMs` |
@@ -88,6 +88,8 @@ per player: u8 index | u8 home (0 none, 1 recall, 2 return) | u32 score | u32 pl
             | u16 wins | u16 count | count × 3 × i16 position (×100) | count × 3 × i8 heading (×127)
             | u16 lasers (units 0 … lasers−1 are red laser ships)
             | u16 beams | beams × (u16 unit | 3 × i16 point hit (×100))
+            | u16 storms (the next `storms` units are storm ships)
+            | u16 bolts | bolts × (u16 unit | u8 sides | 3 × i16 bite | sides × 3 × i16 side voxel)
 u32 removed | removed × u32 voxel index (eaten since the last snapshot)
 ```
 If a guest's connection is backed up (`bufferedAmount > net.maxBuffered`), the host skips a snapshot; eaten voxels stay queued for the next one, so nothing is lost.

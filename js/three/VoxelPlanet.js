@@ -8,6 +8,13 @@ const THREE = window.THREE;
 export const BITE = Object.freeze({ MISS: 0, HIT: 1, REMOVED: 2 });
 
 const NEIGHBORS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+// offsets within 2 voxels, nearest first (for the storm ship's side bolts)
+const AROUND = [];
+for (let c = -2; c <= 2; c++) for (let b = -2; b <= 2; b++) for (let a = -2; a <= 2; a++) {
+  const d = a * a + b * b + c * c;
+  if (d > 0 && d <= 4) AROUND.push([a, b, c, d]);
+}
+AROUND.sort((p, q) => p[3] - q[3]);
 
 /**
  * A planet made of voxels. The outer layer has terrain colours (ocean, land, ice, clouds),
@@ -403,6 +410,25 @@ export class VoxelPlanet {
   }
 
   /** A voxel is eaten (in place or on a fragment). */
+  /**
+   * Up to `n` voxels nearest to voxel `idx` (within 2 voxels) that are still there and not
+   * claimed by another unit — of the same body (a drifting piece: of the same piece).
+   */
+  nearestAround(idx, n, ownFood = -1) {
+    const out = [];
+    if (idx < 0) return out;
+    const fr = this.fragments, frag = fr ? fr.fragOf[idx] : -1;
+    const [ci, cj, ck] = this.coords(idx);
+    for (const [a, b, c] of AROUND) {
+      const m = this.index(ci + a, cj + b, ck + c);
+      if (m < 0 || this.claimedByOther(m, ownFood)) continue;
+      if (frag >= 0 ? fr.fragOf[m] !== frag : this.hp[m] <= 0) continue;
+      out.push(m);
+      if (out.length >= n) break;
+    }
+    return out;
+  }
+
   remove(idx) {
     if (this.fragments?.has(idx)) {
       if (this.fragments.eat(idx)) this.eaten(idx);

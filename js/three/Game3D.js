@@ -1,10 +1,22 @@
 import { CONFIG } from '../config.js';
-import { VoxelPlanet } from './VoxelPlanet.js';
+import { VoxelPlanet, BITE } from './VoxelPlanet.js';
 import { Debris3D } from './Debris3D.js';
 import { Space3D } from './Space3D.js';
 import { ClickMarker } from './ClickMarker.js';
 import { Player } from './Player.js';
 import { Lightning3D } from './Lightning3D.js';
+
+/** How many voxels a crater of radius `r` voxels covers (what a bite of that power hits). */
+const craterCache = new Map();
+function craterSize(r) {
+  const key = Math.round(r * 100);
+  if (craterCache.has(key)) return craterCache.get(key);
+  let n = 0;
+  const ri = Math.ceil(r), r2 = r * r;
+  for (let c = -ri; c <= ri; c++) for (let b = -ri; b <= ri; b++) for (let a = -ri; a <= ri; a++) if (a * a + b * b + c * c <= r2) n++;
+  craterCache.set(key, n);
+  return n;
+}
 
 const THREE = window.THREE;
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
@@ -187,7 +199,7 @@ export class Game3D {
     // a room starts from scratch — nothing carries over from single player (planet, points,
     // upgrades, swarm), so co-op and PvP are fair; only the settings panel values stay
     const old = this.localPlayer;
-    const keep = ['count', 'speed', 'power', 'turn', 'spacing', 'cohesion', 'nearest', 'lasers'].map((k) => [k, old.getSetting(k)]);
+    const keep = ['count', 'speed', 'power', 'turn', 'spacing', 'cohesion', 'nearest', 'lasers', 'storms'].map((k) => [k, old.getSetting(k)]);
     this.removePlayer(0);
     this.planet.dispose();
     this.level = 0;
@@ -355,6 +367,29 @@ export class Game3D {
   }
 
   /** A feeding unit of `player` eats a small crater around the voxel it sits on. */
+  /**
+   * A storm ship's lightning on voxel `idx`: the damage a laser would do this frame (its whole
+   * crater, `power`), split over three voxels — `storm.centre` of it on the bite, `storm.side`
+   * on each of the two nearest others. Returns the side voxels' positions (for drawing),
+   * taken before the hit.
+   */
+  stormCell(idx, ownFood, player) {
+    const pl = this.planet, sc = this.cfg.swarm.storm;
+    const total = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * craterSize(player.biteRadius / pl.s);
+    const sides = pl.nearestAround(idx, 2, ownFood);
+    const at = [];
+    for (const n of sides) { pl.cellCenter(n, this.tmp); at.push(this.tmp.x, this.tmp.y, this.tmp.z); }
+    const hit = (n, amount) => {
+      if (pl.bite(n, amount) !== BITE.REMOVED) return;
+      player.score++;
+      player.planetScore++;
+      this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
+    };
+    hit(idx, total * sc.centre);
+    for (const n of sides) hit(n, total * sc.side);
+    return at;
+  }
+
   biteCell(idx, ownFood, player) {
     const pl = this.planet;
     // eating takes time: every frame on a bite removes part of its strength
@@ -382,7 +417,7 @@ export class Game3D {
 
     this.debris.update();
     this.marker.update();
-    this.lightning.update();
+    this.lightning.update(this.camera);
     for (const p of this.activePlayers()) p.beacon.update(this.camera);
     this.updateHud();
   }
@@ -611,7 +646,7 @@ export class Game3D {
       p.score = ps.score;
       p.planetScore = ps.planetScore;
       p.wins = ps.wins;
-      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams);
+      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts);
     }
     const pl = this.planet;
     if (pl && pl.alive) {

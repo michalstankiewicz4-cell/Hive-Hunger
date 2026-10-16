@@ -1,4 +1,9 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
+// units at the start, split as evenly as possible between the three ship types
+// (eaters, laser ships, storm ships; what doesn't divide goes to eaters, then lasers)
+const START_UNITS = 20;
+const THIRD = Math.floor(START_UNITS / 3), REST = START_UNITS % 3;
+
 export const CONFIG = Object.freeze({
   background: 0x0b0c14,
   fov: 50,
@@ -91,7 +96,7 @@ export const CONFIG = Object.freeze({
 
   // Flock (boids). Every unit flies at the same constant speed — only its direction changes.
   swarm: {
-    count: 20,
+    count: START_UNITS,
     minCount: 10,
     maxCount: 1500,
     speed: 0.05,             // units per frame, identical for all
@@ -118,7 +123,11 @@ export const CONFIG = Object.freeze({
     // ship types: red laser ships eat their bite from `reach` away (5 voxels of 0.5) and fly
     // `speedFactor` × the speed; `count` = how many of the units are lasers at the start
     // The beam is a glowing band `width` wide with a glow of `hitSize` where it hits.
-    laser: { count: 1, reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
+    laser: { count: THIRD + (REST > 1 ? 1 : 0), reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, width: 0.5, hitSize: 1.4 },
+    // blue storm ships: from laser range, a bolt that forks at `fork` (70%) of the way into three —
+    // `centre` of a laser's damage on the bite, `side` on each of the two nearest voxels; a new
+    // flash every `flashEvery` frames, `flashFrames` long; side bolts drawn at `sideGlow` brightness
+    storm: { count: THIRD, centre: 0.4, side: 0.3, fork: 0.7, color: 0x8fd0ff, boltColor: 0x6fbaff, flashEvery: 4, flashFrames: 6, sideGlow: 0.6 },
     aimAngle: 12,            // a ship eats (a laser ship fires) only once it faces its bite within this many degrees
     // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
     // (0.5 s), then takes another bite — or the same one if there is no other
@@ -126,7 +135,8 @@ export const CONFIG = Object.freeze({
     biteRadius: 0.5,         // power: radius of the crater eaten out of a bite
     spawnSpread: 4,
     spawnGap: 1,             // spawn distance from the planet's surface, in planet radii
-    color: 0x8fd0ff,
+    color: 0x8fd0ff,         // the swarm's colour in single player (beacon, click marker)
+    eaterColor: 0xffd84a,    // eaters are yellow (every player)
     size: [0.14, 0.14, 0.7],
   },
 
