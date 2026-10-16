@@ -48,7 +48,7 @@ export class StartScreen {
       return b;
     };
     this.card.append(
-      choice('Single player', 'Your swarm, one planet after another.', onSolo),
+      choice('Single player', 'The solar system map: from its edge in to the Sun.', onSolo),
       choice('Multiplayer · Co-op', 'Eat the planet together (up to 4 players).', () => onCreate('coop'), !available),
       choice('Multiplayer · PvP', 'Whoever eats more of the planet wins it (up to 4 players).', () => onCreate('pvp'), !available),
       choice('Ship guide', 'Every ship type: what it does, and its shot.', () => this.showGuide(), false, 'menu-choice menu-extra menu-guide'),

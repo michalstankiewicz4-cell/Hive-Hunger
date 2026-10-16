@@ -1,3 +1,4 @@
+import { bodyById } from '../../solar.js';
 /**
  * The HUD: progress, the hint line, scores and pings, short notices.
  * (Part of Game3D: these become its methods.)
@@ -40,7 +41,7 @@ export const HudText = {
       : null;
     const now = performance.now();
     this.notices = this.notices.filter((n) => n.until > now);
-    this.hud.update({ level: this.level, eaten, hint, mode: this.mode, scores, banner: this.banner,
+    this.hud.update({ level: this.level, body: bodyById(this.bodyId)?.name, eaten, hint, mode: this.mode, scores, banner: this.banner,
       points: me ? me.points : null,
       notices: this.notices.map((n) => n.text) });
   },

@@ -2,6 +2,22 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.34.0] — 2026-10-16
+
+### Added
+- **Solar system map**: single player and multiplayer start from a 3D map of the solar system, scaled for the game — the Sun, the orbits, the planets with their moons and two belts of asteroids, seen from above at an angle; drag to turn, wheel or two fingers to zoom. The missions go from the outside in: the Kuiper Belt, Pluto and Charon, Neptune and Triton, Uranus, Saturn and Titan, Jupiter, Europa and Io, the Asteroid Belt, Mars, Deimos and Phobos, Earth and the Moon, Venus, Mercury, the Sun.
+- A click on a body opens its **card**: a small picture, what it is, the task and **Start** — or *Coming soon* for the bodies that can't be played yet. The next mission is marked; finished ones get a tick (single player, remembered in this browser).
+- **Kuiper Belt** — the first mission: a tilted ring of 70 small irregular icy asteroids, none touching another.
+- Single player: when a mission's planet is eaten and the ships are gone, you are back on the map with the next mission marked. Every mission that can be played is open from the start.
+- Multiplayer: the missions go in order (the Kuiper Belt, then Earth, then round again); the map shows where the room is going behind the waiting room and the summary. The summary names the body and the next mission.
+- The HUD shows the body's name instead of the planet number.
+
+### Removed
+- The test boards (boxes, cube, the TEST LVL text, sphere + cube) are no longer levels; Earth (the usual planet) stays as a mission. Their shapes are still in the code (the tests build them).
+
+### Changed
+- The level switch has a button per playable mission (1 the Kuiper Belt, 2 Earth).
+
 ## [0.33.0] — 2026-10-16
 
 ### Added

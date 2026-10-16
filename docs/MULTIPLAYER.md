@@ -52,7 +52,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'pong', ts}` | answer to a ping; the host's round trip `now − ts` is the guest's **ping** |
 | guest → host | `{t:'ping'}` | "still here", every `net.pingMs` |
 | host → guest | `{t:'stats', list:[{index, host:true} \| {index, rtt, rate}]}` | every `net.pingMs`: each player's ping (ms) and the data the host sends them (bytes/s) |
-| host → guest | `{t:'summary', summary:{level, mode, winner, rows:[{index,name,color,planet,share,score,wins,next}]}}` | results of the eaten planet; sent again whenever someone presses Next planet |
+| host → guest | `{t:'summary', summary:{level, body, next, mode, winner, rows:[{index,name,color,planet,share,score,wins,next}]}}` | results of the eaten planet; sent again whenever someone presses Next planet |
 | guest → host | `{t:'next'}` | I pressed Next planet |
 | guest → host | `{t:'buy', id}` | buy upgrade `id` with my points |
 | host → guest | `{t:'tree', tree:{owned, spent}}` | your upgrade tree after a purchase |
@@ -74,7 +74,7 @@ Binary messages (`js/net/Protocol.js`, little-endian):
 ```
 u8 type=2 | u32 seed | u16 level | u8 hasBits | [eaten voxels: run lengths as varints]
 ```
-The guest builds the planet from the seed and level, then removes the eaten voxels (voxels of drifting pieces don't count as eaten — they follow as FRAG messages). The run lengths go over all voxel indices, alternating "not eaten" / "eaten" (starting with "not eaten"), each as a little-endian base-128 varint (`VoxelPlanet.eatenRuns`). Eaten areas are craters, so this stays small (a bitset of the whole grid was too big for one WebRTC message on large levels).
+The guest builds the planet from the seed and level (the level also says which mission: they go in order, `Game3D.missionIndex`), then removes the eaten voxels (voxels of drifting pieces don't count as eaten — they follow as FRAG messages). The run lengths go over all voxel indices, alternating "not eaten" / "eaten" (starting with "not eaten"), each as a little-endian base-128 varint (`VoxelPlanet.eatenRuns`). Eaten areas are craters, so this stays small (a bitset of the whole grid was too big for one WebRTC message on large levels).
 
 **FRAG** (type 4) — a piece bitten off the planet (sent when it comes loose, and to a guest who joins for every piece drifting at that moment):
 ```

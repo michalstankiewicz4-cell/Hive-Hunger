@@ -1,4 +1,5 @@
 import { PLAYERS } from './players.js';
+import { bodyById } from '../../solar.js';
 
 /**
  * Multiplayer, host side (and what single player shares with it): the summary after a planet,
@@ -18,7 +19,8 @@ export const HostSide = {
       share: Math.round((p.planetScore / total) * 1000) / 10, score: p.score, wins: p.wins, next: Boolean(p.nextReady),
     })).sort((a, b) => b.planet - a.planet);
     const winner = this.mode === 'pvp' && rows.length ? rows[0].index : null;
-    return { level: this.level, mode: this.mode, winner, rows };
+    // which body it was, and the next mission (they go in order)
+    return { level: this.level, body: this.bodyId, next: this.nextBodyId, mode: this.mode, winner, rows };
   },
 
   /** Shows (or with null hides) the summary here and on the guests' screens. */
@@ -43,9 +45,9 @@ export const HostSide = {
     if (this.mode === 'pvp') {
       const best = players.reduce((a, b) => (b.planetScore > a.planetScore ? b : a));
       best.wins++;
-      return `${best.name} wins planet ${this.level}`;
+      return `${best.name} wins ${bodyById(this.bodyId)?.name || `planet ${this.level}`}`;
     }
-    return `Planet ${this.level} eaten together`;
+    return `${bodyById(this.bodyId)?.name || `Planet ${this.level}`} eaten together`;
   },
 
   /** First free player slot (1–3) or -1 when the room is full. */

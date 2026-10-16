@@ -38,7 +38,9 @@ export class VoxelPlanet {
     this.cfg = cfg;
     this.s = cfg.voxelSize;
     this.style = look.style || 'cubes';
-    const shape = buildShape({ ...look, radius: look.radius || cfg.radius }, this.s);
+    this.seed = seed ?? ((Math.random() * 1e6) | 0);
+    // (the seed also places a belt's asteroids: the same on every player's screen)
+    const shape = buildShape({ ...look, radius: look.radius || cfg.radius, seed: this.seed }, this.s);
     this.shape = look.shape || 'sphere';
     this.N = shape.N;
     this.half = shape.half;     // half of the grid's edge: voxel i's centre is (i + 0.5)·s − half
@@ -46,9 +48,9 @@ export class VoxelPlanet {
     this.bound = shape.bound;   // a sphere containing the whole shape
     this.surfaceKind = shape.surface;
     this.tagColors = shape.colors;
+    this.rocks = shape.rocks || 0;      // a belt: how many asteroids
     this.parts = shape.parts || null; // several objects (each with its own terrain)
     this.fill = shape.fill;            // which voxels the planet started with (for eatenRuns)
-    this.seed = seed ?? ((Math.random() * 1e6) | 0);
     this.alive = true;
     this.fragments = null; // set at the end (pieces bitten off — Fragments.js)
     this.log = null; // multiplayer host: indices of removed voxels since the last network update

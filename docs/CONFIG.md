@@ -41,18 +41,22 @@ The point the flock heads for.
 
 ## Levels (`levels`)
 
-A cycle of planets: planet 1 uses the first entry, planet 6 the first again.
+The missions that can be played, in the solar system map's order (`js/solar.js`): single player picks one on the map; multiplayer goes through them in order (planet 1 the first, then round again). Default: the Kuiper Belt and Earth.
 
 | Field | What it does |
 | --- | --- |
-| `shape` | `sphere` (default), `cube` (half-edge = radius), `pair` (a sphere and a cube of `radius`, `gap` voxels apart), `boxes` (every box shape up to `max`×`max`×`max` once, `gap` apart) or `text` (voxel letters) |
+| `body` | the map body this mission is (`kuiper`, `earth`) |
+| `shape` | `sphere` (default), `belt` (a ring of small asteroids, see below), `cube` (half-edge = radius), `pair` (a sphere and a cube of `radius`, `gap` voxels apart), `boxes` (every box shape up to `max`×`max`×`max` once, `gap` apart) or `text` (voxel letters) |
 | `gap` | `pair`: voxels between the sphere and the cube (10); `boxes`: between boxes and rows (5) |
 | `max` | `boxes` only: the largest edge (4) |
 | `radiusScale` | radius (sphere) or half-edge (cube) = `radiusScale × planet.radius` (0.7 = 30% smaller; voxel count grows with the cube of it) |
 | `text`, `pixel`, `depth`, `colors` | text only: the words (letters T, E, S, L, V and space so far), voxels per font pixel, thickness in voxels, letter colours in turn |
+| `count`, `minSize`, `maxSize` | `belt`: how many rocks (70) and how big, voxels across (2–6) |
+| `inner`, `outer`, `thick`, `tilt` | `belt`: the ring from 0.55 to 0.95 × `planet.radius`, 6 voxels deep, tilted 0.55 rad |
+| `colors` | `belt`: rock colours in turn (icy greys), each a little lighter or darker |
 | `style` | graphics only: `smooth` (smooth surface, cubes hidden), `cubes` or `wedges` (cubes + ramps and corners in the steps) |
 
-Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text "TEST LVL", pair 0.7 with gap 10.
+Default (both `smooth`): the Kuiper Belt (70 rocks), Earth (sphere 1). The other shapes (`cube`, `pair`, `boxes`, `text`) are no longer missions; the tests build them.
 
 ## Flock (`swarm`)
 

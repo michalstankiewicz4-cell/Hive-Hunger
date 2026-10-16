@@ -19,6 +19,7 @@ export class Hud {
   /**
    * @param {object} s
    * @param {number} s.level planet number
+   * @param {string} [s.body] the map body's name (shown instead of the number)
    * @param {number} s.eaten 0..1
    * @param {string} [s.hint]
    * @param {'coop'|'pvp'|null} [s.mode]
@@ -27,13 +28,13 @@ export class Hud {
    * @param {string[]} [s.notices] e.g. who left or lost the connection
    * @param {number|null} [s.points] your points to spend (1 voxel = 1 point)
    */
-  update({ level, eaten, hint = '', mode = null, scores = null, banner = '', notices = [], points = null }) {
+  update({ level, body = '', eaten, hint = '', mode = null, scores = null, banner = '', notices = [], points = null }) {
     if (this.pointsValue && points !== this.lastPoints) {
       this.lastPoints = points;
       this.pointsEl.hidden = points === null;
       this.pointsValue.textContent = (points ?? 0).toLocaleString('en');
     }
-    const title = `Planet ${level} · ${Math.floor(eaten * 100)}% eaten${mode ? ` · ${MODE_LABEL[mode]}` : ''}`;
+    const title = `${body || `Planet ${level}`} · ${Math.floor(eaten * 100)}% eaten${mode ? ` · ${MODE_LABEL[mode]}` : ''}`;
     const key = JSON.stringify([title, hint, scores, banner, notices]);
     if (key === this.last) return;
     this.last = key;

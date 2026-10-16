@@ -1,6 +1,7 @@
 """Pieces bitten off a planet: when eating cuts a body in two, every part smaller than the rest
 comes loose, drifts and turns, and the swarm can still chase and eat it. Parts of equal size
-both stay. Bodies that were apart from the start (the boxes) are never compared.
+both stay. Bodies that were apart from the start (the boxes) are never compared. The test boards
+(a cube, boxes) are built here for the test.
 
 Run from the repository root:  python tests/test_fragments.py
 Set SHOTS=<folder> to save a screenshot of a drifting piece there."""
@@ -13,11 +14,19 @@ from playwright.async_api import async_playwright
 
 import harness as h
 
-# builds planet `level` and stops the simulation (the test drives it)
-BUILD = """(level) => {
-  const g = window.__dbg;
+# test boards (not missions of the game any more — their shapes are still there, see shapes.js):
+# a cube, and every box shape from 1×1×1 to 4×4×4 once, 5 voxels apart
+CUBE = {'body': 'test-cube', 'shape': 'cube', 'radiusScale': 0.7, 'style': 'smooth'}
+BOXES = {'body': 'test-boxes', 'shape': 'boxes', 'max': 4, 'gap': 5, 'style': 'smooth'}
+
+# builds a planet of `look` (added to the levels for the test) and starts it; the test drives it
+BUILD = """(look) => {
+  const g = window.__dbg, L = g.cfg.levels;
+  let n = L.findIndex((l) => l.body === look.body);
+  if (n < 0) { L.push(look); n = L.length - 1; }
   g.planet.dispose();
-  g.level = level - 1;
+  g.mission = n;
+  g.level = 0;
   g.spawnPlanet(12345);
   g.started = true;
   const pl = g.planet;
@@ -58,8 +67,8 @@ async def main():
         await page.click('.menu-choice >> nth=0')
         await page.evaluate('() => window.__dbg.stop()')
 
-        # planet 3 (a cube): cut off a slab 3 voxels thick — the slab comes loose, the rest stays
-        b = await page.evaluate(BUILD, 3)
+        # a cube: cut off a slab 3 voxels thick — the slab comes loose, the rest stays
+        b = await page.evaluate(BUILD, CUBE)
         lo = await page.evaluate('''() => { const pl = window.__dbg.planet, N = pl.N;
           for (let i = 0; i < N; i++) for (let idx = i; idx < pl.hp.length; idx += N) if (pl.hp[idx] > 0) return i; }''')
         c = await page.evaluate(CUT, lo + 3)
@@ -136,9 +145,9 @@ async def main():
         t.ok(rt.get('found') and rt['paused'] == 30 and rt['still'] < 1e-6, 'a drone without a bite for 10 s stops for 0.5 s', rt)
         t.ok(rt['now'] != rt['old'] and rt['now'] >= 0 and rt['pauseLeft'] == 0, 'then it takes another bite (the old one is let go)', rt)
 
-        # planet 1 (boxes): eating in two boxes at once never makes one of them come loose;
+        # the boxes: eating in two boxes at once never makes one of them come loose;
         # cutting a 4×4×4 box between layers 1 and 2 frees the single layer, a 3×3×3 cut through the middle keeps both
-        await page.evaluate(BUILD, 1)
+        await page.evaluate(BUILD, BOXES)
         bx = await page.evaluate('''() => { const pl = window.__dbg.planet, N = pl.N, fr = pl.fragments;
           const box = new Map();
           for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) {
@@ -182,7 +191,7 @@ async def main():
 
         # tugs: fly to a drifting piece, hold it with a tractor beam, tow it home; at the beacon the
         # piece is gone and the player gets 5 × its points (here only tugs, so nobody eats it on the way)
-        await page.evaluate(BUILD, 1)
+        await page.evaluate(BUILD, BOXES)
         tg = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, pl = g.planet, N = pl.N, fr = pl.fragments;
           p.onNewPlanet(); p.setSetting('count', 20); ['lasers', 'storms'].forEach(k => p.setSetting(k, 0)); p.setSetting('tugs', 20); p.setSetting('speed', 0.2);
           const box = new Map(); for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) { const t = pl.tags[idx]; (box.get(t) || box.set(t, []).get(t)).push(idx); }
@@ -204,7 +213,7 @@ async def main():
 
         # a black hole pulls in a drifting piece within 15 voxels (gently) and swallows it: its voxels
         # count as eaten, a point each for the hole's owner
-        await page.evaluate(BUILD, 1)
+        await page.evaluate(BUILD, BOXES)
         bh = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, pl = g.planet, N = pl.N, fr = pl.fragments;
           p.onNewPlanet(); p.setSetting('count', 20); ['lasers', 'storms', 'tugs', 'bombers'].forEach(k => p.setSetting(k, 0)); g.stop();
           const box = new Map(); for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) { const t = pl.tags[idx]; (box.get(t) || box.set(t, []).get(t)).push(idx); }
@@ -222,7 +231,7 @@ async def main():
         t.ok(bh['maxSpeed'] <= 0.0501 and bh['frames'] > 60, 'gently: it takes over a second', bh)
 
         # cleaners (grey): eat only drifting pieces of at most 3 voxels — not bigger pieces, not the planet
-        await page.evaluate(BUILD, 1)
+        await page.evaluate(BUILD, BOXES)
         cl = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, pl = g.planet, fr = pl.fragments;
           p.onNewPlanet(); p.setSetting('count', 20);
           ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].forEach(k => p.setSetting(k, 0)); p.setSetting('cleaners', 20); p.setSetting('speed', 0.2);

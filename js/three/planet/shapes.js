@@ -19,6 +19,7 @@ export function buildShape(look, s) {
   if (shape === 'text') return text(look, s);
   if (shape === 'pair') return pair(look.radius, look.gap ?? 10, s);
   if (shape === 'boxes') return boxes(look.max ?? 4, look.gap ?? 5, s);
+  if (shape === 'belt') return belt(look, s);
   return sphere(look.radius, s);
 }
 
@@ -105,6 +106,68 @@ function boxes(max, gap, s) {
   return {
     N, half: (N * s) / 2, radius: 2 * s, bound: (Math.hypot(W, H, max) * s) / 2, surface: 'none', colors,
     fill: (i, j, k) => tags[(k * N + j) * N + i],
+  };
+}
+
+/**
+ * A belt of small asteroids: `count` irregular rocks (each two or three overlapping balls, `minSize` …
+ * `maxSize` voxels across) in a flat ring round the centre — between `inner` and `outer` × the radius,
+ * up to `thick` / 2 voxels above and below, the ring tilted by `tilt` radians — never touching each other. Placed from the seed (the same
+ * belt for every player); every rock has its own colour from `colors`, a little lighter or darker.
+ */
+function belt(look, s) {
+  const rnd = mulberry32((look.seed ?? 1) + 7919);
+  const R = look.radius / s; // voxels
+  const inner = R * (look.inner ?? 0.55), outer = R * (look.outer ?? 0.95), thick = look.thick ?? 6;
+  const minSize = look.minSize ?? 2, maxSize = look.maxSize ?? 6, tilt = look.tilt ?? 0;
+  const N = (Math.ceil(outer + maxSize) * 2 + 4) & ~1, mid = N / 2;
+  const palette = look.colors || [[150, 140, 130]];
+  const rocks = [];
+  for (let tries = 0; rocks.length < (look.count ?? 60) && tries < 20000; tries++) {
+    const a = rnd() * Math.PI * 2, r = Math.sqrt(inner * inner + rnd() * (outer * outer - inner * inner));
+    const size = minSize + rnd() * (maxSize - minSize), rad = size / 2;
+    // in the ring's plane, then the ring tilted by `tilt` (towards the starting camera) so it isn't seen edge-on
+    const fx = Math.cos(a) * r, fz = Math.sin(a) * r, fy = (rnd() - 0.5) * thick, ct = Math.cos(tilt), st = Math.sin(tilt);
+    const cx = fx, cy = fy * ct - fz * st, cz = fy * st + fz * ct;
+    if (rocks.some((q) => Math.hypot(q.x - cx, q.y - cy, q.z - cz) < q.rad + rad + 3)) continue; // apart
+    // two or three balls, the extra ones smaller and off the centre: a lumpy rock
+    const balls = [[cx, cy, cz, rad]];
+    const extra = 1 + (rnd() < 0.5 ? 1 : 0);
+    for (let e = 0; e < extra; e++) {
+      const u = rnd() * 2 - 1, t = rnd() * Math.PI * 2, q = Math.sqrt(1 - u * u), d = rad * (0.35 + rnd() * 0.3);
+      balls.push([cx + q * Math.cos(t) * d, cy + u * d, cz + q * Math.sin(t) * d, rad * (0.55 + rnd() * 0.3)]);
+    }
+    rocks.push({ x: cx, y: cy, z: cz, rad: rad * 1.3, balls });
+  }
+  const tags = new Uint8Array(N * N * N);
+  const colors = [null];
+  rocks.forEach((rock, n) => {
+    const base = palette[n % palette.length], shade = 0.85 + rnd() * 0.3;
+    colors.push(base.map((c) => Math.max(0, Math.min(255, Math.round(c * shade)))));
+    for (const [bx, by, bz, br] of rock.balls) {
+      const r2 = Math.max(1, br * br);
+      const i0 = Math.floor(bx + mid - br - 1), i1 = Math.ceil(bx + mid + br + 1);
+      const j0 = Math.floor(by + mid - br - 1), j1 = Math.ceil(by + mid + br + 1);
+      const k0 = Math.floor(bz + mid - br - 1), k1 = Math.ceil(bz + mid + br + 1);
+      for (let k = Math.max(0, k0); k <= Math.min(N - 1, k1); k++) for (let j = Math.max(0, j0); j <= Math.min(N - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(N - 1, i1); i++) {
+        const x = i + 0.5 - mid - bx, y = j + 0.5 - mid - by, z = k + 0.5 - mid - bz;
+        if (x * x + y * y + z * z <= r2) tags[(k * N + j) * N + i] = n + 1;
+      }
+    }
+  });
+  return {
+    N, half: (N * s) / 2, radius: 2 * s, bound: (outer + maxSize) * s, surface: 'none', colors, rocks: rocks.length,
+    fill: (i, j, k) => tags[(k * N + j) * N + i],
+  };
+}
+
+/** A small seeded random generator (0 ≤ x < 1). */
+function mulberry32(a) {
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 

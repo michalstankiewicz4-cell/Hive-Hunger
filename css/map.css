@@ -1,0 +1,210 @@
+/* The solar system map (over the game; the start of single player and multiplayer) */
+
+.map {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  background: #05060c;
+  overflow: hidden;
+}
+
+.map-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.map-canvas:active {
+  cursor: grabbing;
+}
+
+.map-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.map-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 1px 5px;
+  border-radius: 6px;
+  color: var(--hud-text);
+  font: 12px/1.3 monospace;
+  white-space: nowrap;
+  text-shadow: 0 0 4px #000, 0 0 2px #000;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.map-label[hidden] {
+  display: none;
+}
+
+.map-label.is-moon {
+  font-size: 10px;
+  color: var(--hud-dim);
+}
+
+.map-label.is-belt {
+  color: #b9c6dc;
+  font-style: italic;
+}
+
+.map-label.is-soon {
+  opacity: 0.6;
+}
+
+.map-label.is-done::after {
+  content: ' ✓';
+  color: #8de08d;
+}
+
+.map-label.is-next {
+  color: var(--accent);
+  font-weight: bold;
+  opacity: 1;
+}
+
+.map-label.is-selected {
+  background: rgba(143, 208, 255, 0.16);
+}
+
+.map-head {
+  position: absolute;
+  top: calc(12px + var(--safe-top));
+  left: 16px;
+  right: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  pointer-events: none;
+  font: 13px/1.45 monospace;
+}
+
+.map-title {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.map-hint {
+  margin: 0;
+  color: var(--hud-dim);
+}
+
+.map-back {
+  margin-left: auto;
+  pointer-events: auto;
+  padding: 6px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel-bg);
+  color: var(--hud-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.map-back[hidden] {
+  display: none;
+}
+
+.map-card {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  gap: 8px;
+  width: min(340px, calc(100% - 32px));
+  box-sizing: border-box;
+  padding: 16px 16px 14px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  color: var(--hud-text);
+  font: 13px/1.45 monospace;
+}
+
+.map-card[hidden] {
+  display: none;
+}
+
+.map-card-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.map-pic {
+  width: 96px;
+  height: 96px;
+  flex: none;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+}
+
+.map-card-name {
+  margin: 0;
+  font-size: 18px;
+  color: var(--accent);
+}
+
+.map-card-kind,
+.map-card-status {
+  margin: 0;
+  color: var(--hud-dim);
+}
+
+.map-card-status {
+  color: #8de08d;
+}
+
+.map-card-text {
+  margin: 0;
+}
+
+.map-card-task {
+  margin: 0;
+  color: #ffe08a;
+}
+
+.map-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--hud-dim);
+  font: 20px/1 monospace;
+  cursor: pointer;
+}
+
+.map-start {
+  text-align: center;
+}
+
+.map-start:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* phones: the card along the bottom */
+@media (max-width: 520px) {
+  .map-card {
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+  .map-hint {
+    display: none;
+  }
+}

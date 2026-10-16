@@ -1,5 +1,6 @@
-"""Planet levels: shape and size of each level in the cycle (CONFIG.levels), all drawn as a
-smooth surface that is built and updated when voxels are eaten.
+"""Planet levels: the missions that can be played (CONFIG.levels: the Kuiper Belt and Earth, in the
+solar system map's order), their shapes and sizes, all drawn as a smooth surface that is built and
+updated when voxels are eaten; the map's bodies.
 
 Run from the repository root:  python tests/test_levels.py
 Set SHOTS=<folder> to save a screenshot of every level there."""
@@ -16,6 +17,7 @@ import harness as h
 BUILD = """(level) => {
   const g = window.__dbg;
   g.planet.dispose();
+  g.mission = level - 1;
   g.level = level - 1;
   const t = performance.now();
   g.spawnPlanet(12345);
@@ -53,7 +55,12 @@ async def main():
         await page.click('.menu-choice >> nth=0')
         levels = await page.evaluate('() => window.__dbg.cfg.levels')
         R = await page.evaluate('() => window.__dbg.cfg.planet.radius')
-        t.ok(len(levels) == 5 and all(l.get('style') == 'smooth' for l in levels), 'five levels in the cycle, all smooth', [l.get('shape', 'sphere') + '/' + l.get('style', 'cubes') for l in levels])
+        t.ok([l.get('body') for l in levels] == ['kuiper', 'earth'] and all(l.get('style') == 'smooth' for l in levels),
+             'two missions to play: the Kuiper Belt and Earth, both smooth', [l.get('body') + '/' + l.get('shape', 'sphere') for l in levels])
+        solar = await page.evaluate("async () => (await import('./js/solar.js')).SOLAR.map((b) => b.id)")
+        t.ok(len(solar) == 20 and solar[0] == 'kuiper' and solar[-1] == 'sun' and solar.index('pluto') < solar.index('neptune') < solar.index('jupiter') < solar.index('earth') < solar.index('mercury'),
+             'the map: 20 bodies from the Kuiper Belt in to the Sun, in order', solar)
+        t.ok(all(l['body'] in solar for l in levels) and solar.index('kuiper') < solar.index('earth'), 'every mission is a body of the map, in the map\'s order')
 
         for level in range(1, len(levels) + 2):
             want = levels[(level - 1) % len(levels)]
@@ -79,58 +86,40 @@ async def main():
                     await page.wait_for_timeout(600)
                     await page.screenshot(path=os.path.join(shots, f'level{level}-eaten.png'))
 
-        # planet 1: every box shape from 1×1×1 to 4×4×4 once, 5 voxels apart
+        # planet 1: the Kuiper Belt — small irregular asteroids in a tilted ring, none touching another;
+        # every one in its own (icy) colour; the same belt from the same seed
         await page.evaluate(BUILD, 1)
-        bx = await page.evaluate('''() => { const pl = window.__dbg.planet, N = pl.N; const box = new Map();
+        belt = await page.evaluate('''() => { const g = window.__dbg, pl = g.planet, N = pl.N, L = g.cfg.levels[0]; const rock = new Map();
           for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) {
             const t = pl.tags[idx], i = idx % N, j = ((idx / N) | 0) % N, k = (idx / (N * N)) | 0;
-            const b = box.get(t) || { n: 0, i0: 1e9, i1: -1, j0: 1e9, j1: -1, k0: 1e9, k1: -1 };
+            const b = rock.get(t) || { n: 0, i0: 1e9, i1: -1, j0: 1e9, j1: -1, k0: 1e9, k1: -1 };
             b.n++; b.i0 = Math.min(b.i0, i); b.i1 = Math.max(b.i1, i); b.j0 = Math.min(b.j0, j); b.j1 = Math.max(b.j1, j); b.k0 = Math.min(b.k0, k); b.k1 = Math.max(b.k1, k);
-            box.set(t, b);
+            rock.set(t, b);
           }
-          const list = [...box.values()].map(b => ({ size: [b.i1 - b.i0 + 1, b.j1 - b.j0 + 1, b.k1 - b.k0 + 1], full: b.n === (b.i1 - b.i0 + 1) * (b.j1 - b.j0 + 1) * (b.k1 - b.k0 + 1), b }));
-          // smallest gap between two boxes that overlap in the other two directions
-          let gap = 1e9;
-          for (const p of list) for (const q of list) if (p !== q) {
-            const ov = (a0, a1, b0, b1) => a0 <= b1 && b0 <= a1;
-            if (ov(p.b.j0, p.b.j1, q.b.j0, q.b.j1) && ov(p.b.k0, p.b.k1, q.b.k0, q.b.k1) && q.b.i0 > p.b.i1) gap = Math.min(gap, q.b.i0 - p.b.i1 - 1);
-            if (ov(p.b.i0, p.b.i1, q.b.i0, q.b.i1) && ov(p.b.k0, p.b.k1, q.b.k0, q.b.k1) && q.b.j0 > p.b.j1) gap = Math.min(gap, q.b.j0 - p.b.j1 - 1);
+          // a voxel of one rock next to a voxel of another (they would touch)
+          let touching = 0;
+          for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) {
+            const i = idx % N, j = ((idx / N) | 0) % N, k = (idx / (N * N)) | 0;
+            for (const [a, b, c] of [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) { const n = pl.index(i + a, j + b, k + c); if (n >= 0 && pl.hp[n] > 0 && pl.tags[n] !== pl.tags[idx]) touching++; }
           }
-          return { boxes: list.length, total: pl.total, sizes: [...new Set(list.map(b => b.size.join('x')))].length, shapes: [...new Set(list.map(b => [...b.size].sort().join('x')))].length,
-            allFull: list.every(b => b.full), gap, colours: new Set(list.map((_, n) => pl.tagColors[n + 1].join(','))).size }; }''')
-        t.ok(bx['boxes'] == 20 and bx['shapes'] == 20 and bx['allFull'] and bx['total'] == 350,
-             'planet 1: every box shape from 1×1×1 to 4×4×4 once, no rotated copies (20 boxes, 350 voxels)', bx)
-        t.ok(bx['gap'] == 5 and bx['colours'] == 20, 'planet 1: boxes 5 voxels apart, each in its own colour', bx['gap'])
+          const list = [...rock.values()], span = list.map((b) => Math.max(b.i1 - b.i0, b.j1 - b.j0, b.k1 - b.k0) + 1);
+          const first = pl.total;
+          g.planet.dispose(); g.spawnPlanet(12345);
+          return { rocks: list.length, want: L.count, pl: pl.rocks, touching, minSpan: Math.min(...span), maxSpan: Math.max(...span), total: first, again: g.planet.total,
+            colours: new Set(list.map((_, n) => pl.tagColors[n + 1].join(','))).size, irregular: list.filter((b) => b.n < (b.i1 - b.i0 + 1) * (b.j1 - b.j0 + 1) * (b.k1 - b.k0 + 1) * 0.6).length }; }''')
+        t.ok(belt['rocks'] == belt['want'] == belt['pl'] and belt['touching'] == 0, 'planet 1: the Kuiper Belt — 70 asteroids, none touching another', belt)
+        t.ok(belt['minSpan'] >= 2 and belt['maxSpan'] <= 9 and belt['irregular'] > belt['rocks'] // 3, 'small, irregular rocks (lumps of overlapping balls)', belt)
+        t.ok(belt['colours'] > 10 and belt['total'] == belt['again'], 'each in its own shade; the same seed builds the same belt', belt)
 
-        # planet 5: a sphere and a cube side by side — every voxel of both is still a voxel to eat
-        small = await page.evaluate(BUILD, 5)
-        Rv = round(small['R'] / 0.5)
-        pair = await page.evaluate('''() => { const pl = window.__dbg.planet; let sphere = 0, cube = 0;
-          for (let i = 0; i < pl.hp.length; i++) if (pl.hp[i] > 0) { const c = pl.cellCenter(i, new window.THREE.Vector3()); if (c.x < 0) sphere++; else cube++; }
-          return { sphere, cube, total: pl.total, style: pl.style }; }''')
-        t.ok(pair['cube'] == (2 * Rv) ** 3 and pair['sphere'] > 0.5 * (2 * Rv) ** 3 and pair['sphere'] + pair['cube'] == pair['total']
-             and pair['style'] == 'smooth', 'planet 5: a sphere and a full cube, smooth; all their voxels count', pair)
+        # planet 2: Earth — the full planet
         full = await page.evaluate(BUILD, 2)
-        t.ok(abs(small['R'] / full['R'] - 0.7) < 0.01, 'planet 5: sphere radius 30% smaller than planet 2')
-        box = await page.evaluate(BUILD, 3)
-        side = round(2 * box['half'] / 0.5)
-        t.ok(box['total'] == side ** 3 and abs(box['half'] - small['R']) <= 0.25,
-             'planet 3: a full cube with the edge of the small sphere\'s diameter', f"{side}³ = {box['total']}")
-
-        # planet 4: the text — every letter has its own colour, and the swarm can eat it
-        txt = await page.evaluate(BUILD, 4)
-        info = await page.evaluate('''() => { const pl = window.__dbg.planet; const seen = new Set();
-          for (let i = 0; i < pl.tags.length; i++) if (pl.tags[i]) seen.add(pl.tags[i]);
-          const cols = [...seen].map(t => pl.tagColors[t].join(','));
-          return { letters: seen.size, colours: new Set(cols).size, exposed: pl.count }; }''')
-        t.ok(info['letters'] == 7 and info['colours'] == 7, 'planet 4: "TEST LVL" — 7 letters in 7 colours', info)
+        t.ok(full['shape'] == 'sphere' and abs(full['R'] - R) < 0.01, 'planet 2: Earth, the full-size planet', full)
+        await page.evaluate(BUILD, 1)
         await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
-          p.onNewPlanet(); p.setSetting('count', 100); p.setSetting('speed', 0.3); p.setSetting('power', 1.5); g.stop(); }''')
-        before = txt['total']
+          p.onNewPlanet(); p.setSetting('count', 100); p.setSetting('speed', 0.3); p.setSetting('power', 1.5); g.started = true; g.stop(); }''')
         await h.fast_forward(page, 1500)
-        st = await page.evaluate('() => ({ level: window.__dbg.level, left: window.__dbg.planet.left })')
-        t.ok(st['level'] > 4 or st['left'] < before, 'the swarm eats the text',
-             'eaten whole, next planet' if st['level'] > 4 else f"{before} → {st['left']}")
+        st = await page.evaluate('() => ({ left: window.__dbg.planet.left, total: window.__dbg.planet.total, body: window.__dbg.bodyId })')
+        t.ok(st['body'] == 'earth' or st['left'] < st['total'], 'the swarm eats the asteroids', 'eaten whole, Earth next' if st['body'] == 'earth' else st)
 
         await browser.close()
     return t.done(errors)

@@ -48,7 +48,9 @@ export class Game3D {
     this.role = role;
     this.mode = null;        // multiplayer: 'coop' | 'pvp'
     this.net = null;         // NetHost / NetGuest
-    this.level = 0;
+    this.level = 0;          // planets so far (the summary's number; in multiplayer it also picks the mission)
+    this.mission = 0;        // single player: the mission being played (an index into CONFIG.levels)
+    this.onMissionDone = null; // single player: (body id) => void — a mission's planet was eaten and the ships are gone
     this.running = false;    // the render loop is on
     this.started = false;    // the match has begun (start screen / waiting room before that)
     this.paused = false;     // single player: paused with Space
@@ -221,12 +223,13 @@ export class Game3D {
   }
 
   /**
-   * Single player: build level `n` of the cycle right away (the level switch in the panel).
-   * The swarm starts again from its tunnel, so it can't end up inside the new shape.
+   * Single player: build mission `n` (1 = the first of CONFIG.levels) right away (the level switch in
+   * the panel, Start on the map). The swarm starts again from its tunnel, so it can't end up inside the new shape.
    */
   jumpToLevel(n) {
     if (this.role !== 'solo') return;
     this.planet.dispose();
+    this.mission = (n - 1) % this.cfg.levels.length;
     this.level = n - 1;
     this.spawnPlanet();
     this.returnFrames = 0;
@@ -235,6 +238,16 @@ export class Game3D {
       p.swarm.pause.fill(0);
       p.placeAtSpawn();
     }
+  }
+
+  /** Single player: Start on the map — mission of body `id` begins (false if it can't be played yet). */
+  startMission(id) {
+    const n = this.cfg.levels.findIndex((l) => l.body === id);
+    if (this.role !== 'solo' || n < 0) return false;
+    this.jumpToLevel(n + 1);
+    this.paused = false;
+    this.started = true;
+    return true;
   }
 
   spawnPlanet(seed) {
@@ -259,12 +272,27 @@ export class Game3D {
   }
 
   /**
-   * Size and graphics of planet `level`: CONFIG.levels repeats in a cycle (planet 5 looks like
-   * planet 1, and so on). Every client builds the same planet from the level and the seed.
+   * Which mission planet `level` is (an index into CONFIG.levels): in single player the one picked on
+   * the map; in multiplayer they go in order, round again after the last — every client works it out
+   * from the planet number.
    */
+  missionIndex(level = this.level) {
+    const n = this.cfg.levels.length;
+    return this.multiplayer ? (((level - 1) % n) + n) % n : this.mission % n;
+  }
+
+  /** The map body of the planet being played now (and of the next one in multiplayer). */
+  get bodyId() {
+    return this.cfg.levels[this.missionIndex()].body;
+  }
+
+  get nextBodyId() {
+    return this.multiplayer ? this.cfg.levels[this.missionIndex(this.level + 1)].body : this.cfg.levels[(this.mission + 1) % this.cfg.levels.length].body;
+  }
+
+  /** Size and graphics of planet `level` (its mission's entry in CONFIG.levels). Every client builds the same planet from it and the seed. */
   levelLook(level) {
-    const list = this.cfg.levels;
-    const l = list[(level - 1) % list.length];
+    const l = this.cfg.levels[this.missionIndex(level)];
     return { ...l, radius: this.cfg.planet.radius * (l.radiusScale || 1), style: l.style || 'cubes' };
   }
 
@@ -322,10 +350,17 @@ export class Game3D {
       this.returnFrames++;
       const home = players.every((p) => p.departed()) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames;
       if (home && (!this.multiplayer || players.every((p) => p.nextReady))) {
+        const done = this.bodyId;
         pl.dispose();
+        // single player: back to the map (the next mission is ready behind it); multiplayer: the next in order
+        if (!this.multiplayer) this.mission = (this.mission + 1) % this.cfg.levels.length;
         this.spawnPlanet();
         this.setSummary(null);
         this.net?.broadcastPlanet(this);
+        if (!this.multiplayer) {
+          this.started = false;
+          this.onMissionDone?.(done);
+        }
       }
     }
     // ships that began their jump to hyperspace: the guests see them go the same way

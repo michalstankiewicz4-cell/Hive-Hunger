@@ -114,11 +114,28 @@ async def main():
         t.ok(not after['started'] and before['cx'] == after['cx'] and after['spin'] == 0,
              'nothing moves before a mode is chosen')
 
-        # single player
+        # single player: the solar system map — every body from the Kuiper Belt in to the Sun; the next
+        # mission's card opens at once; bodies without a level yet are "coming soon"
         await page.click('.menu-choice >> nth=0')
         await page.wait_for_timeout(500)
+        mp = await page.evaluate("""() => ({ map: !document.getElementById('map').hidden, started: window.__dbg.started,
+          labels: [...document.querySelectorAll('.map-label')].map((e) => e.textContent),
+          card: document.querySelector('.map-card-name')?.textContent, status: document.querySelector('.map-card-status')?.textContent,
+          start: document.querySelector('.map-start')?.textContent, pic: document.querySelector('.map-pic')?.width,
+          task: document.querySelector('.map-card-task')?.textContent })""")
+        t.ok(mp['map'] and not mp['started'] and len(mp['labels']) == 20 and mp['labels'][0] == 'Kuiper Belt' and mp['labels'][-1] == 'Sun',
+             'Single player opens the solar system map: from the Kuiper Belt in to the Sun', mp['labels'])
+        t.ok(mp['card'] == 'Kuiper Belt' and mp['status'] == 'Next mission' and mp['start'] == 'Start' and mp['pic'] and 'Task' in (mp['task'] or ''),
+             'the next mission\'s card: a picture, what it is, the task and Start', mp)
+        await page.click('.map-label >> text=Saturn', force=True)
+        soon = await page.evaluate("() => [document.querySelector('.map-card-name').textContent, document.querySelector('.map-start').textContent, document.querySelector('.map-start').disabled]")
+        t.ok(soon == ['Saturn', 'Coming soon', True], 'a body without a level yet: coming soon', soon)
+        await page.click('.map-label >> text=Kuiper Belt', force=True)
+        await page.click('.map-start')
+        await page.wait_for_timeout(500)
         s = await page.evaluate(STATE)
-        t.ok(s['started'] and await page.locator('#menu').is_hidden(), 'Single player starts the game')
+        kb = await page.evaluate("() => [window.__dbg.bodyId, window.__dbg.planet.shape, document.getElementById('map').hidden]")
+        t.ok(s['started'] and await page.locator('#menu').is_hidden() and kb == ['kuiper', 'belt', True], 'Start on the card begins the mission (the Kuiper Belt)', kb)
 
         # Esc pauses and shows the start screen, Esc again carries on
         await page.keyboard.press('Escape')
@@ -151,15 +168,15 @@ async def main():
 
         # level switch (single player): a planet right away, the swarm starts again from its beacon
         levels = await page.locator('.control-levels button').all_inner_texts()
-        t.ok(levels == ['1', '2', '3', '4', '5'] and await page.locator('.control-levels').is_visible(), 'level switch in the panel', levels)
-        await page.click('.control-levels button >> nth=2')
+        t.ok(levels == ['1', '2'] and await page.locator('.control-levels').is_visible(), 'level switch in the panel (the missions that can be played)', levels)
+        await page.click('.control-levels button >> nth=1')
         await page.wait_for_timeout(300)
         jump = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet;
           const c = s.center(), home = p.spawnWorld(); let inside = 0;
           for (let i = 0; i < s.count; i++) { const idx = pl.cellAt({ x: s.pos[i * 3], y: s.pos[i * 3 + 1], z: s.pos[i * 3 + 2] }); if (idx >= 0 && pl.hp[idx] > 0) inside++; }
           return { level: g.level, shape: pl.shape, home: Math.hypot(c.x - home.x, c.y - home.y, c.z - home.z), inside, left: pl.left, total: pl.total,
             pressed: document.querySelector('.control-levels button[aria-pressed=true]').textContent }; }""")
-        t.ok(jump['level'] == 3 and jump['shape'] == 'cube' and jump['pressed'] == '3', 'level 3 (the cube) right away', jump)
+        t.ok(jump['level'] == 2 and jump['shape'] == 'sphere' and jump['pressed'] == '2', 'level 2 (Earth) right away', jump)
         t.ok(jump['home'] < 5 and jump['inside'] == 0, 'the swarm starts again from its beacon, not inside the planet', jump)
         await page.evaluate("() => window.__dbg.localPlayer.setSetting('speed', 0.3)")
         await h.fast_forward(page, 400)
@@ -167,7 +184,7 @@ async def main():
         t.ok(after_jump < jump['total'], 'and starts eating the new planet', f"{jump['total']} → {after_jump}")
         await page.click('.control-levels button >> nth=0')
         await page.wait_for_timeout(300)
-        t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'boxes'], 'back to level 1')
+        t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'belt'], 'back to level 1 (the Kuiper Belt)')
 
         # ship types (bottom-right): 1 red laser ship by default; lasers eat from 5 voxels away, 10% slower
         ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'].map((k) => +document.getElementById('ships-' + k).value)""")
@@ -528,6 +545,17 @@ async def main():
         t.ok(worst_inside == 0, 'no unit inside solid voxels', [worst_inside, await page.evaluate('() => (window.__inside || []).slice(0, 5)')])
         t.ok(worst_shared == 0, 'no bite shared while free voxels are left', worst_shared)
 
+        # the mission is done: once the ships are gone, back to the map — the belt ticked, Earth next
+        dn = await page.evaluate("""() => { const g = window.__dbg; let f = 0;
+          while (document.getElementById('map').hidden && f < 1500) { g.update(); f++; } }""")
+        await page.wait_for_timeout(300)  # (the map draws its labels)
+        dn = await page.evaluate("""() => { const g = window.__dbg;
+          return { map: !document.getElementById('map').hidden, started: g.started, card: document.querySelector('.map-card-name')?.textContent,
+            status: document.querySelector('.map-card-status')?.textContent, done: [...document.querySelectorAll('.map-label.is-done')].map((e) => e.textContent),
+            saved: localStorage.getItem('hive-hunger-progress') }; }""")
+        t.ok(dn['map'] and not dn['started'] and dn['card'] == 'Earth' and dn['status'] == 'Next mission' and dn['done'] == ['Kuiper Belt'] and 'kuiper' in (dn['saved'] or ''),
+             'mission done: back to the map, the belt ticked (and remembered), Earth next', dn)
+        await page.click('.map-start')
         # the next planet: the tunnel opens, the ships come out of it, it closes
         ar = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm;
           let f = 0; while (g.level < 2 && f < 400) { g.update(); f++; }

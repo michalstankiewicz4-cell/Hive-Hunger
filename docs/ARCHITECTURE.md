@@ -53,7 +53,7 @@ css/             one stylesheet per part of the page
 | `fields.js` | (Swarm3D) boosters' force fields: which ships are inside one (`boosted`), the pink ball of octagonal cells drawn round each booster (a shader on a sphere) |
 | `steering.js` | `aroundPlanet()` (fly around the planet, not through it), `nearOwnBite()` |
 | **`js/three/planet/`** | |
-| `VoxelPlanet.js` | Voxel planet: building the grid from the level's shape and seed, coordinates, what is solid (also on drifting pieces), syncing, disposing |
+| `VoxelPlanet.js` | Voxel planet: building the grid from the level's shape and seed (a belt also places its rocks from the seed), coordinates, what is solid (also on drifting pieces), syncing, disposing |
 | `look.js` | (VoxelPlanet) materials, terrain and letter colours, the drawn cubes (exposed voxels as instances), damage on them |
 | `eating.js` | (VoxelPlanet) bites, claims, chain lightning weakening voxels, removing voxels (grid or piece), the removal log, shattering |
 | `search.js` | (VoxelPlanet) exposed voxels near a point, the nearest free voxel, matter for the brain, raycasts |
@@ -85,7 +85,8 @@ css/             one stylesheet per part of the page
 | `Hud.js` | Planet counter, points counter, hints, notices, multiplayer scoreboard and banner |
 | `ControlPanel.js` | Sliders (Units, Speed, Power, Turning), "Reset to default" |
 | `ShipTypes.js` | Ship types panel (bottom-right): linked sliders for eaters and every type in `SHIP_KINDS` (together all your units), each with arrows (one ship less / more) and a lock checkbox |
-| `LevelSwitch.js` | Level buttons 1–5 under the panel (single player only): `Game3D.jumpToLevel` builds that planet and lets the swarm out of its tunnel again |
+| `LevelSwitch.js` | A level button per playable mission under the panel (single player only): `Game3D.jumpToLevel` builds that planet and lets the swarm out of its tunnel again |
+| `SolarMap.js` | The solar system map (`#map`, over the game): its own WebGL renderer and scene, made when first shown — the Sun (glow sprite, point light), orbit circles, bodies along them (moons round their planets, canvas textures: bands on the giants, land on Earth), rings, the belts as points, HTML labels; drag / wheel / pinch turn and zoom; a click (raycast on invisible hit spheres, belts by the orbit plane) opens the card: a 2D-painted picture, kind, text, task, Start / Coming soon; the next mission pulses |
 | `StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
 | `Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
 | `Lobby.js` | Room panel during a multiplayer match: room, link, leave |
@@ -94,7 +95,7 @@ css/             one stylesheet per part of the page
 | `SettingsView.js` | The Settings screen in the menu: Mouse (controls, camera turning, zoom speed), Keyboard (keys), Graphics (FPS counter, resolution, smooth edges, effects), Reset settings, Back |
 | `dom.js` | Small DOM helpers for the menus |
 | `js/utils/*` | Noise (fBm), terrain colours, nebula/star colours |
-| **`css/`** | Loaded in this order (later files may override earlier ones): `base.css` (colours, page, hidden helpers, version), `hud.css`, `panel.css` (settings, level switch, ship types; narrow screens), `lobby.css`, `menu.css` (start screen, waiting room), `summary.css`, `points.css`, `tree.css` |
+| **`css/`** | Loaded in this order (later files may override earlier ones): `base.css` (colours, page, hidden helpers, version), `hud.css`, `panel.css` (settings, level switch, ship types; narrow screens), `lobby.css`, `menu.css` (start screen, waiting room), `map.css` (the solar system map), `summary.css`, `points.css`, `tree.css` |
 
 ## Game states
 
@@ -126,9 +127,13 @@ stateDiagram-v2
 
 ## Planet levels and looks
 
-`CONFIG.levels` is a cycle: planet `n` uses entry `(n − 1) mod length` — `shape`, `radiusScale` (× `planet.radius`) and `style`. `Game3D.levelLook(level)` turns it into the planet's radius and style; every client builds the same planet from the level and the seed, so multiplayer needs nothing extra.
+`CONFIG.levels` are the missions that can be played, in the solar system map's order; each names its map body (`body`, see `js/solar.js`) — `shape`, `radiusScale` (× `planet.radius`) and `style`. `Game3D.missionIndex(level)` says which: in single player `Game3D.mission` (picked on the map: `startMission(id)`), in multiplayer `(level − 1) mod length` — the missions go in order, so every client works it out from the planet number and multiplayer needs nothing extra. `Game3D.levelLook(level)` turns the entry into the planet's radius and style; `bodyId` / `nextBodyId` name the bodies (HUD, summary, map).
 
-Shapes (`shapes.js`) decide which voxels are solid (`sphere`, `cube`, `pair`, `boxes`, `text`). `boxes` lays out every box shape up to max×max×max once (x ≥ y ≥ z, no rotated copies): one row per depth, boxes from the smallest, `gap` apart; each box has its own colour (tags, like the text's letters). A `pair` has `parts` — each part (the sphere and the cube) gets its own terrain, measured from its own centre (`VoxelPlanet.partAt`). The grid is always a cube centred on the origin (`half` = half its edge); each shape also gives the radius the swarm flies around on long trips (`R`: the sphere's radius, the cube's half-edge, half the text's thickness) and a bounding sphere for clicks (`bound`). Terrain colours follow the surface: sphere — depth under the radius, cube — depth under the nearest face; the text uses a colour per letter. Only spheres get the smoothed shading.
+**Single player flow:** Single player → the map (`SolarMap.show`, the first mission not done marked) → Start → `Game3D.startMission` (`jumpToLevel`, `started`) → … the planet eaten, the ships gone → the next mission is built behind the map, `started` = false, `onMissionDone(id)` → `progress.complete(id)` (localStorage, `js/progress.js`) and the map again. Esc on the map returns to the start screen; with a mission under way, Single player / Esc carry on with it. **Multiplayer:** `main.js` shows the map (mode `multi`, no Start) while the room is waiting or the summary is up — the next mission marked.
+
+**The map's data** (`js/solar.js`, `SOLAR`): 20 bodies from the outside in (Kuiper Belt … Sun) — id, name, kind, type (`belt`, `dwarf`, `planet`, `moon`, `star`), parent (moons), map orbit and size, speed, tilt, colour, rings, text. A body is playable when `CONFIG.levels` has it.
+
+Shapes (`shapes.js`) decide which voxels are solid (`sphere`, `belt`, `cube`, `pair`, `boxes`, `text`). `belt` (the Kuiper Belt) places `count` rocks from the planet's seed (mulberry32 — the same belt on every screen): each two or three overlapping balls, `minSize`…`maxSize` voxels across, in a flat ring between `inner` and `outer` × the radius, `thick` voxels deep, tilted `tilt` towards the starting camera, at least 3 voxels apart (none touching); a colour per rock (tags); the swarm flies round only a tiny sphere (`R` = 2 voxels), the rocks themselves are what it slides along. `boxes` lays out every box shape up to max×max×max once (x ≥ y ≥ z, no rotated copies): one row per depth, boxes from the smallest, `gap` apart; each box has its own colour (tags, like the text's letters). A `pair` has `parts` — each part (the sphere and the cube) gets its own terrain, measured from its own centre (`VoxelPlanet.partAt`). The grid is always a cube centred on the origin (`half` = half its edge); each shape also gives the radius the swarm flies around on long trips (`R`: the sphere's radius, the cube's half-edge, half the text's thickness) and a bounding sphere for clicks (`bound`). Terrain colours follow the surface: sphere — depth under the radius, cube — depth under the nearest face; the text uses a colour per letter. Only spheres get the smoothed shading.
 
 Styles change only the graphics — collisions, claims and eating always use the voxels. Every level uses `smooth` (the owner's choice since 0.13.0; an extra-smooth variant was tried in 0.14 and removed); `cubes` and `wedges` stay available. On a `pair`, the sphere's normals lean towards its own centre (like `sphereShading` on single spheres):
 

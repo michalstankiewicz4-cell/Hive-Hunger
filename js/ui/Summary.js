@@ -1,4 +1,5 @@
 import { el, button, hex } from './dom.js';
+import { bodyById } from '../solar.js';
 
 /**
  * Multiplayer summary after a planet is eaten: who ate how much of it, the totals, the PvP
@@ -31,7 +32,7 @@ export class Summary {
     this.root.hidden = false;
     this.card.replaceChildren();
     const pvp = s.mode === 'pvp';
-    const title = el('h2', 'menu-title', `Planet ${s.level} eaten`);
+    const title = el('h2', 'menu-title', `${bodyById(s.body)?.name || `Planet ${s.level}`} eaten`);
     title.id = 'summary-title';
     this.card.appendChild(title);
 
@@ -68,7 +69,8 @@ export class Summary {
     const pressed = !me || me.next;
     const next = button(pressed ? 'Waiting for the others…' : 'Next planet', () => this.onNext(), 'menu-start');
     next.disabled = pressed;
-    this.card.append(next, el('p', 'menu-note', 'The next planet appears when every player has pressed Next planet and the swarms are home.'));
+    const nextName = bodyById(s.next)?.name;
+    this.card.append(next, el('p', 'menu-note', `${nextName ? `Next mission: ${nextName}. ` : ''}It begins when every player has pressed Next planet and the swarms are home.`));
     if (!pressed) next.focus();
   }
 }

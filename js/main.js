@@ -9,6 +9,8 @@ import { Lobby } from './ui/Lobby.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { Summary } from './ui/Summary.js';
 import { TreeView } from './ui/TreeView.js';
+import { SolarMap } from './ui/SolarMap.js';
+import { progress } from './progress.js';
 import { pingText, rateText } from './ui/dom.js';
 
 const hudEl = document.getElementById('hud');
@@ -45,7 +47,7 @@ if (!window.THREE) {
   // single player: jump straight to any level (the swarm starts again from its tunnel)
   const levels = new LevelSwitch(document.getElementById('controls'), CONFIG.levels, {
     isSolo: () => game.role === 'solo',
-    current: () => game.level,
+    current: () => game.mission + 1,
     onPick: (n) => game.jumpToLevel(n),
   });
   setInterval(() => levels.sync(), 500); // hides it once a room is created; follows the planet number
@@ -60,16 +62,59 @@ if (!window.THREE) {
   // guest: the host lowered our Units / Bombers (bombers blew up)
   game.onSettingsChange = (values) => Object.assign(guestSettings, values);
 
-  // start screen → (multiplayer) waiting room → match; the room panel stays during the match
-  let soloPlayed = false; // single player has been started (Esc can return to it)
+  // start screen → (single player) the solar system map → a mission; (multiplayer) waiting room → match.
+  // The room panel stays during the match
+  let soloPlayed = false; // a single-player mission is under way (Esc can return to it)
+  const playable = (id) => CONFIG.levels.some((l) => l.body === id);
+  const map = new SolarMap(document.getElementById('map'), {
+    playable,
+    onStart: (id) => {
+      if (!game.startMission(id)) return;
+      soloPlayed = true;
+      map.hide();
+      menu.hide();
+    },
+    onBack: () => {
+      map.hide();
+      menu.showStart();
+    },
+  });
+  // single player: the next mission is the first one not eaten yet (all of them are open for now)
+  const firstUndone = () => CONFIG.levels.map((l) => l.body).find((id) => !progress.done.has(id)) || CONFIG.levels[0].body;
+  const showSoloMap = (next = firstUndone()) => {
+    menu.hide();
+    map.show({ mode: 'solo', next, current: null, done: progress.done });
+  };
+  // a mission's planet is eaten and the ships are gone: back to the map, the next one marked
+  game.onMissionDone = (id) => {
+    progress.complete(id);
+    soloPlayed = false;
+    showSoloMap(game.bodyId);
+  };
+  // multiplayer: the map stays behind the waiting room and the summary (where the room goes next);
+  // the missions go in order, so it has no Start
+  const roomDone = new Set();
+  let multiMapKey = '';
+  setInterval(() => {
+    if (game.role === 'solo') return;
+    if (game.summary) roomDone.add(game.summary.body);
+    const want = Boolean(game.localPlayer && (game.summary || !game.started));
+    const key = want ? `${game.summary ? game.summary.next : game.bodyId}/${game.summary ? 's' : 'w'}/${roomDone.size}` : '';
+    if (key === multiMapKey) return;
+    multiMapKey = key;
+    if (!want) map.hide();
+    else map.show({ mode: 'multi', next: game.summary ? game.summary.next : game.bodyId, current: game.summary ? game.summary.body : null, done: roomDone });
+  }, 300);
   // the room panel's Settings button: Settings over the game (it keeps running), Back closes it
   const lobby = new Lobby(lobbyEl, () => menu.showSettings(() => menu.hide()));
   const menu = new StartScreen(menuEl, {
     available: canNet,
+    // Single player: the map (or, with a mission under way, back to it — Esc does the same)
     onSolo: () => {
-      game.started = true;
-      soloPlayed = true;
-      menu.hide();
+      if (soloPlayed) {
+        game.started = true;
+        menu.hide();
+      } else showSoloMap();
     },
     onCreate: (mode) => {
       menu.showBusy('Multiplayer', 'Creating room…');
@@ -140,7 +185,10 @@ if (!window.THREE) {
       showPauseHint();
     } else if (e.key === 'Escape') {
       if (tree.isOpen) tree.close();
-      else if (menu.inSettings) menu.closeSettings(); // back to where Settings was opened
+      else if (game.role === 'solo' && !map.root.hidden) {
+        map.hide(); // the map → the start screen
+        menu.showStart();
+      } else if (menu.inSettings) menu.closeSettings(); // back to where Settings was opened
       else if (game.role === 'solo' && game.started) {
         game.started = false;
         menu.showStart();

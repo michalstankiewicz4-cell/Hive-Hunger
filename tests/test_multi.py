@@ -43,6 +43,7 @@ async def main():
             host = await h.open_page(browser, url, errors, 'host', peer=True)
             # play single player first: points, an upgrade, part of the planet eaten …
             await host.click('.menu-choice >> nth=0')
+            await host.click('.map-start')  # (the map: the first mission)
             await host.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 100); p.setSetting('speed', 0.4); }")
             await h.fast_forward(host, 400)
             await host.evaluate("() => { window.__dbg.localPlayer.score += 100; window.__dbg.buyUpgrade('units1'); }")
@@ -55,6 +56,8 @@ async def main():
             t.ok(len(code) == 6, 'room created', code)
             await host.wait_for_timeout(700)
             t.ok(await host.locator('.control-levels').is_hidden(), 'no level switch in multiplayer')
+            wm = await host.evaluate("() => ({ map: !document.getElementById('map').hidden, card: document.querySelector('.map-card-name')?.textContent, body: window.__dbg.bodyId })")
+            t.ok(wm['map'] and wm['card'] == 'Kuiper Belt' and wm['body'] == 'kuiper', 'the waiting room over the map: the first mission, the Kuiper Belt', wm)
             fresh = await host.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
               return { score: p.score, owned: [...p.tree.owned], level: g.level, left: g.planet.left, total: g.planet.total,
                 count: p.base.count, units: p.swarm.count }; }''')
@@ -143,6 +146,10 @@ async def main():
             text = await guests[1].inner_text('#summary')
             t.ok(('wins this planet' in text or 'You win this planet' in text) and 'Share' in text and 'Won' in text, 'PvP summary: winner, shares, planets won',
                  text.replace(chr(10), ' | ')[:200])
+            t.ok('Kuiper Belt eaten' in text and 'Next mission: Earth' in text, 'missions go in order: the Kuiper Belt first, Earth next', text.replace(chr(10), ' | ')[:200])
+            await guests[1].wait_for_timeout(500)
+            gm = await guests[1].evaluate("() => ({ map: !document.getElementById('map').hidden, card: document.querySelector('.map-card-name')?.textContent, start: Boolean(document.querySelector('.map-card .map-start:not(:disabled)')) })")
+            t.ok(gm['map'] and gm['card'] == 'Earth' and not gm['start'], 'the map behind the summary shows the next mission (no Start: they go in order)', gm)
             rows = await host.evaluate('() => window.__dbg.summary.rows.map(r => r.planet)')
             t.ok(rows == sorted(rows, reverse=True), 'players sorted by voxels eaten', rows)
             await host.click('#summary .menu-start')
@@ -156,6 +163,9 @@ async def main():
             await host.wait_for_timeout(1000)
             t.ok((await host.evaluate(GAME))['level'] == 2 and await host.locator('#summary').is_hidden()
                  and await guests[1].locator('#summary').is_hidden(), 'everyone pressed: next planet, summary closed')
+            bodies = [await host.evaluate('() => window.__dbg.bodyId'), await guests[1].evaluate('() => window.__dbg.bodyId'),
+                      await guests[1].evaluate("() => document.getElementById('map').hidden")]
+            t.ok(bodies == ['earth', 'earth', True], 'the next mission (Earth) on host and guests, the map gone', bodies)
 
             # a piece bitten off on the host drifts on every screen; eating it there shows on the guests
             cut = await host.evaluate("""() => { const g = window.__dbg, pl = g.planet, N = pl.N;
