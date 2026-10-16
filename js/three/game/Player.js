@@ -116,8 +116,9 @@ export class Player {
       isSolidCell: (idx) => idx >= 0 && game.planet.hp[idx] > 0,
       isFood: (idx) => game.planet.solid(idx),
       floatingAt: (p) => game.planet.fragments?.at(p) ?? -1,
-      bite: (idx, ownFood) => game.biteCell(idx, ownFood, this),
-      storm: (idx, ownFood) => game.stormCell(idx, ownFood, this),
+      // (a ship in a booster's field: `booster.boost` × the crater radius and × as hard; drills: × the radius)
+      bite: (idx, ownFood, i) => game.biteCell(idx, ownFood, this, this.boostOf(i)),
+      storm: (idx, ownFood, i) => game.stormCell(idx, ownFood, this, this.boostOf(i)),
       pierce: (idx, i) => game.pierceCell(idx, this, i),
       pierceLine: (i, x, y, z, D, E) => game.pierceLine(this, i, x, y, z, D, E),
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
@@ -125,11 +126,16 @@ export class Player {
       fireShot: (i, idx, x, y, z) => game.fireShot(this, i, idx, x, y, z),
       fireBubble: (i, idx, x, y, z) => game.fireBubble(this, i, idx, x, y, z),
       // drills: everything around the bit at (x, y, z) is gone; returns how many voxels
-      drill: (i, x, y, z) => game.destroySphere(x, y, z, this.drillRadius, this, CONFIG.swarm.drill.debris),
+      drill: (i, x, y, z) => game.destroySphere(x, y, z, this.drillRadius * this.boostOf(i), this, CONFIG.swarm.drill.debris),
       drillRadius: () => this.drillRadius,
       drillAt: (x, y, z) => game.clearCell(x, y, z, this),
       isFloating: (idx) => (game.planet.fragments?.fragOf[idx] ?? -1) >= 0,
     };
+  }
+
+  /** × the Power of unit i: `booster.boost` inside a booster's field, otherwise 1. */
+  boostOf(i) {
+    return i >= 0 && this.swarm.boosted[i] ? CONFIG.swarm.booster.boost : 1;
   }
 
   /** Every unit drops its bite (releasing the claim) and stops eating. */

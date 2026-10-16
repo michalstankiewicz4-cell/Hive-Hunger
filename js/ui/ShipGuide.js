@@ -24,6 +24,7 @@ export const SHIP_INFO = {
   tugs: ['Tugs', 'Catch drifting pieces with a tractor beam and tow them home for 5 × the points.'],
   supports: ['Support', 'Every 3 s a bolt jumps between your own ships, destroying the voxels on its way.'],
   cleaners: ['Cleaners', 'Eat only drifting pieces of 1–3 voxels.'],
+  boosters: ['Boosters', 'Fly with the swarm in a gentle pink force field 5 voxels across: your ships inside it get +20% Power: a wider crater, eating harder.'],
 };
 
 const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
@@ -357,6 +358,47 @@ const PICTURES = {
     }
   },
 
+  boosters(g, t, c) {
+    // a pink ball of octagons round the booster; ships flying into it light up (+20% Power)
+    const x = 60, y = 32, R = 22;
+    const glow = g.createRadialGradient(x, y, R * 0.3, x, y, R);
+    glow.addColorStop(0, 'rgba(255,80,170,0.05)');
+    glow.addColorStop(0.85, 'rgba(255,110,190,0.18)');
+    glow.addColorStop(1, 'rgba(255,180,225,0.55)');
+    g.fillStyle = glow;
+    g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.fill();
+    // the octagon cells, turning slowly (seen from the side: squeezed towards the edge)
+    g.save();
+    g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.clip();
+    const spin = t * 0.9;
+    for (let row = -2; row <= 2; row++) for (let col = -3; col <= 3; col++) {
+      const u = ((col * 0.42 + spin) % 2.94 + 2.94) % 2.94 - 1.47, v = row * 0.42;
+      if (Math.abs(u) > 1.4) continue;
+      const cx = x + Math.sin(u) * R, cy = y + Math.sin(v) * R, sx = Math.cos(u) * 7.5, sy = Math.cos(v) * 7.5;
+      const shim = 0.45 + 0.35 * Math.sin(t * 6.28 * 2 + row * 1.7 + col * 2.3);
+      g.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const a = (k + 0.5) * Math.PI / 4;
+        g.lineTo(cx + Math.cos(a) * sx * 0.54, cy + Math.sin(a) * sy * 0.54);
+      }
+      g.closePath();
+      g.strokeStyle = `rgba(255,179,224,${shim})`;
+      g.lineWidth = 0.8;
+      g.stroke();
+    }
+    g.restore();
+    g.strokeStyle = 'rgba(255,190,230,0.8)';
+    g.lineWidth = 1;
+    g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.stroke();
+    ship(g, x, y, c);
+    // two eaters fly through it: inside the field they glow
+    for (const [y0, dt] of [[18, 0], [46, 0.5]]) {
+      const k = ((t + dt) % 1), sx = 4 + k * 112;
+      const inside = Math.hypot(sx - x, y0 - y) < R;
+      if (inside) glowDot(g, sx, y0, 6, 'rgba(255,120,200,0.5)');
+      ship(g, sx, y0, inside ? '#fff1a0' : '#ffd84a', 0, 10);
+    }
+  },
   cleaners(g, t, c) {
     // a tiny piece drifting; the cleaner flies to it and eats it
     const fly = ease(t / 0.5), eat = ease((t - 0.55) / 0.3);

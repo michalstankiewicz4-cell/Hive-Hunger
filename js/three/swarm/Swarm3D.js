@@ -6,6 +6,7 @@ import { Hyperspace } from './warp.js';
 import { Beams, makeBeams } from './beams.js';
 import { TowBeams } from './tows.js';
 import { DrillBits } from './drills.js';
+import { ForceFields } from './fields.js';
 
 const THREE = window.THREE;
 const FORWARD = new THREE.Vector3(0, 0, 1);
@@ -75,6 +76,10 @@ export class Swarm3D {
     // (Bubbles.js), splashOut = the id of the one in flight
     this.splashers = 0;
     this.splashOut = new Int32Array(this.max);
+    // the next `boosters` units are pink boosters: they don't eat — they fly with the swarm in a force
+    // field (fields.js); boosted = 1 for ships inside one (host: they have `booster.boost` × the Power)
+    this.boosters = 0;
+    this.boosted = new Uint8Array(this.max);
     // the last `snipers` units are teal snipers: from any distance they fire an accelerating shot at
     // their bite (Shots.js) that destroys the voxel it hits; snipePhase 1 = stopped and charging,
     // snipeT counts the charge down (or, after a shot, the second it flies on)
@@ -316,6 +321,7 @@ export class Swarm3D {
     this.turnLook(); // the heading drawn — and the one a laser ship aims with
 
     this.stepWarp();
+    this.updateBoost();
 
     for (let i = 0; i < this.count; i++) {
       const i3 = i * 3;
@@ -387,7 +393,7 @@ export class Swarm3D {
 
       // landed on its bite: eats it until it is gone, then takes off
       if (landed[i]) {
-        if (food[i] >= 0 && world.isFood(food[i]) && !this.isTug(i) && !this.isSupport(i)) {
+        if (food[i] >= 0 && world.isFood(food[i]) && !this.isTug(i) && !this.isSupport(i) && !this.isBooster(i)) {
           // a bomber touching its voxel blows up (and is gone)
           if (this.isBomber(i)) {
             world.bomb(i, foodPos[i3], foodPos[i3 + 1], foodPos[i3 + 2]);
@@ -439,7 +445,7 @@ export class Swarm3D {
             continue;
           }
           if (this.isStorm(i)) {
-            const at = world.storm(food[i], food[i]);
+            const at = world.storm(food[i], food[i], i);
             this.stormSideN[i] = at.length / 3;
             for (let k = 0; k < at.length; k++) this.stormSides[i * 6 + k] = at[k];
           } else if (this.isPiercer(i)) {
@@ -457,7 +463,7 @@ export class Swarm3D {
               food[i] = -1;
               landed[i] = 0;
             }
-          } else world.bite(food[i], food[i]);
+          } else world.bite(food[i], food[i], i);
           this.hungry[i] = 0;
           continue;
         }
@@ -501,7 +507,7 @@ export class Swarm3D {
         food[i] = -1;
       }
       const tug = this.isTug(i);
-      const passive = tug || this.isSupport(i); // tugs and support ships don't eat
+      const passive = tug || this.isSupport(i) || this.isBooster(i); // tugs, support ships and boosters don't eat
       // a cleaner eats only small drifting pieces (at most `cleaner.maxPiece` voxels)
       const cleaner = this.isCleaner(i);
       // was another type a moment ago (a slider moved): its bite isn't one for it any more
@@ -714,6 +720,7 @@ export class Swarm3D {
     this.renderTrails(camera);
     if (this.remote) this.turnLook(); // a guest's copy: no simulation turns it
     this.renderDrills(); // after turnLook: the bits follow the drawn heading
+    this.renderFields();
     const dm = this.dummy;
     const look = this.look;
     for (let i = 0; i < this.count; i++) {
@@ -732,7 +739,7 @@ export class Swarm3D {
 const HIDDEN = new THREE.Matrix4().makeScale(0, 0, 0);
 
 // the rest of the swarm, one file per part: ship types, a guest's copy, hyperspace, laser beams and
-// storm bolts, tractor beams
-for (const part of [ShipTypes, RemoteSwarm, Hyperspace, Beams, TowBeams, DrillBits]) {
+// storm bolts, tractor beams, drill bits, boosters' fields
+for (const part of [ShipTypes, RemoteSwarm, Hyperspace, Beams, TowBeams, DrillBits, ForceFields]) {
   Object.defineProperties(Swarm3D.prototype, Object.getOwnPropertyDescriptors(part));
 }

@@ -2,6 +2,13 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.33.0] — 2026-10-16
+
+### Added
+- **Boosters** (pink): a thirteenth ship type, a support ship. A booster doesn't eat — it flies with the swarm in a gentle force field 5 voxels across, a ball of shimmering octagonal cells in pinks. Your own ships inside a field get +20% Power: a 20% wider crater and eating 20% harder (eaters, lasers, storms, piercers; drills drill 20% wider). Several fields at once don't add up. Guests see the same fields.
+- The Ship guide has the booster with its picture (ships lighting up as they fly through the field).
+- Every player starts with 2 of each type: 26 units.
+
 ## [0.32.0] — 2026-10-16
 
 ### Added

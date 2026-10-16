@@ -29,7 +29,7 @@ export const Destruction = {
    */
   pierceCell(idx, player, i) {
     const pl = this.planet, c = this.cfg.swarm.piercer, s = player.swarm;
-    const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage;
+    const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage * player.boostOf(i);
     const hit = [idx];
     if (!(pl.fragments && pl.fragments.has(idx))) {
       // along the beam from the bite on, half a voxel at a time
@@ -62,7 +62,7 @@ export const Destruction = {
    */
   pierceLine(player, i, x, y, z, D, E) {
     const pl = this.planet, c = this.cfg.swarm.piercer, i3 = i * 3;
-    const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage;
+    const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage * player.boostOf(i);
     const p = PIERCE_P.set(x, y, z), step = pl.s * 0.5, hit = [];
     // all the way: out past the far side of the whole grid (whatever its shape), however far that is
     const reach = Math.hypot(x, y, z) + pl.half * 1.8;
@@ -95,12 +95,12 @@ export const Destruction = {
     return 1;
   },
 
-  /** A feeding unit of `player` eats a small crater around the voxel it sits on. */
-  biteCell(idx, ownFood, player) {
+  /** A feeding unit of `player` eats a small crater around the voxel it sits on (in a booster's field: `boost` × the crater radius and `boost` × as hard). */
+  biteCell(idx, ownFood, player, boost = 1) {
     const pl = this.planet;
     // eating takes time: every frame on a bite removes part of its strength
-    const damage = this.cfg.planet.strength / this.cfg.swarm.eatFrames;
-    pl.biteSphere(idx, player.biteRadius, damage, (n) => {
+    const damage = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * boost;
+    pl.biteSphere(idx, player.biteRadius * boost, damage, (n) => {
       player.score++;
       player.planetScore++;
       this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
@@ -113,9 +113,9 @@ export const Destruction = {
    * on each of the two nearest others. Returns the side voxels' positions (for drawing),
    * taken before the hit.
    */
-  stormCell(idx, ownFood, player) {
+  stormCell(idx, ownFood, player, boost = 1) {
     const pl = this.planet, sc = this.cfg.swarm.storm;
-    const total = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * craterSize(player.biteRadius / pl.s);
+    const total = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * craterSize((player.biteRadius * boost) / pl.s) * boost;
     const sides = pl.nearestAround(idx, 2, ownFood);
     const at = [];
     for (const n of sides) { pl.cellCenter(n, this.tmp); at.push(this.tmp.x, this.tmp.y, this.tmp.z); }
