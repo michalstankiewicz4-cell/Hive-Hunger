@@ -124,6 +124,11 @@ Lessons from writing them:
 - A huge, fast swarm crumbles a planet into thousands of small drifting pieces (each its own small mesh); with 1500 units at full power the frame time roughly doubles while it lasts. Normal swarms add about 1–2 ms per frame.
 - **Fast swarms can't finish a planet.** At high Speed a unit turns in a wide arc (radius ≈ `speed / turnRate`, e.g. 0.5 / 0.07 ≈ 7) and can circle an isolated last voxel forever without coming within `reachDistance` + its speed; the planet stays at a few dozen voxels. Found while testing 0.8.0 (3 swarms at speed 0.5); lowering Speed finishes it. Not fixed yet — waiting for the owner's decision.
 
+## The owner's ideas for later (not built yet — wait for him to ask)
+
+- **Tug ship (holownik):** flies only to drifting pieces (fragments); from 10 voxels away it sends a tractor beam that takes in the whole piece and pulls it to the player's spawn; it gets 5× the points the whole piece is worth. (2026-10-16)
+- Decided against: drifting pieces bouncing off each other (2026-10-16).
+
 ## Ideas proposed earlier but not done
 
 Suggested during development; not built because the owner hasn't asked for them.
