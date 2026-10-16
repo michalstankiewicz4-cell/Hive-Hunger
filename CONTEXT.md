@@ -4,7 +4,7 @@ A recovery file: everything needed to pick the project up again — what it is, 
 
 ## What it is
 
-**Hive Hunger** — a free 3D browser game: a swarm that behaves like a flock of birds eats voxel planets. Single player goes through missions on a solar system map (only the Kuiper Belt and Earth can be played so far) with a saved game; multiplayer (Co-op / PvP, up to 4) over WebRTC, the missions in order. 13 ship types, an upgrade tree, a start screen with the owner's picture.
+**Hive Hunger** — a free 3D browser game: a swarm that behaves like a flock of birds eats voxel planets. Single player goes through missions on a solar system map (only the Kuiper Belt and Earth can be played so far) with a saved game; multiplayer (Co-op / PvP, up to 4) over WebRTC, the missions in order. 14 ship types, an upgrade tree, a start screen with the owner's picture.
 
 - Play: https://michalstankiewicz4-cell.github.io/Hive-Hunger/
 - Repository: https://github.com/michalstankiewicz4-cell/Hive-Hunger (branch `main`)
@@ -55,18 +55,19 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Free camera (0.28.0, owner):** no vertical limit — it turns over the poles.
 - **Drills weaker (0.28.0, owner: "half the drilling power, smaller power"):** what goes around the bit is 0.75 × Power (0.375 at default, half of the old 0.75) and follows the Power slider.
 - **Tunnel shape (0.28.0, owner):** 10° narrower only while opening (owner's correction; widens back once open), opening out like the bell of a trumpet, half the streaks (35) bunched unevenly, their last 20% fading to transparent (owner).
-- **Start (0.27.0, owner):** every player starts with 2 ships of every type (26 units with the thirteen types of 0.33.0).
+- **Start (0.27.0, owner):** every player starts with 2 ships of every type (28 units with the fourteen types of 0.43.0).
 - **Drills (0.27.0, owner, from the assistant's list of proposals):** orange, "with a nice spiral orange drill bit". Assistant's choices: they drill straight towards the planet's centre (±`spread`), until through or 60 units; on pieces they eat like eaters. (Width: see 0.28.0.)
 - **Space pause (0.27.0, owner):** single player only, "Press Space to pause" at the bottom; the camera still turns while paused (assistant's choice).
 - **Cleaners (0.26.0, owner):** grey; eat only drifting pieces of 1, 2 or 3 voxels (owner's limit; the assistant had proposed a ship for the last isolated voxels). Assistant's choices: nearest small piece first, otherwise they fly with the swarm; normal speed and bite. Same release: **at most 100 units** (owner; the Units slider and upgrades together), **arrows** next to the ship-type sliders (one ship per click, owner).
 - **Level switch (0.17.0):** single player only, a button per playable mission in the settings panel (1–5 before 0.34.0); the swarm restarts from its beacon (owner: so it never gets stuck inside a shape). Hidden in multiplayer.
 - **100% means every voxel is gone.** Then the ships jump to hyperspace and only then does the next planet appear (0.25.0; before that they flew home).
-- **Defaults:** units 26 (2 of each type), speed 0.05, power 0.5, turning 0.12. "Reset to default" restores them.
+- **Defaults:** units 28 (2 of each type), speed 0.05, power 0.5, turning 0.12. "Reset to default" restores them.
 - **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player **Esc** pauses and opens it, Esc again carries on (no Menu button — removed on request). No atmosphere glow (removed on request).
 - **Fair rooms:** creating a Co-op/PvP room starts from scratch (the first mission, no points/upgrades/eaten voxels from single player); only the settings panel stays.
 - **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (voxels eaten of the planet per player, share, total, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
-- **SEO:** in English; 0.41.0 (owner): Polish keywords and a Polish paragraph in the hidden text too. Title, description, keywords (including "incremental free"; 0.40.0: solar system, 13 ship types, co-op/PvP), Open Graph/Twitter thumbnail (0.40.0, owner: the start screen — `og-image.jpg`, rendered from the page at 1200 × 630 without the version; before: a picture of the game), `VideoGame` JSON-LD, sitemap.
+- **SEO:** in English; 0.41.0 (owner): Polish keywords and a Polish paragraph in the hidden text too. Title, description, keywords (including "incremental free"; 0.40.0: solar system, 14 ship types, co-op/PvP), Open Graph/Twitter thumbnail (0.40.0, owner: the start screen — `og-image.jpg`, rendered from the page at 1200 × 630 without the version; before: a picture of the game), `VideoGame` JSON-LD, sitemap.
 
+- **Cutters (0.43.0, owner):** target like an eater, from 20 voxels, a flat red beam covering the target's width — a red ray on each side, an animated haze between them (a flat beam shining through smoke); it simply cuts what it hits, as strong as a piercer. Owner chose: the width of the target, the whole row at once getting deeper until through, crimson hull. Assistant's choices: at most 12 voxels each side of the line (on Earth the "target" is the whole planet), the sheet spreads along the surface (across the line and the way out from the centre), a narrow apex at the ship, a bright line along the cut, no extra time after getting through, the tree node on level 4 (from Burn or Fourth fork, no properties yet).
 - **Upgrade tree (0.42.0, owner):** keep our tree's look and its growth upwards; like the owner's example — not symmetrical, unexpected links; ships with properties to upgrade and traits of the whole swarm; costs don't matter yet; ships on different levels; levels numbered (5 + the start); bigger ship nodes of another shape, the swarm's and the properties' of their own. The assistant proposed the layout (owner: "send it to GitHub under Tab, the logic later"). Open questions for later: what buying a ship does (unlock the type / +2 ships / only open its properties), the list of properties, the cross links.
 - **"New or continue" note (0.41.0, owner):** under Single player in the main menu when a save exists, so the player knows before pressing.
 - **Save game (0.41.0, owner):** under Resume in the Esc menu; it stays paused and the note says "Saved ✓" with the time (assistant's choice).
@@ -188,12 +189,13 @@ Lessons from writing them:
 | 0.42.0 | tag `v0.42.0` | new tree layout: ships, their properties, swarm traits on levels 0–5 (logic later) |
 | 0.42.1 | tag `v0.42.1` | documentation brought up to date; where the work stopped |
 | 0.42.2 | tag `v0.42.2` | CONTEXT: the tags are on GitHub; how the owner adds them |
+| 0.43.0 | tag `v0.43.0` | cutters: a flat red sheet that cuts whole rows, deeper until through |
 
 ## Known limitations
 
 - The host's tab must stay in the foreground (browsers pause animation in background tabs → the game pauses for everyone).
 - Multiplayer depends on the PeerJS public server for joining; strict NATs without TURN may fail to connect (no TURN server is configured).
-- With slow defaults (26 units, speed 0.05) a planet takes a long time; sliders change that live.
+- With slow defaults (28 units, speed 0.05) a planet takes a long time; sliders change that live.
 - A huge, fast swarm crumbles a planet into thousands of small drifting pieces (each its own small mesh); with 1500 units at full power (before 0.26.0 limited swarms to 100) the frame time roughly doubled while it lasted. Normal swarms add about 1–2 ms per frame.
 - **Fast swarms can't finish a planet.** At high Speed a unit turns in a wide arc (radius ≈ `speed / turnRate`, e.g. 0.5 / 0.07 ≈ 7) and can circle an isolated last voxel forever without coming within `reachDistance` + its speed; the planet stays at a few dozen voxels. Found while testing 0.8.0 (3 swarms at speed 0.5); lowering Speed finishes it. Not fixed yet — waiting for the owner's decision.
 

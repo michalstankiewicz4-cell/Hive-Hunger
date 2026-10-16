@@ -2,6 +2,16 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.43.0] — 2026-10-16
+
+### Added
+- **Cutters** (crimson): a fourteenth ship type, an attack ship. A cutter picks its bite like an eater and, from 20 voxels away, locks a flat red sheet on it, as wide as what it hits (the solid voxels in a row across the sheet, at most 12 each side): a red ray along each edge, a glowing haze drifting between them like a flat laser through smoke, and a bright line where it cuts. The whole row is cut at once — each voxel as hard as a piercer bites — and when it is gone the sheet goes deeper along the line, until through; then the cutter flies on. Guests see the same sheets.
+- The Ship guide and the upgrade tree (a ship node on level 4, coming soon) have the cutter.
+- Every player starts with 2 of each type: 28 units.
+
+### Fixed
+- A player leaving a room no longer leaves its boosters' fields behind on the other screens.
+
 ## [0.42.2] — 2026-10-16
 
 ### Changed

@@ -16,7 +16,7 @@ function craterSize(r) {
 }
 
 /**
- * What ships do to voxels: bites, storm bolts, bomber blasts, orb bursts, support ships' lightning
+ * What ships do to voxels: bites, cutters' rows, storm bolts, bomber blasts, orb bursts, support ships' lightning
  * and black holes swallowing pieces (points go to the player who did it).
  * (Part of Game3D: these become its methods.)
  */
@@ -76,6 +76,52 @@ export const Destruction = {
     pl.cellCenter(hit[0], PIERCE_B);
     E[i3] = PIERCE_B.x; E[i3 + 1] = PIERCE_B.y; E[i3 + 2] = PIERCE_B.z;
     for (const n of hit) {
+      if (pl.bite(n, amount) !== BITE.REMOVED) continue;
+      player.score++;
+      player.planetScore++;
+      this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
+    }
+    return true;
+  },
+
+  /**
+   * A cutter (unit i of `player`) at (x, y, z) cutting along its locked line (direction D[i*3…]) with its
+   * sheet spread along S[i*3…]: the first solid grid voxel on the line (however far, through the whole
+   * planet) and the row of solid voxels across the sheet through it — as far as the solid voxels go,
+   * at most `cutter.maxHalf` each side — are each bitten for `cutter.damage` × an eater's rate (claimed
+   * or not; a point each when gone). L / R[i*3…] are set to the row's two ends (for drawing). Nothing
+   * left on the line — it is through — returns false.
+   */
+  cutLine(player, i, x, y, z, D, S, L, R) {
+    const pl = this.planet, c = this.cfg.swarm.cutter, i3 = i * 3, s = pl.s;
+    const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage * player.boostOf(i);
+    const p = PIERCE_P.set(x, y, z), step = s * 0.5;
+    const reach = Math.hypot(x, y, z) + pl.half * 1.8;
+    let first = -1;
+    for (let k = 0, steps = Math.ceil(reach / step); k < steps; k++) {
+      p.x += D[i3] * step; p.y += D[i3 + 1] * step; p.z += D[i3 + 2] * step;
+      const n = pl.cellAt(p);
+      if (n >= 0 && pl.hp[n] > 0) { first = n; break; }
+    }
+    if (first < 0) return false;
+    // across the sheet, both ways from the line, half a voxel at a time, while the voxels are solid
+    const row = new Set([first]);
+    const ends = [];
+    for (const sign of [-1, 1]) {
+      const q = PIERCE_B.copy(p);
+      let last = 0;
+      for (let k = 1; k <= c.maxHalf * 2; k++) {
+        q.x += S[i3] * step * sign; q.y += S[i3 + 1] * step * sign; q.z += S[i3 + 2] * step * sign;
+        const n = pl.cellAt(q);
+        if (n < 0 || pl.hp[n] <= 0) break;
+        row.add(n);
+        last = k;
+      }
+      ends.push((last + 1) * step * sign); // (to the voxel's edge)
+    }
+    L[i3] = p.x + S[i3] * ends[0]; L[i3 + 1] = p.y + S[i3 + 1] * ends[0]; L[i3 + 2] = p.z + S[i3 + 2] * ends[0];
+    R[i3] = p.x + S[i3] * ends[1]; R[i3 + 1] = p.y + S[i3 + 1] * ends[1]; R[i3 + 2] = p.z + S[i3 + 2] * ends[1];
+    for (const n of row) {
       if (pl.bite(n, amount) !== BITE.REMOVED) continue;
       player.score++;
       player.planetScore++;

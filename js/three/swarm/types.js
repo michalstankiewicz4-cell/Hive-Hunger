@@ -36,6 +36,7 @@ export const ShipTypes = {
   isSniper(i) { return this.isKind(i, 'snipers'); },
   isSplasher(i) { return this.isKind(i, 'splashers'); },
   isBooster(i) { return this.isKind(i, 'boosters'); },
+  isCutter(i) { return this.isKind(i, 'cutters'); },
 
   /** Every unit in its type's colour (set again only when the split or the count changed). */
   updateColors() {
@@ -57,10 +58,10 @@ export const ShipTypes = {
     const swap = (arr, k) => {
       for (let j = 0; j < k; j++) { const t = arr[a * k + j]; arr[a * k + j] = arr[b * k + j]; arr[b * k + j] = t; }
     };
-    for (const arr of [this.pos, this.dir, this.look, this.foodPos, this.beamTo, this.tugGoal, this.drillDir, this.pierceDir, this.pierceEnd]) swap(arr, 3);
+    for (const arr of [this.pos, this.dir, this.look, this.foodPos, this.beamTo, this.tugGoal, this.drillDir, this.pierceDir, this.pierceEnd, this.cutDir, this.cutSide, this.cutL, this.cutR]) swap(arr, 3);
     swap(this.stormSides, 6);
     for (const arr of [this.food, this.landed, this.redirect, this.best, this.stuck, this.lastBlock, this.blockAge,
-      this.hungry, this.pause, this.firing, this.aimed, this.stormSideN, this.tugHas, this.orbOut, this.splashOut, this.boosted, this.snipePhase, this.snipeT, this.zapWait, this.hidden, this.warpDelay, this.warpT,
+      this.hungry, this.pause, this.firing, this.aimed, this.stormSideN, this.tugHas, this.orbOut, this.splashOut, this.boosted, this.cutOn, this.snipePhase, this.snipeT, this.zapWait, this.hidden, this.warpDelay, this.warpT,
       this.drillLeft, this.drillIdle, this.drillHit, this.drillAim, this.pierceOn, this.pierceAfter]) swap(arr, 1);
     swap(this.warpDir, 3);
     swap(this.warpFrom, 3);

@@ -7,6 +7,7 @@ import { Beams, makeBeams } from './beams.js';
 import { TowBeams } from './tows.js';
 import { DrillBits } from './drills.js';
 import { ForceFields } from './fields.js';
+import { CutterSheets } from './cutters.js';
 
 const THREE = window.THREE;
 const FORWARD = new THREE.Vector3(0, 0, 1);
@@ -80,6 +81,14 @@ export class Swarm3D {
     // field (fields.js); boosted = 1 for ships inside one (host: they have `booster.boost` × the Power)
     this.boosters = 0;
     this.boosted = new Uint8Array(this.max);
+    // the next `cutters` units are crimson cutters: a flat red sheet locked on a line (cutDir) across its
+    // width (cutSide); cutL / cutR = the ends of the row being cut now (cutters.js draws the sheet)
+    this.cutters = 0;
+    this.cutOn = new Uint8Array(this.max);
+    this.cutDir = new Float32Array(this.max * 3);
+    this.cutSide = new Float32Array(this.max * 3);
+    this.cutL = new Float32Array(this.max * 3);
+    this.cutR = new Float32Array(this.max * 3);
     // the last `snipers` units are teal snipers: from any distance they fire an accelerating shot at
     // their bite (Shots.js) that destroys the voxel it hits; snipePhase 1 = stopped and charging,
     // snipeT counts the charge down (or, after a shot, the second it flies on)
@@ -363,6 +372,16 @@ export class Swarm3D {
         }
         continue;
       }
+      // a cutter on its locked line: it cuts the row across it; when the row is gone, the next one deeper,
+      // until through — then it flies on
+      if (this.cutOn[i]) {
+        if (!this.isCutter(i) || world.holding) { this.cutOn[i] = 0; continue; } // another type now / called back
+        const hit = world.cutLine(i, pos[i3], pos[i3 + 1], pos[i3 + 2], this.cutDir, this.cutSide, this.cutL, this.cutR);
+        this.hungry[i] = 0;
+        dir[i3] = this.cutDir[i3]; dir[i3 + 1] = this.cutDir[i3 + 1]; dir[i3 + 2] = this.cutDir[i3 + 2];
+        if (!hit) { this.cutOn[i] = 0; best[i] = Infinity; stuck[i] = 0; }
+        continue;
+      }
       // a sniper: from anywhere at its bite — stop, charge `sniper.chargeFrames` (5 s) facing it, fire,
       // then fly on for `sniper.moveFrames` (1 s), stop and charge again
       if (this.isSniper(i) && !world.holding) {
@@ -463,7 +482,24 @@ export class Swarm3D {
               food[i] = -1;
               landed[i] = 0;
             }
-          } else world.bite(food[i], food[i], i);
+          } else if (this.isCutter(i) && !world.isFloating(food[i])) {
+            // aimed: the line from here through the bite is locked; the sheet spreads across it, along
+            // the surface (sideways to both the line and the way out from the centre)
+            const l = Math.hypot(foodPos[i3] - pos[i3], foodPos[i3 + 1] - pos[i3 + 1], foodPos[i3 + 2] - pos[i3 + 2]) || 1;
+            const dx = (foodPos[i3] - pos[i3]) / l, dy = (foodPos[i3 + 1] - pos[i3 + 1]) / l, dz = (foodPos[i3 + 2] - pos[i3 + 2]) / l;
+            const ul = Math.hypot(foodPos[i3], foodPos[i3 + 1], foodPos[i3 + 2]) || 1;
+            let ux = foodPos[i3] / ul, uy = foodPos[i3 + 1] / ul, uz = foodPos[i3 + 2] / ul;
+            if (Math.abs(dx * ux + dy * uy + dz * uz) > 0.97) { ux = 0; uy = 1; uz = 0; } // (straight down: any side)
+            let sx = dy * uz - dz * uy, sy = dz * ux - dx * uz, sz = dx * uy - dy * ux;
+            const sl = Math.hypot(sx, sy, sz) || 1;
+            this.cutDir[i3] = dx; this.cutDir[i3 + 1] = dy; this.cutDir[i3 + 2] = dz;
+            this.cutSide[i3] = sx / sl; this.cutSide[i3 + 1] = sy / sl; this.cutSide[i3 + 2] = sz / sl;
+            this.cutOn[i] = 1;
+            world.release(food[i]);
+            food[i] = -1;
+            landed[i] = 0;
+          } else if (this.isCutter(i)) world.pierce(food[i], i); // on a drifting piece: just its bite
+          else world.bite(food[i], food[i], i);
           this.hungry[i] = 0;
           continue;
         }
@@ -474,8 +510,8 @@ export class Swarm3D {
       const px = pos[i3], py = pos[i3 + 1], pz = pos[i3 + 2];
       const laser = i < this.lasers;
       const orb = this.isOrb(i), sniper = this.isSniper(i), splasher = this.isSplasher(i);
-      const piercer = this.isPiercer(i);
-      const ranged = laser || orb || piercer || sniper || splasher || this.isStorm(i); // laser, storm, orb ships, piercers and snipers eat from a distance
+      const piercer = this.isPiercer(i), cutter = this.isCutter(i);
+      const ranged = laser || orb || piercer || cutter || sniper || splasher || this.isStorm(i); // laser, storm, orb ships, piercers and snipers eat from a distance
       const speed = laser ? this.speed * c.laser.speedFactor : this.speed;
       let sx = 0, sy = 0, sz = 0;   // separation
       let ax = 0, ay = 0, az = 0;   // alignment
@@ -565,7 +601,7 @@ export class Swarm3D {
         const fx0 = foodPos[i3] - px, fy0 = foodPos[i3 + 1] - py, fz0 = foodPos[i3 + 2] - pz;
         // a laser ship stops at laser range and eats from there
         // (a sniper doesn't land: it stops wherever its move ends — see above)
-        const reach = sniper ? 0 : (orb ? c.orb.range : splasher ? c.splasher.range : piercer ? c.piercer.reach : ranged ? c.laser.reach : c.reachDistance) + speed;
+        const reach = sniper ? 0 : (orb ? c.orb.range : splasher ? c.splasher.range : piercer ? c.piercer.reach : cutter ? c.cutter.reach : ranged ? c.laser.reach : c.reachDistance) + speed;
         if (fx0 * fx0 + fy0 * fy0 + fz0 * fz0 < reach * reach) {
           landed[i] = 1;
           this.aimed[i] = 0; // a new bite: it must turn to it first
@@ -715,6 +751,7 @@ export class Swarm3D {
     this.updateColors();
     this.renderBeams(camera);
     this.renderPiercers(camera);
+    this.renderCutters();
     this.renderStorms(camera);
     this.renderTows();
     this.renderTrails(camera);
@@ -739,7 +776,7 @@ export class Swarm3D {
 const HIDDEN = new THREE.Matrix4().makeScale(0, 0, 0);
 
 // the rest of the swarm, one file per part: ship types, a guest's copy, hyperspace, laser beams and
-// storm bolts, tractor beams, drill bits, boosters' fields
-for (const part of [ShipTypes, RemoteSwarm, Hyperspace, Beams, TowBeams, DrillBits, ForceFields]) {
+// storm bolts, tractor beams, drill bits, boosters' fields, cutters' sheets
+for (const part of [ShipTypes, RemoteSwarm, Hyperspace, Beams, TowBeams, DrillBits, ForceFields, CutterSheets]) {
   Object.defineProperties(Swarm3D.prototype, Object.getOwnPropertyDescriptors(part));
 }

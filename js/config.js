@@ -1,21 +1,21 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
 // at the start every player has START_EACH ships of every type (eaters, laser ships, storm ships,
-// tugs, bombers, orb ships, support ships, cleaners, drills, piercers, snipers, splashers, boosters): 2 × 13 = 26 units
+// tugs, bombers, orb ships, support ships, cleaners, drills, piercers, snipers, splashers, boosters, cutters): 2 × 14 = 28 units
 const START_EACH = 2;
-const START_UNITS = START_EACH * 13;
+const START_UNITS = START_EACH * 14;
 
 /**
  * Ship types other than eaters, in the order their units come in the swarm: units 0 … lasers−1 are
  * laser ships, then storm ships, and so on; the rest are eaters. Each key is also the setting (and
  * the Ship types slider) with how many there are.
  */
-export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'];
+export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'];
 /**
  * How the ship types are shown (Ship types panel, Ship guide): attack ships, then — below a line —
  * support ships. (The order of the units in the swarm is SHIP_KINDS above; this is only for showing.)
  */
 export const SHIP_GROUPS = Object.freeze([
-  { name: 'Attack', kinds: ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'snipers'] },
+  { name: 'Attack', kinds: ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'cutters', 'snipers'] },
   { name: 'Support', kinds: ['tugs', 'supports', 'cleaners', 'boosters'] },
 ]);
 /** The CONFIG.swarm entry of a ship type: 'lasers' → 'laser', 'supports' → 'support', … */
@@ -209,6 +209,13 @@ export const CONFIG = Object.freeze({
     // six sides of a cube blown up to a ball, lines `line` wide, `fill` and `rim` glow, turning `spin`
     booster: { count: START_EACH, radius: 1.25, boost: 1.2, color: 0xff5fb8,
       fieldColors: [0xff4fa8, 0xffb3e0], cells: 3, line: 0.05, opacity: 0.7, fill: 0.07, rim: 0.5, spin: 0.004, segments: 32 },
+    // crimson cutters: pick a bite like an eater and, from `reach` (20 voxels), lock a flat red sheet on it —
+    // as wide as what it hits (the solid voxels in a row across the sheet, at most `maxHalf` voxels each
+    // side of the line): a red ray along each edge, a glowing haze between them like a flat laser through
+    // smoke. The whole row is cut at once (each voxel `damage` × an eater's rate, like a piercer); when it
+    // is gone the sheet goes deeper along the line, until through, then it flies on
+    cutter: { count: START_EACH, reach: 10, damage: 0.8, maxHalf: 12, color: 0xc8102e, sheetColor: 0xff2020, edgeColor: 0xff5a4a,
+      apex: 0.12, hazeSpeed: 3, opacity: 0.85 },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
     // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames

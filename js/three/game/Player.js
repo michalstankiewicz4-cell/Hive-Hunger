@@ -121,6 +121,7 @@ export class Player {
       storm: (idx, ownFood, i) => game.stormCell(idx, ownFood, this, this.boostOf(i)),
       pierce: (idx, i) => game.pierceCell(idx, this, i),
       pierceLine: (i, x, y, z, D, E) => game.pierceLine(this, i, x, y, z, D, E),
+      cutLine: (i, x, y, z, D, S, L, R) => game.cutLine(this, i, x, y, z, D, S, L, R),
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
       fireOrb: (i, idx, x, y, z) => game.fireOrb(this, i, idx, x, y, z),
       fireShot: (i, idx, x, y, z) => game.fireShot(this, i, idx, x, y, z),
@@ -199,6 +200,7 @@ export class Player {
     this.swarm.snipeT.fill(0);
     this.swarm.tugHas.fill(0);
     this.swarm.pierceOn.fill(0); // (the line was on the old planet)
+    this.swarm.cutOn.fill(0);
     this.swarm.tows = [];
     this.swarm.food.fill(-1);
     this.swarm.landed.fill(0);
@@ -274,6 +276,7 @@ export class Player {
     this.game.scene.remove(this.swarm.mesh);
     this.game.scene.remove(this.swarm.beams.band, this.swarm.beams.hits, this.swarm.piercerBeams.band, this.swarm.piercerBeams.hits);
     this.swarm.piercerBolts.clear();
+    this.swarm.disposeExtras(); // boosters' fields, cutters' sheets
     this.swarm.stormBolts.clear();
     this.beacon.group.parent?.remove(this.beacon.group);
   }

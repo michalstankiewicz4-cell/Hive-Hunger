@@ -21,6 +21,7 @@ export const SHIP_INFO = {
   bombers: ['Bombers', 'Blow up everything within 10 voxels on contact — and are gone. A black hole stays for 4 s.'],
   drills: ['Drills', 'Drill a straight tunnel towards the centre with a spiral bit, until through.'],
   piercers: ['Piercers', 'Lock a line from 20 voxels and fire along it until through: an orange beam with a spiral bolt, 3 voxels at once.'],
+  cutters: ['Cutters', 'From 20 voxels a flat red sheet as wide as what it hits: it cuts the whole row at once, deeper and deeper, until through.'],
   snipers: ['Snipers', 'From any distance: stop, charge 5 s, fire a shot that speeds up 5% per voxel and destroys the voxel it hits.'],
   tugs: ['Tugs', 'Catch drifting pieces with a tractor beam and tow them home for 5 × the points.'],
   supports: ['Support', 'Every 3 s a bolt jumps between your own ships, destroying the voxels on its way.'],
@@ -362,6 +363,30 @@ const PICTURES = {
     }
   },
 
+  cutters(g, t, c) {
+    // a flat red sheet from the ship to the block's face, as tall as the block: a ray along each edge,
+    // haze drifting between them; the block is cut column by column, deeper over time
+    const bx = 76, by = 10, rows = 6, cols = 5, sx = 22, sy = 31.5;
+    const deep = Math.min(cols - 1, Math.floor(t * cols * 1.1));
+    block(g, bx, by, cols, rows, (cx) => (cx < deep ? 0 : cx === deep ? 1 - ((t * cols * 1.1) % 1) * 0.8 : 1));
+    ship(g, sx, sy, c);
+    const fx = bx + deep * VOX, top = by, bot = by + rows * VOX;
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    // the haze: a wedge from the ship to the cut, with drifting streaks
+    g.beginPath(); g.moveTo(sx + 6, sy - 1); g.lineTo(fx, top); g.lineTo(fx, bot); g.lineTo(sx + 6, sy + 1); g.closePath();
+    g.fillStyle = 'rgba(255,40,40,0.16)'; g.fill();
+    g.clip();
+    for (let k = 0; k < 7; k++) {
+      const u = ((k / 7 + t * 1.4) % 1), x = sx + 6 + (fx - sx - 6) * u;
+      g.fillStyle = `rgba(255,90,80,${0.25 * Math.sin(u * Math.PI)})`;
+      g.fillRect(x - 3, 0, 6, H);
+    }
+    g.restore();
+    glowLine(g, [[sx + 6, sy - 1], [fx, top]], 'rgba(255,60,60,1)', 1, 5);
+    glowLine(g, [[sx + 6, sy + 1], [fx, bot]], 'rgba(255,60,60,1)', 1, 5);
+    glowLine(g, [[fx, top], [fx, bot]], 'rgba(255,190,180,1)', 1.2, 6);
+  },
   boosters(g, t, c) {
     // a pink ball of octagons round the booster; ships flying into it light up (+20% Power)
     const x = 60, y = 32, R = 22;

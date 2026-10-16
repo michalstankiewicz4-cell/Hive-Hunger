@@ -63,7 +63,7 @@ Default (both `smooth`): the Kuiper Belt (a band of 335 rocks), Earth (sphere 1)
 
 | Value | Default | What it does | More / less |
 | --- | --- | --- | --- |
-| `count` | 26 | *slider Units* (`START_UNITS` = 2 × 13 types) | |
+| `count` | 28 | *slider Units* (`START_UNITS` = 2 × 14 types) | |
 | `maxCount` | 100 | most units a swarm can have (slider + Brood bonuses together); the slider's own range (10–100) is in `controls` | |
 | `speed` | 0.05 | *slider Speed* — identical constant speed of every unit | |
 | `perception` | 3 | how far a unit sees neighbours (at least 1.3 × `separationDistance`) | larger = smoother flock, slower |
@@ -86,7 +86,7 @@ Default (both `smooth`): the Kuiper Belt (a band of 335 rocks), Earth (sphere 1)
 | `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count`, `splasher.count`, `booster.count` | 26, 2 each | units at the start and how many of each type — `START_EACH` (2) of every type; `count` = `START_UNITS` = 2 × 13 (the rest, 2, are eaters) | |
+| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count`, `splasher.count`, `booster.count`, `cutter.count` | 28, 2 each | units at the start and how many of each type — `START_EACH` (2) of every type; `count` = `START_UNITS` = 2 × 14 (the rest, 2, are eaters) | |
 | `bomber.radius` | 5 | a bomber destroys everything within this (10 voxels) | |
 | `bomber.color`, `bomber.debris` | purple, 300 | colour; most debris pieces thrown by a blast | |
 | `orb.range`, `orb.speed`, `orb.blast` | 5, 0.045, 1 | firing distance (10 voxels), orb speed per frame, burst radius (2 voxels) | |
@@ -123,6 +123,9 @@ Default (both `smooth`): the Kuiper Belt (a band of 335 rocks), Earth (sphere 1)
 | `booster.radius`, `booster.boost` | 1.25, 1.2 | the field's radius (5 voxels across); × the Power inside it (crater radius and how hard ships eat; fields don't add up) | |
 | `booster.fieldColors`, `booster.cells`, `booster.line` | deep / light pink, 3, 0.05 | the field's colours; octagons along each of the six sides of the ball; line width (part of a cell) | |
 | `booster.opacity`, `booster.fill`, `booster.rim`, `booster.spin`, `booster.segments` | 0.7, 0.07, 0.5, 0.004, 32 | how bright the field is, the cells' faint fill, the glowing rim; turning per frame; sphere detail | |
+| `cutter.count`, `cutter.color` | 2, crimson | cutters at the start; hull colour | |
+| `cutter.reach`, `cutter.damage`, `cutter.maxHalf` | 10, 0.8, 12 | cutting distance (20 voxels); each voxel of the row bitten at this × an eater's rate (as a piercer); the row at most this many voxels each side of the line | |
+| `cutter.sheetColor`, `edgeColor`, `apex`, `hazeSpeed`, `opacity` | red, light red, 0.12, 3, 0.85 | the sheet's haze and its edge rays; half its width at the ship; how fast the haze drifts; brightness | |
 | `minCount` | 0 | fewest units (the Units slider starts at 10; bombers that blew up can take the swarm lower) | |
 | `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
 | `tug.pull` | 0.9 | a towed piece's speed × the swarm speed | |
@@ -262,4 +265,4 @@ Not game rules: each player's own, remembered in the browser (`localStorage`, ke
 
 ## Ship groups (`SHIP_GROUPS` in `config.js`)
 
-How the types are shown in the Ship types panel and the Ship guide: `Attack` (eaters, lasers, storms, orbs, splashers, bombers, drills, piercers, snipers), then below a line `Support` (tugs, support, cleaners, boosters). Only for showing — the order of the units in the swarm is `SHIP_KINDS`.
+How the types are shown in the Ship types panel and the Ship guide: `Attack` (eaters, lasers, storms, orbs, splashers, bombers, drills, piercers, cutters, snipers), then below a line `Support` (tugs, support, cleaners, boosters). Only for showing — the order of the units in the swarm is `SHIP_KINDS`.

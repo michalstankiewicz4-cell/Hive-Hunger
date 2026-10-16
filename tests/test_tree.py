@@ -56,8 +56,8 @@ async def main():
           const kinds = {}; for (const n of NODES) kinds[n.kind] = (kinds[n.kind] || 0) + 1;
           return { kinds, ships: NODES.filter((n) => n.kind === 'ship').map((n) => n.id).sort(), levels: [...new Set(NODES.map((n) => Math.ceil(n.depth)))].sort(),
             soon: t.state('lasers'), buy: t.canBuy('lasers', 1e9), either: NODES.find((n) => n.id === 'orbs').parents.length, both: NODES.find((n) => n.id === 'piercers').all }; }""")
-        t.ok(tr['kinds'].get('ship') == 13 and tr['kinds'].get('prop', 0) >= 26 and tr['kinds'].get('swarm', 0) >= 10 and tr['levels'] == [0, 1, 2, 3, 4, 5],
-             'the tree: 13 ships, their properties and the swarm\'s traits on levels 0–5', tr)
+        t.ok(tr['kinds'].get('ship') == 14 and tr['kinds'].get('prop', 0) >= 26 and tr['kinds'].get('swarm', 0) >= 10 and tr['levels'] == [0, 1, 2, 3, 4, 5],
+             'the tree: 14 ships, their properties and the swarm\'s traits on levels 0–5', tr)
         t.ok(tr['soon'] == 'soon' and not tr['buy'] and tr['either'] == 2 and tr['both'], 'ships are shown as coming soon (not bought yet); links across branches', tr)
         # buying: parents first, enough points
         r = await page.evaluate("() => { const g = window.__dbg, p = g.localPlayer; g.stop(); p.score = 100;"

@@ -90,8 +90,8 @@ async def main():
           attack: [...document.querySelectorAll('.guide-section:nth-of-type(1) .guide-ship')].map((e) => e.dataset.kind),
           support: [...document.querySelectorAll('.guide-section:nth-of-type(2) .guide-ship')].map((e) => e.dataset.kind),
           fits: document.querySelector('.menu-card').getBoundingClientRect().height <= window.innerHeight })""")
-        t.ok(gd['sections'] == ['Attack', 'Support'] and len(gd['attack']) == 9 and gd['support'] == ['tugs', 'supports', 'cleaners', 'boosters'] and gd['fits'],
-             'Ship guide: 13 ships, attack and support apart, on one screen', gd)
+        t.ok(gd['sections'] == ['Attack', 'Support'] and len(gd['attack']) == 10 and gd['support'] == ['tugs', 'supports', 'cleaners', 'boosters'] and gd['fits'],
+             'Ship guide: 14 ships, attack and support apart, on one screen', gd)
         await page.set_viewport_size({'width': 1000, 'height': 480})
         gs = await page.evaluate("""() => { const s = document.querySelector('.guide-scroll'), b = document.querySelector('.guide-back'), t = document.getElementById('menu-title');
           s.scrollTop = 99999; const r = b.getBoundingClientRect(), tr = t.getBoundingClientRect();
@@ -110,14 +110,14 @@ async def main():
         await page.keyboard.press('Escape')
         t.ok((await page.text_content('#menu-title')).startswith('Hive Hunger'), 'Esc goes back from the Ship guide')
         order = await page.evaluate("() => [...document.querySelectorAll('#ships .ships-row, #ships .ships-sep')].map((e) => e.classList.contains('ships-sep') ? '|' : e.className.match(/ships-(\\w+)$/)[1])")
-        t.ok(order == ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'snipers', '|', 'tugs', 'supports', 'cleaners', 'boosters'],
+        t.ok(order == ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'cutters', 'snipers', '|', 'tugs', 'supports', 'cleaners', 'boosters'],
              'Ship types panel in the guide\'s order: attack ships, a line, support ships', order)
         await page.click('.menu-settings')
         await page.click('.settings-buttons button >> nth=0')  # Reset settings
         rs = await page.evaluate("() => ({ ratio: window.__dbg.renderer.getPixelRatio(), aa: window.__dbg.renderer.getContextAttributes().antialias, fps: document.getElementById('fps').hidden })")
         await page.click('.settings-buttons .is-primary')  # Back
         t.ok(rs['aa'] and rs['fps'] and rs['ratio'] == 1, 'Reset settings restores them (native resolution, smooth edges, no FPS counter)', rs)
-        start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'].map((k) => +document.getElementById('ships-' + k).value)""")
+        start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].map((k) => +document.getElementById('ships-' + k).value)""")
         title = await page.text_content('#menu-title')
         version = await page.inner_text('#version')
         t.ok(title.startswith('Hive Hunger') and title.endswith(version) and version.startswith('v0.'), 'start screen shows the version next to the title', title)
@@ -240,32 +240,32 @@ async def main():
         t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'belt'], 'back to level 1 (the Kuiper Belt)')
 
         # ship types (bottom-right): 1 red laser ship by default; lasers eat from 5 voxels away, 10% slower
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'].map((k) => +document.getElementById('ships-' + k).value)""")
-        t.ok(start_ships == [2] * 13, 'ship types at the start: 2 of each', start_ships)
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].map((k) => +document.getElementById('ships-' + k).value)""")
+        t.ok(start_ships == [2] * 14, 'ship types at the start: 2 of each', start_ships)
         # (no bombers for the next checks: they would blow up meanwhile)
-        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('bombers', 0); p.setSetting('orbs', 0); p.setSetting('supports', 0); p.setSetting('cleaners', 0); p.setSetting('drills', 0); p.setSetting('piercers', 0); p.setSetting('snipers', 0); p.setSetting('splashers', 0); p.setSetting('boosters', 0); p.setSetting('storms', 3); p.setSetting('tugs', 3); }")
+        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('bombers', 0); p.setSetting('orbs', 0); p.setSetting('supports', 0); p.setSetting('cleaners', 0); p.setSetting('drills', 0); p.setSetting('piercers', 0); p.setSetting('snipers', 0); p.setSetting('splashers', 0); p.setSetting('boosters', 0); p.setSetting('cutters', 0); p.setSetting('storms', 3); p.setSetting('tugs', 3); }")
         await page.wait_for_timeout(400)
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'].map((k) => +document.getElementById('ships-' + k).value)""")
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].map((k) => +document.getElementById('ships-' + k).value)""")
         await page.click('.control-levels button >> nth=1')
         await page.evaluate("""() => { const e = document.getElementById('ships-lasers'); e.value = 8; e.dispatchEvent(new Event('input'));
           window.__dbg.localPlayer.setSetting('speed', 0.3); }""")
         await page.wait_for_timeout(400)
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'].map((k) => +document.getElementById('ships-' + k).value)""")
-        t.ok(ui == [6, 8, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'the sliders are linked: 8 lasers take 5 eaters', ui)
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].map((k) => +document.getElementById('ships-' + k).value)""")
+        t.ok(ui == [6, 8, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'the sliders are linked: 8 lasers take 5 eaters', ui)
         ui2 = await page.evaluate("""() => { const e = document.getElementById('ships-eaters'); e.value = 15; e.dispatchEvent(new Event('input')); return 0; }""")
-        ui2 = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'].map((k) => +document.getElementById('ships-' + k).value)""")
-        t.ok(ui2 == [15, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '15 eaters take the last types first (orbs, bombers, tugs, storm ships), then lasers', ui2)
+        ui2 = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].map((k) => +document.getElementById('ships-' + k).value)""")
+        t.ok(ui2 == [15, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '15 eaters take the last types first (orbs, bombers, tugs, storm ships), then lasers', ui2)
         # a locked slider stays put: lock Eaters and Lasers, move Storms up — it takes only from the unlocked ones
         lk = await page.evaluate("""() => { const set = (k, v) => { const e = document.getElementById('ships-' + k); e.value = v; e.dispatchEvent(new Event('input')); };
           set('lasers', 5); set('storms', 3); set('tugs', 3); set('bombers', 2); // 7 eaters
           for (const k of ['eaters', 'lasers']) { const b = document.getElementById('ships-lock-' + k); b.checked = true; b.dispatchEvent(new Event('change')); }
           set('storms', 6); // +3: from bombers (2), then tugs (1) — not the locked eaters or lasers
-          const r = ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'].map((k) => +document.getElementById('ships-' + k).value);
+          const r = ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].map((k) => +document.getElementById('ships-' + k).value);
           const disabled = document.getElementById('ships-eaters').disabled;
           for (const k of ['eaters', 'lasers']) { const b = document.getElementById('ships-lock-' + k); b.checked = false; b.dispatchEvent(new Event('change')); }
           set('tugs', 0); set('bombers', 0); set('storms', 0); set('lasers', 5);
           return { r, disabled }; }""")
-        t.ok(lk['r'] == [7, 5, 6, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0] and lk['disabled'], 'a locked slider stays put (moving another takes from the unlocked ones)', lk)
+        t.ok(lk['r'] == [7, 5, 6, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] and lk['disabled'], 'a locked slider stays put (moving another takes from the unlocked ones)', lk)
         # the arrows next to a slider: one ship more / fewer (from / to the eaters)
         ar = await page.evaluate("""() => { const v = () => ['eaters', 'lasers'].map((k) => +document.getElementById('ships-' + k).value);
           const row = document.querySelector('.ships-lasers'), before = v();
@@ -558,7 +558,25 @@ async def main():
         t.ok(bo['pink'] and bo['shown'] and bo['across'] == 5, 'a pink booster flies in a force field 5 voxels across', bo)
         t.ok(bo['inside'] == 1.2 and bo['outside'] == 1 and bo['r'] == 1.2 and bo['hard'] == 1.2 and not bo['eats'],
              'own ships inside it get +20% Power (crater radius and how hard they eat), outside not; the booster does not eat', bo)
-        await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('boosters', 0); g.start(); }")
+        await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('boosters', 0); }")
+        # cutter: from 20 voxels a flat red sheet as wide as what it hits; it cuts the whole row, deeper until through
+        ct = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet, c = g.cfg.swarm.cutter;
+          p.setSetting('cutters', 1);
+          const i = s.kindStart('cutters'); s.render(g.camera);
+          const ic = s.mesh.instanceColor, crimson = ic.getX(i) > 0.7 && ic.getY(i) < 0.2 && ic.getZ(i) < 0.3;
+          let f = 0; while (!s.cutOn[i] && f < 3000) { g.update(); f++; }
+          if (!s.cutOn[i]) return { crimson, cutting: false };
+          const at = [s.pos[i * 3], s.pos[i * 3 + 1], s.pos[i * 3 + 2]], left0 = pl.left, score0 = p.score;
+          g.update(); s.render(g.camera);
+          const L = [s.cutL[i * 3], s.cutL[i * 3 + 1], s.cutL[i * 3 + 2]], R = [s.cutR[i * 3], s.cutR[i * 3 + 1], s.cutR[i * 3 + 2]];
+          const mid = L.map((v, k) => (v + R[k]) / 2), dist = Math.hypot(...mid.map((v, k) => v - at[k]));
+          const sheet = s.cutsShown, width = Math.hypot(...L.map((v, k) => v - R[k]));
+          let k = 0; while (s.cutOn[i] && k < 3000) { g.update(); k++; }
+          return { crimson, cutting: true, sheet, width, dist, reach: c.reach, eaten: left0 - pl.left, points: p.score - score0, through: !s.cutOn[i], still: Math.hypot(s.pos[i * 3] - at[0], s.pos[i * 3 + 1] - at[1], s.pos[i * 3 + 2] - at[2]) }; }""")
+        t.ok(ct.get('crimson') and ct.get('cutting') and ct.get('sheet', 0) >= 1 and ct.get('width', 0) >= 0.5 and ct.get('dist', 99) <= ct.get('reach', 0) + 2,
+             'a crimson cutter locks a flat sheet on its bite from up to 20 voxels, as wide as what it hits', ct)
+        t.ok(ct.get('eaten', 0) > 1 and ct.get('points', 0) > 0 and ct.get('through'), 'it cuts whole rows, deeper and deeper, until through; then it moves on', ct)
+        await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('cutters', 0); g.start(); }")
         # Space pauses single player (nothing moves, "Paused" at the bottom) and carries on
         await page.mouse.move(500, 300)
         await page.keyboard.press('Space')

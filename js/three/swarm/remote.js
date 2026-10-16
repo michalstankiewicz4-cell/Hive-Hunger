@@ -7,9 +7,11 @@ export const RemoteSwarm = {
    * Multiplayer guest: show positions and headings received from the host instead of
    * simulating. Units move smoothly towards the received positions between updates.
    */
-  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null, bombers = 0, orbs = 0, supports = 0, cleaners = 0, drills = 0, drilling = null, piercers = 0, snipers = 0, splashers = 0, boosters = 0) {
+  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null, bombers = 0, orbs = 0, supports = 0, cleaners = 0, drills = 0, drilling = null, piercers = 0, snipers = 0, splashers = 0, boosters = 0, cutters = 0, cuts = null) {
     this.splashers = splashers;
     this.boosters = boosters;
+    this.cutters = cutters;
+    this.remoteCuts = cuts || [];
     this.piercers = piercers;
     this.snipers = snipers;
     this.bombers = bombers;
@@ -72,6 +74,19 @@ export const RemoteSwarm = {
       if (!(this.landed[i] && this.aimed[i] && this.food[i] >= 0)) continue;
       const i3 = i * 3, n = this.stormSideN[i] * 3;
       out.push([i, this.foodPos[i3], this.foodPos[i3 + 1], this.foodPos[i3 + 2], Array.from(this.stormSides.subarray(i * 6, i * 6 + n))]);
+    }
+    return out;
+  },
+
+  /** Cutters cutting now, with the ends of their row: [[unit, lx, ly, lz, rx, ry, rz], …] (a guest: from the host). */
+  cutList() {
+    if (this.remote) return this.remoteCuts || [];
+    const out = [];
+    const a = this.kindStart('cutters'), b = Math.min(this.count, a + this.cutters);
+    for (let i = a; i < b; i++) {
+      if (!this.cutOn[i] || this.hidden[i]) continue;
+      const i3 = i * 3;
+      out.push([i, this.cutL[i3], this.cutL[i3 + 1], this.cutL[i3 + 2], this.cutR[i3], this.cutR[i3 + 1], this.cutR[i3 + 2]]);
     }
     return out;
   },

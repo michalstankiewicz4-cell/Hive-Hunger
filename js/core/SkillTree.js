@@ -46,6 +46,7 @@ export const BRANCHES = {
   piercers: { color: [192, 112, 58], label: 'Piercers' },
   snipers: { color: [47, 224, 192], label: 'Snipers' },
   boosters: { color: [255, 95, 184], label: 'Boosters' },
+  cutters: { color: [200, 16, 46], label: 'Cutters' },
 };
 
 export const NODES = [
@@ -111,6 +112,7 @@ export const NODES = [
   ship('boosters', 'boosters', 'Boosters', 4.2, -50, ['units3', 'c-vac'], 'A pink force field: more Power for ships inside.'),
   prop('x-field', 'boosters', 'Bigger field', 5.0, -54, ['boosters'], 'A bigger force field.'),
   prop('x-boost', 'boosters', '+35% Power', 5.0, -44, ['boosters'], 'Ships inside get +35% Power instead of +20%.'),
+  ship('cutters', 'cutters', 'Cutters', 3.9, 56, ['l-burn', 's-fork'], 'A flat red sheet that cuts a whole row at once.'),
   // level 5: snipers
   ship('snipers', 'snipers', 'Snipers', 5.0, -2, ['r-deep', 'p-area'], 'From any distance: an accelerating shot.'),
   prop('n-charge', 'snipers', 'Quick charge', 5.0, -8, ['snipers'], 'Charges in 3 s instead of 5.'),
