@@ -84,7 +84,7 @@ Lessons from writing them:
 - **No `hp <= 0` guard in `VoxelPlanet.remove()`**: an early return there once stopped every voxel from being removed (scores went up, the planet never shrank).
 - **Ending at 100%:** never shatter the planet early (it used to shatter at 97%); units must be able to land on isolated scraps (`reachDistance`), or the last voxels are circled forever.
 - **Claims:** a voxel claimed by a unit must be released whenever the unit drops it (`dropAllBites`, new planet, player leaving), or other units will never eat it.
-- **Classes split over files (0.25.1):** methods of `Game3D` and `Swarm3D` live partly in other files of their folder (`game/input.js`, `swarm/warp.js`, …) and are added to the prototype at the end of the class file. Search for a method's name, not just the class file. A getter in such a part needs `Object.defineProperties` (as done there), `Object.assign` would read it once instead.
+- **Classes split over files (0.25.1, 0.25.2):** methods of `Game3D`, `Swarm3D`, `Player` and `VoxelPlanet` live partly in other files of their folder (`game/input.js`, `swarm/warp.js`, `game/ships.js`, `planet/eating.js`, …) and are added to the prototype at the end of the class file. Search for a method's name, not just the class file. A getter in such a part needs `Object.defineProperties` (as done there), `Object.assign` would read it once instead.
 - **Smooth-surface colours:** the builder reads colours straight from the planet's `colors` table via `colorOffset`; a fragment's small grid passes the planet's table and an index mapping — keep both when changing either.
 - **Guests don't simulate.** Anything that changes the game must happen on the host and reach guests through messages (`players`, `planet`, `stats`, `notice`, `summary`, `bolt`, `tree`) or snapshots.
 
@@ -130,6 +130,7 @@ Lessons from writing them:
 | 0.24.0 | tag `v0.24.0` | support ships (lightning between own ships) |
 | 0.25.0 | tag `v0.25.0` | subspace tunnel at the spawn point; ships escape into hyperspace after a planet |
 | 0.25.1 | tag `v0.25.1` | code split into folders and files, CSS per panel; faster smooth-surface rebuilds, shared textures, fewer per-frame allocations (no gameplay change) |
+| 0.25.2 | tag `v0.25.2` | `Player` and `VoxelPlanet` split into files too (no gameplay change) |
 
 ## Known limitations
 

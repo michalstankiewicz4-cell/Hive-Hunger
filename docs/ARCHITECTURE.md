@@ -21,7 +21,7 @@ js/
 css/             one stylesheet per part of the page
 ```
 
-**Classes split over several files.** `Game3D` and `Swarm3D` are big, so their methods live in several files: each part file exports an object of methods (`export const Input = { bindInput() {…}, … }`), and the class file adds them to its prototype at the end (`Object.defineProperties(Game3D.prototype, Object.getOwnPropertyDescriptors(part))`). The methods behave exactly as if they were written in the class (`this` is the game / swarm); to find one, search for its name. A new part: write the file, import it in the class file and add it to the list there.
+**Classes split over several files.** `Game3D`, `Swarm3D`, `Player` and `VoxelPlanet` are big, so their methods live in several files: each part file exports an object of methods (`export const Input = { bindInput() {…}, … }`), and the class file adds them to its prototype at the end (`Object.defineProperties(Game3D.prototype, Object.getOwnPropertyDescriptors(part))`). The methods behave exactly as if they were written in the class (`this` is the game / swarm); to find one, search for its name. A new part: write the file, import it in the class file and add it to the list there.
 
 | File | What it does |
 | --- | --- |
@@ -36,7 +36,10 @@ css/             one stylesheet per part of the page
 | `guest.js` | (Game3D) guest side: following the host — snapshots, planets, pieces, jumps, orbs, bolts, black holes, settings, tree |
 | `hud.js` | (Game3D) HUD text: progress, hint line, scores and pings, notices |
 | `players.js` | Player names and colours in multiplayer |
-| `Player.js` | One player: swarm + leader + tunnel + settings + score; per-player simulation step, commands, recall, arrival through the tunnel, jump to hyperspace, tugs, support ships |
+| `Player.js` | One player: swarm + leader + tunnel + settings + score; setting up, commands, recall, settings, a new planet, the per-player frame step |
+| `arrival.js` | (Player) the tunnel: ships coming out of it, the jump to hyperspace, the spawn point and where it is in the world |
+| `ships.js` | (Player) ships with their own jobs: tugs towing pieces home, removing bombers that blew up, orbs, support ships' lightning |
+| `upgrades.js` | (Player) points, buying upgrades, bonuses on top of the sliders, chain lightning |
 | **`js/three/swarm/`** | |
 | `Swarm3D.js` | The flock (boids): per-unit state, neighbour grid, feeding, collisions, getting unstuck, aiming, drawing the ships |
 | `types.js` | (Swarm3D) ship types by unit index, their colours, swapping two units |
@@ -46,7 +49,12 @@ css/             one stylesheet per part of the page
 | `tows.js` | (Swarm3D) tugs' tractor beams shaped to the piece |
 | `steering.js` | `aroundPlanet()` (fly around the planet, not through it), `nearOwnBite()` |
 | **`js/three/planet/`** | |
-| `VoxelPlanet.js` | Voxel planet: terrain, claims, eating, exposed-voxel instancing, raycast, seed, removal log, eaten-voxel run lengths for late joiners; knows about drifting fragment voxels |
+| `VoxelPlanet.js` | Voxel planet: building the grid from the level's shape and seed, coordinates, what is solid (also on drifting pieces), syncing, disposing |
+| `look.js` | (VoxelPlanet) materials, terrain and letter colours, the drawn cubes (exposed voxels as instances), damage on them |
+| `eating.js` | (VoxelPlanet) bites, claims, chain lightning weakening voxels, removing voxels (grid or piece), the removal log, shattering |
+| `search.js` | (VoxelPlanet) exposed voxels near a point, the nearest free voxel, matter for the brain, raycasts |
+| `runs.js` | (VoxelPlanet) eaten voxels as run lengths for players who join mid-planet |
+| `grid.js` | `BITE` results, the six neighbours, offsets within 2 voxels |
 | `Fragments.js` | Pieces bitten off the planet: finding splits (flood fill from the neighbours of eaten voxels), drifting and turning, their own smooth surfaces, eating them, the spatial hash the swarm uses to find and avoid them |
 | `PlanetSurface.js` | Extra planet graphics over the voxels: `smooth` (surface nets) and `wedges` (ramps and corner pieces in the steps), built per 16³ chunk and rebuilt as voxels are eaten (within `budgetMs` per frame) |
 | `shapes.js` | Which voxels are solid for a level's `shape`: `sphere`, `cube`, `pair`, `boxes`, `text` |

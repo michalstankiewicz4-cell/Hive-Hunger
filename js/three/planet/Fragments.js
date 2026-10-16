@@ -1,8 +1,8 @@
 import { PlanetSurface } from './PlanetSurface.js';
+import { NEIGHBORS } from './grid.js';
 
 const THREE = window.THREE;
 const HASH = 8; // cell size of the fragments' spatial hash (world units)
-const NEIGHBORS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 
 /**
  * Pieces bitten off a planet. When eating splits a body of voxels into parts, every part that

@@ -2,6 +2,17 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.25.2] — 2026-10-16
+
+No change to how the game plays or looks.
+
+### Changed
+- `Player` split into `Player.js` (setting up, commands, settings, the frame step), `arrival.js` (the tunnel, hyperspace), `ships.js` (tugs, bombers, orb and support ships) and `upgrades.js` (points, the tree, chain lightning).
+- `VoxelPlanet` split into `VoxelPlanet.js` (the grid, what is solid), `look.js` (materials, colours, drawn cubes), `eating.js` (bites, claims, removing voxels), `search.js` (finding food, raycasts), `runs.js` (eaten voxels for late joiners) and `grid.js` (shared constants, also used by `Fragments.js`).
+
+### Fixed
+- A test of storm ships could fail now and then when the bite had no free voxels next to it.
+
 ## [0.25.1] — 2026-10-16
 
 No change to how the game plays or looks.

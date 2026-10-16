@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.25.1 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.25.2 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -98,9 +98,11 @@ js/
   core/                 rules without graphics: Leader (the swarm's "brain"), SkillTree (upgrades)
   three/game/           Game3D (scene, roles, planets, frame loop) and its parts: input, destruction,
                         host, guest, hud; Player (one player's swarm, brain, tunnel, settings, score)
+                        and its parts: arrival, ships, upgrades
   three/swarm/          Swarm3D (the flock: feeding, collisions, drawing) and its parts: ship types,
                         a guest's copy, hyperspace, laser and storm beams, tractor beams; steering
-  three/planet/         VoxelPlanet, its smooth surface, drifting pieces (Fragments), level shapes
+  three/planet/         VoxelPlanet and its parts (look, eating, search, runs, grid), its smooth surface,
+                        drifting pieces (Fragments), level shapes
   three/effects/        lightning, support ships' bolts, orbs, black holes, debris
   three/scene/          sky, the subspace tunnel at the spawn point, click marker
   three/textures.js     glow and gradient textures shared by the effects
