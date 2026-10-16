@@ -1,4 +1,5 @@
-"""Single player: start screen, Esc menu, eating a whole planet, return home, next planet.
+"""Single player: start screen, Esc menu, eating a whole planet, the jump to hyperspace, next planet
+arriving through the tunnel.
 
 Run from the repository root:  python tests/test_solo.py"""
 
@@ -136,7 +137,10 @@ async def main():
         t.ok(lk['r'] == [7, 5, 6, 2, 0, 0, 0] and lk['disabled'], 'a locked slider stays put (moving another takes from the unlocked ones)', lk)
         await page.evaluate("""() => { const e = document.getElementById('ships-lasers'); e.value = 8; e.dispatchEvent(new Event('input'));
           const st = document.getElementById('ships-storms'); st.value = 1; st.dispatchEvent(new Event('input')); }""")
-        sp = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm; g.update();
+        sp = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm;
+          // (the ships come out of the tunnel first)
+          for (let n = 0; n < 400 && g.localPlayer.arrival.phase !== 'done'; n++) g.update();
+          g.update();
           const before = Array.from(s.pos); g.update();
           const step = (i) => Math.hypot(s.pos[i * 3] - before[i * 3], s.pos[i * 3 + 1] - before[i * 3 + 1], s.pos[i * 3 + 2] - before[i * 3 + 2]);
           const L = [], E = []; for (let i = 0; i < s.count; i++) (i < s.lasers ? L : E).push(step(i)); // storm ships fly at full speed
@@ -286,15 +290,43 @@ async def main():
         t.ok(worst_inside == 0, 'no unit inside solid voxels', worst_inside)
         t.ok(worst_shared == 0, 'no bite shared while free voxels are left', worst_shared)
 
-        # return home, then the next planet
-        for _ in range(20):
-            s = await page.evaluate(STATE)
-            if s['level'] > 1:
-                break
-            await h.fast_forward(page, 200)
+        # the next planet: the tunnel opens, the ships come out of it, it closes
+        ar = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm;
+          let f = 0; while (g.level < 2 && f < 400) { g.update(); f++; }
+          const seen = new Set(); let maxOpen = 0, hiddenAtStart = 0, n = 0;
+          for (let i = 0; i < s.count; i++) hiddenAtStart += s.hidden[i];
+          for (; n < 600 && p.arrival.phase !== 'done'; n++) { g.update(); seen.add(p.arrival.phase); maxOpen = Math.max(maxOpen, p.beacon.openness); }
+          for (let k = 0; k < 80; k++) g.update();
+          let hidden = 0; for (let i = 0; i < s.count; i++) hidden += s.hidden[i];
+          return { level: g.level, hiddenAtStart, phases: [...seen], maxOpen, hidden, closed: p.beacon.openness < 0.05, count: s.count }; }""")
+        t.ok(ar['level'] == 2 and ar['hiddenAtStart'] == ar['count'] and ar['maxOpen'] > 0.95 and 'emerging' in ar['phases'],
+             'next planet: the tunnel opens and the ships come out of it', ar)
+        t.ok(ar['hidden'] == 0 and ar['closed'], 'when they are all out, the tunnel closes', ar)
+        await h.fast_forward(page, 600)
+        s = await page.evaluate(STATE)
         # (the swarm may already have started on it)
-        t.ok(s['level'] == 2 and s['alive'] and 0 < s['left'] <= s['total'], 'next planet appears after the swarm is home',
+        t.ok(s['level'] == 2 and s['alive'] and 0 < s['left'] <= s['total'], 'next planet appears after the jump',
              f"level {s['level']}, {s['left']} of {s['total']} left")
+        # the jump to hyperspace (the rest of planet 2 eaten at once): the ships go one after another
+        # (random waits, several at a time with many ships), leaving streaks, and are gone
+        jp = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet;
+          g.stop();
+          for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) pl.remove(idx);
+          for (const f of [...(pl.fragments?.list || [])]) for (const c of pl.fragments.cellsOf(f)) pl.remove(c);
+          let most = 0, frames = 0, streaks = 0, firstGone = -1;
+          g.update();
+          const mode = p.homeMode;
+          while (!p.departed() && frames < 400) {
+            g.update(); frames++;
+            let w = 0, h = 0; for (let i = 0; i < s.count; i++) { if (s.warpT[i] > 0) w++; h += s.hidden[i]; }
+            if (h > 0 && firstGone < 0) firstGone = frames;
+            most = Math.max(most, w);
+            if (frames % 10 === 0) { s.render(g.camera); streaks = Math.max(streaks, (s.warpTrails || []).filter((m) => m.group.visible).length); }
+          }
+          return { mode, frames, most, streaks, firstGone, gone: p.departed(), count: s.count }; }""")
+        t.ok(jp['mode'] == 'jump' and jp['gone'] and 1 <= jp['most'] < jp['count'] and jp['streaks'] > 0 and jp['frames'] > 100,
+             'planet eaten: the ships jump to hyperspace one after another, leaving streaks', jp)
+        await page.evaluate("() => window.__dbg.start()")
         t.ok(s['home'] is None, 'the swarm is back to work on the new planet')
 
         await browser.close()

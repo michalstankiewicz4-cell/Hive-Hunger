@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.24.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.25.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -12,7 +12,7 @@ Eating is deliberate. Every unit claims the nearest uneaten, unclaimed voxel to 
 
 Planets come in a cycle of levels: 1 — a test board with every box shape from 1×1×1 to 4×4×4 voxels once (20 boxes, 5 voxels apart), 2 — the usual planet, 3 — a cube, 4 — the text TEST LVL in coloured letters, 5 — a test board with a sphere and a cube side by side (10 voxels apart); then it starts again. Every planet is drawn as a smooth surface: no steps — slopes, rounded corners and craters. It is graphics only: underneath, the swarm still eats voxels — every voxel is still 1 point.
 
-When eating cuts a piece off — a part no longer connected to the rest — it comes loose: every part smaller than the rest gently drifts away and turns (parts of equal size all stay). It stops at most 4 units from where it came off, and big pieces turn slowly. A piece bitten through breaks up again the same way, and so on until it is eaten. The swarm can chase it and eat it like any other voxel, for the same points; a drone that hasn't eaten anything for 10 s stops for half a second and takes another bite (or the same one, if there is no other). A planet counts as eaten only when its last voxel is gone, drifting pieces included. The swarm then flies back to its spawn point (the beacon), and the next planet appears once the swarm has gathered there. The planet slowly spins.
+When eating cuts a piece off — a part no longer connected to the rest — it comes loose: every part smaller than the rest gently drifts away and turns (parts of equal size all stay). It stops at most 4 units from where it came off, and big pieces turn slowly. A piece bitten through breaks up again the same way, and so on until it is eaten. The swarm can chase it and eat it like any other voxel, for the same points; a drone that hasn't eaten anything for 10 s stops for half a second and takes another bite (or the same one, if there is no other). A planet counts as eaten only when its last voxel is gone, drifting pieces included. The ships then escape into hyperspace — one after another at random moments (several at once in a big swarm), each speeding off with a blue streak behind it — and the next planet appears once they are all gone. Ships arrive through a subspace tunnel at the spawn point: it opens into a wide blue vortex, the ships fly out of it, and it closes to a small swirl (click it to call the swarm back; it opens for a moment to take in a piece a tug brings home). The planet slowly spins.
 
 ## Points and upgrades
 
@@ -21,7 +21,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 ## Controls
 
 - **Click / tap** — send the swarm there (a pulsing ring marks the spot): every unit drops its current bite, the swarm flies over (around the planet, not through it) and starts eating at the clicked spot. A unit stuck in a corner of a crater or tunnel bites through the blocking voxel (if it isn't someone else's) and carries on
-- **Click the beacon** (marker at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
+- **Click the tunnel** (the small blue vortex at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
 - **Right mouse button / two fingers** — rotate the camera
 - **Mouse wheel** — zoom
 - **Tab** — upgrade tree (Esc closes it)
@@ -32,11 +32,11 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Power** — radius of the crater a unit eats out of its bite
   - **Turning** — how fast ships turn their nose; a ship eats only once it faces its bite
   - **Reset to default** — restore all settings to their starting values
-  - **Level 1–5** (single player) — jump straight to that level; the swarm starts again from its beacon
+  - **Level 1–5** (single player) — jump straight to that level; the swarm comes out of its tunnel again
 - **Ship types panel in the bottom-right corner** — how many of your units are yellow **Eaters**, red **Lasers**, blue **Storms**, green **Tugs**, purple **Bombers**, magenta **Orbs** and white **Support** ships — a slider each (linked: together they are all your units; at the start split as evenly as possible — 3 of each, 2 support ships). The checkbox in front of a slider locks it: it can't be moved, and moving the others never changes it. Every ship eats only once it faces its bite.
   - **Laser** ships eat their bite from 5 voxels away with a glowing red beam, but fly 10% slower.
   - **Storm** ships fire lightning from the same distance: it forks at 70% of the way into three — the bite gets 40% of a laser's damage, the two nearest voxels 30% each. When the bite is gone, the ship picks its next one like any other.
-  - **Tugs** don't eat: they fly only to drifting pieces. From 10 voxels away a green tractor beam takes in the whole piece and the tug tows it home to your beacon. There the piece is gone and you get **5 ×** the points of what is left of it — other ships (yours or other players') may eat it on the way.
+  - **Tugs** don't eat: they fly only to drifting pieces. From 10 voxels away a green tractor beam takes in the whole piece and the tug tows it home to your tunnel. There the piece is gone and you get **5 ×** the points of what is left of it — other ships (yours or other players') may eat it on the way.
   - **Bombers** fly to the nearest voxel and, touching it, blow up everything within 10 voxels (a point each) — and are gone for good (one unit fewer). The blast leaves a black hole for about 4 seconds that bends the picture around it and gently pulls in debris and drifting pieces within 15 voxels; what falls in is gone (the pieces' voxels count for the bomber's owner).
   - **Orb** ships fire, from 10 voxels away, a voxel-sized plasma orb with a pulsing glow and a fiery tail — one at a time. It flies slowly to the bite and bursts there: everything within 2 voxels is gone (a point each).
   - **Support** ships don't eat: every 3 seconds each fires a white lightning bolt at your own ships — it jumps between them in a random order (up to 6 jumps) over 1.5 s and is gone after the last one; every voxel on its way is destroyed (a point each). The bolt is irregularly bent, with energy flowing along it and small branches.
@@ -48,7 +48,7 @@ The start screen offers **Single player**, **Multiplayer · Co-op** and **Multip
 - **Co-op** — everyone eats the same planet together; the scoreboard shows how many voxels each player has eaten (the summary after each planet shows the shares).
 - **PvP** — a race on the same planet: whoever eats more of it wins the planet.
 
-Every player has their own swarm (Blue, Pink, Green, Violet), beacon and settings. After each planet a summary shows who ate how much of it (and in PvP who won it); the next planet comes once everyone has pressed **Next planet**. The scoreboard shows each player's ping (the host is marked "host"), the room panel shows your connection, and a short notice appears when someone joins, leaves or loses the connection. Spawn points are spread evenly around the planet (2 players opposite each other, 3 a third of a turn apart, 4 a quarter). It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
+Every player has their own swarm (Blue, Pink, Green, Violet), tunnel and settings. After each planet a summary shows who ate how much of it (and in PvP who won it); the next planet comes once everyone has pressed **Next planet**. The scoreboard shows each player's ping (the host is marked "host"), the room panel shows your connection, and a short notice appears when someone joins, leaves or loses the connection. Spawn points are spread evenly around the planet (2 players opposite each other, 3 a third of a turn apart, 4 a quarter). It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 ## Troubleshooting
 
@@ -98,7 +98,7 @@ js/
   core/Leader.js        the swarm's "brain": finds matter on its own + follows clicks
   core/SkillTree.js     upgrade tree: nodes, costs, effects
   three/Game3D.js       scene, camera, input, game loop, roles (solo / host / guest)
-  three/Player.js       one player: swarm, brain, beacon, settings, score
+  three/Player.js       one player: swarm, brain, tunnel, settings, score
   three/VoxelPlanet.js  voxel planet
   three/Fragments.js    pieces bitten off the planet: finding splits, drifting, eating them
   three/PlanetSurface.js smooth / wedge surfaces over the voxels (levels 3 and 4)
@@ -106,7 +106,7 @@ js/
   three/Swarm3D.js      the flock (boids) with collisions and feeding
   three/Debris3D.js     debris
   three/ClickMarker.js  ring marking the clicked spot
-  three/SpawnBeacon.js  beacon at the spawn point (call the swarm back)
+  three/Portal3D.js     the subspace tunnel at the spawn point (ships arrive through it; click it to call the swarm back)
   three/Space3D.js      sky (nebulae + stars)
   net/Net.js            multiplayer host and guest over PeerJS
   net/Protocol.js       binary network messages

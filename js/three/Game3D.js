@@ -173,8 +173,6 @@ export class Game3D {
       index,
       name: look.name,
       color: look.color,
-      // single player keeps the amber beacon; in multiplayer each beacon has its player's colour
-      beaconColor: this.multiplayer ? look.color : this.cfg.beacon.color,
       spawn: this.spawnFor(indices.indexOf(index), indices.length),
     };
   }
@@ -338,7 +336,7 @@ export class Game3D {
       else me.recall();
       return;
     }
-    if (!this.planet.alive || me.homeMode === 'return') return;
+    if (!this.planet.alive || me.homeMode === 'jump') return;
     const point = this.pointFromScreen(ndc);
     this.marker.show(point, this.lastPickHit, this.camera);
     if (this.role === 'guest') this.net.sendCommand({ kind: 'click', p: point });
@@ -480,6 +478,12 @@ export class Game3D {
     if (this.role === 'host') this.net?.broadcastZap(player.index, chain, seed);
   }
 
+  /** Guest: ships of a player began their jump to hyperspace on the host. */
+  onWarp({ index, list }) {
+    const s = this.players[index]?.swarm;
+    if (s) for (const [i, x, y, z] of list) if (i < s.count) s.startWarp(i, x, y, z);
+  }
+
   /** Guest: a support ship fired on the host — the same bolt here. */
   onZap({ index, chain, seed }) {
     const p = this.players[index];
@@ -571,7 +575,7 @@ export class Game3D {
     // the planet counts as eaten only when its last voxel is gone; then every swarm flies home
     if (this.started && pl.alive && pl.left <= 0) {
       pl.shatter((idx, color) => this.debris.emit(pl.cellCenter(idx, this.tmp), color, this.cfg.debris.perCellOnFinish));
-      for (const p of players) p.returnHome();
+      for (const p of players) p.jumpOut(); // off to hyperspace, one after another
       this.returnFrames = 0;
       this.banner = this.planetResult();
       // multiplayer: a summary for everyone; the next planet waits until every player pressed Next planet
@@ -580,17 +584,23 @@ export class Game3D {
         this.setSummary(this.buildSummary());
       }
     }
-    // back home: the next planet appears once every swarm has gathered at its beacon
-    // (and, in multiplayer, everyone has closed the summary with Next planet)
+    // the next planet appears once every ship has jumped to hyperspace
+    // (and, in multiplayer, everyone has closed the summary with Next planet); they arrive through the tunnel
     if (this.started && !pl.alive) {
       this.returnFrames++;
-      const home = players.every((p) => p.gatheredAtHome()) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames;
+      const home = players.every((p) => p.departed()) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames;
       if (home && (!this.multiplayer || players.every((p) => p.nextReady))) {
         pl.dispose();
         this.spawnPlanet();
         this.setSummary(null);
         this.net?.broadcastPlanet(this);
       }
+    }
+    // ships that began their jump to hyperspace: the guests see them go the same way
+    for (const p of players) {
+      if (!p.swarm.started.length) continue;
+      if (this.role === 'host') this.net?.broadcastWarp(p.index, p.swarm.started);
+      p.swarm.started.length = 0;
     }
     // orbs fly (following a target on a drifting piece) and burst
     if (this.started) this.orbs.update((o) => this.orbBurst(o), (o, out) => { if (this.planet.solid(o.target)) this.planet.cellCenter(o.target, out); });
@@ -785,7 +795,12 @@ export class Game3D {
     for (const ps of s.players) {
       const p = this.players[ps.index];
       if (!p) continue;
-      p.homeMode = ps.home === 1 ? 'recall' : ps.home === 2 ? 'return' : null;
+      p.homeMode = ps.home === 1 ? 'recall' : ps.home === 2 ? 'jump' : null;
+      p.beacon.setOpen(ps.portal);
+      if (ps.hidden) for (let i = 0; i < ps.count; i++) {
+        // ships not out of the tunnel yet / gone (a ship jumping away here keeps going on its own)
+        if (p.swarm.warpT[i] === 0) p.swarm.hidden[i] = (ps.hidden[i >> 3] >> (i & 7)) & 1;
+      }
       p.beacon.active = ps.home !== 0;
       p.score = ps.score;
       p.planetScore = ps.planetScore;
@@ -822,11 +837,11 @@ export class Game3D {
     let eaten = 0;
     if (pl) eaten = !pl.alive ? 1 : 1 - pl.left / pl.total;
     const hint = !me ? 'connecting…'
-      : me.homeMode === 'return'
-        ? 'planet eaten — returning to the beacon'
+      : me.homeMode === 'jump'
+        ? 'planet eaten — jumping to hyperspace'
         : me.homeMode === 'recall'
           ? 'called back · click the planet to send the swarm out again'
-          : 'click: steer the swarm · click the beacon: call it back · right button / two fingers: rotate · wheel: zoom'
+          : 'click: steer the swarm · click the tunnel: call it back · right button / two fingers: rotate · wheel: zoom'
             + (this.multiplayer ? '' : ' · Esc: menu');
 
     const scores = this.multiplayer

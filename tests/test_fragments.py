@@ -121,6 +121,7 @@ async def main():
         # a drone that hasn't eaten for 10 s stops for 0.5 s, then takes another bite
         rt = await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet, c = g.cfg.swarm.retarget;
           p.onNewPlanet(); p.setSetting('count', 20);
+          for (let n = 0; n < 400 && p.arrival.phase !== 'done'; n++) g.update(); // (out of the tunnel first)
           for (let n = 0; n < 5; n++) g.update();
           let i = -1; for (let k = 0; k < s.count; k++) if (s.food[k] >= 0 && !s.landed[k]) { i = k; break; }
           if (i < 0) return { found: false };

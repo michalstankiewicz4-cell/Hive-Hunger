@@ -95,11 +95,11 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `minCount` | 0 | fewest units (the Units slider starts at 10; bombers that blew up can take the swarm lower) | |
 | `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
 | `tug.pull` | 0.9 | a towed piece's speed × the swarm speed | |
-| `tug.deliver` | 2 | how close (beyond the piece's radius) to the beacon a piece counts as home | |
+| `tug.deliver` | 2 | how close (beyond the piece's radius) to the tunnel a piece counts as home | |
 | `tug.reward` | 5 | points per voxel of a piece brought home | |
 | `tug.color`, `tug.beamColor`, `tug.streaks` | green, 14 | tug and beam colour, light streaks in the beam | |
 | `tug.outlineScale`, `tug.outlinePoints`, `tug.rimMax` | 1.05, 160, 64 | the beam ends on the piece's outline this much larger; voxels sampled for it; most outline points | |
-| `eaterColor` | yellow | eaters' colour (every player); `color` stays the swarm's colour in single player (beacon, click marker) | |
+| `eaterColor` | yellow | eaters' colour (every player); `color` stays the swarm's colour in single player (click marker) | |
 | `storm.centre`, `storm.side` | 0.4, 0.3 | a storm ship's damage on its bite / on each of the two nearest voxels, as a share of what a laser does (its whole crater) | |
 | `storm.fork` | 0.7 | where the bolt forks (share of the way to the bite) | |
 | `storm.color`, `storm.boltColor` | blue | storm ship and lightning colour | |
@@ -118,14 +118,34 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 
 Slider ranges and steps (`min`, `max`, `step`, `decimals`): Units, Speed, Power, Turning. Defaults come from `swarm` above; "Reset to default" restores them.
 
-## Beacon (`beacon`)
+## Spawn tunnel (`portal`)
 
 | Value | Default | What it does |
 | --- | --- | --- |
-| `color`, `size` | amber, 0.9 | single-player beacon (in multiplayer it takes the player's colour) |
-| `hitRadius` | 3 | how close to the beacon a click must be |
-| `arriveRadius`, `gatherRadius` | 2.5, 10 | when a returning swarm counts as home |
-| `returnTimeoutFrames` | 1500 | the next planet appears after this even if a swarm isn't home |
+| `closedRadius`, `openRadius` | 0.7, 4 | mouth radius closed (the small swirl) and open |
+| `openFrames`, `closeFrames` | 50, 60 | how long opening and closing take |
+| `emergeWindow` | 90 | ships come out at random moments within this many frames (1.5 s) |
+| `linger` | 40 | the tunnel closes this long after the last ship is out |
+| `pulseFrames` | 90 | how long it stays open to take in a towed piece |
+| `hitRadius` | 2.5 | how close to the tunnel a click must be (plus part of its radius) |
+| `color`, `innerColor`, `rimColor`, `coreColor` | blues | the three streak layers and the bright core |
+
+## Jump to hyperspace (`swarm.warp`)
+
+| Value | Default | What it does |
+| --- | --- | --- |
+| `window` | 150 | every ship jumps at a random moment within this many frames (2.5 s) |
+| `frames` | 40 | how long a jump lasts before the ship is gone |
+| `accel`, `maxSpeed` | 1.16, 4 | speed × `accel` every frame, up to `maxSpeed` units per frame |
+| `outward` | 0.8 | how much the jump direction leans away from the planet (the rest: the ship's heading) |
+| `trailFade` | 25 | frames the streak stays after the ship is gone |
+| `width`, `color`, `streakColor`, `streaks` | 0.35, blue, light blue, 6 | the streak: a blue band with lighter lines along it |
+
+## Next planet (`beacon`)
+
+| Value | Default | What it does |
+| --- | --- | --- |
+| `returnTimeoutFrames` | 1500 | the next planet appears after this even if a ship hasn't jumped yet |
 
 ## Multiplayer (`net`)
 

@@ -7,10 +7,10 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | File | What it does |
 | --- | --- |
 | `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the settings panel, the start screen, room panel, summary and upgrade tree; Tab / Esc keys; starts the loop |
-| `js/config.js` | All parameters: planet, flock, feeding, beacon, marker, network, slider ranges |
+| `js/config.js` | All parameters: planet, flock, feeding, spawn tunnel, hyperspace jump, marker, network, slider ranges |
 | `js/version.js` | Game version (keep in sync with `CHANGELOG.md`) |
 | `js/three/Game3D.js` | Scene, camera, input, roles (solo / host / guest), planet lifecycle, HUD data, guest-side handling of network messages |
-| `js/three/Player.js` | One player: swarm + leader + beacon + settings + score; per-player simulation step, commands, recall, return home |
+| `js/three/Player.js` | One player: swarm + leader + tunnel + settings + score; per-player simulation step, commands, recall, arrival through the tunnel, jump to hyperspace |
 | `js/three/Swarm3D.js` | The flock (boids), feeding, collisions, getting unstuck, drawing; `aroundPlanet()` path helper |
 | `js/core/Leader.js` | The swarm's "brain": a point the flock heads for; stays at matter, finds new matter, follows clicks |
 | `js/three/VoxelPlanet.js` | Voxel planet: terrain, claims, eating, exposed-voxel instancing, raycast, seed, removal log, eaten-voxel run lengths for late joiners; knows about drifting fragment voxels |
@@ -22,7 +22,7 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/three/Lightning3D.js` | Lightning bolts (chain lightning, storm ships): a jagged 1-px white core with a thin glow ribbon (`glowPx` = 2 px each side, turned to the camera every frame), flickering out |
 | `js/three/Debris3D.js` | Debris point cloud |
 | `js/three/Space3D.js` | Sky sphere with nebulae + star layers (one group, turned by the spin) |
-| `js/three/SpawnBeacon.js` | Clickable beacon at each player's spawn point |
+| `js/three/Portal3D.js` | The subspace tunnel at each player's spawn point: opens, closes, pulses; ships come out of it; click it to call the swarm back |
 | `js/three/ClickMarker.js` | Ring shown where the player clicked |
 | `js/net/Net.js` | `NetHost` / `NetGuest` over PeerJS: rooms, joining, pings, timeouts |
 | `js/net/Protocol.js` | Binary snapshot, planet and fragment messages |
@@ -32,7 +32,7 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/three/Orbs.js` | Plasma orbs of orb ships: flight to the target, pulsing glow, fiery tail (a point cloud with per-point size and colour), burst flash |
 | `js/three/Zaps.js` | Support ships' lightning: a seeded, bent bolt through a chain of ships with flowing energy and branches, run from ship to ship; reports each finished jump |
 | `js/three/BlackHoles.js` | Black holes after bomber blasts: strength over time, pulling and swallowing debris and pieces, the lensing render pass |
-| `js/ui/LevelSwitch.js` | Level buttons 1–5 under the panel (single player only): `Game3D.jumpToLevel` builds that planet and puts the swarm back at its beacon |
+| `js/ui/LevelSwitch.js` | Level buttons 1–5 under the panel (single player only): `Game3D.jumpToLevel` builds that planet and lets the swarm out of its tunnel again |
 | `js/ui/StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
 | `js/ui/Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
 | `js/ui/Lobby.js` | Room panel during a multiplayer match: room, link, leave |
@@ -55,15 +55,17 @@ stateDiagram-v2
     Playing --> StartScreen: Leave room / host left / connection lost
     state Playing {
         [*] --> Eating
-        Eating --> ReturningHome: last voxel eaten (multiplayer: summary)
-        ReturningHome --> Eating: every swarm at its beacon (multiplayer: + everyone pressed Next planet) → next planet
+        Eating --> Jumping: last voxel eaten (multiplayer: summary)
+        Jumping --> Arriving: every ship gone to hyperspace (multiplayer: + everyone pressed Next planet) → next planet
+        Arriving --> Eating: the tunnel opens, the ships come out, it closes
     }
 ```
 
-- **Start screen** and **waiting room** are the overlay (`StartScreen`); `game.started` is `false`, so swarms wait at their beacons and the planet doesn't turn. In single player **Esc** sets `started` back to `false` (pause) and shows the start screen; Esc again or **Single player** carries on. Creating a room (`Game3D.becomeHost`) starts from scratch: a new planet 1 and a new host player (no points, upgrades or eaten voxels from single player); only the settings panel values are kept.
+- **Start screen** and **waiting room** are the overlay (`StartScreen`); `game.started` is `false`, so swarms wait at their tunnels and the planet doesn't turn. In single player **Esc** sets `started` back to `false` (pause) and shows the start screen; Esc again or **Single player** carries on. Creating a room (`Game3D.becomeHost`) starts from scratch: a new planet 1 and a new host player (no points, upgrades or eaten voxels from single player); only the settings panel values are kept.
 - **Playing:** `game.started` is `true`. In multiplayer the room panel (`Lobby`, bottom left) has the link and **Leave room**; leaving reloads the page without `?room=`, i.e. back to the start screen.
 - Someone who opens a room link while the match is running skips the waiting room.
-- **Returning home:** after the last voxel, every swarm flies to its beacon; the next planet appears when all have gathered (or after `beacon.returnTimeoutFrames`). In multiplayer the summary (`Summary`) is open meanwhile and the next planet also waits until every player has pressed **Next planet** (`Player.nextReady`).
+- **Jumping:** after the last voxel, `Player.jumpOut` sets `homeMode = 'jump'` and `Swarm3D.jumpAll` gives every ship a random delay within `swarm.warp.window`; when it runs out (`stepWarp`, host) the ship speeds up away from the planet (`accel`, up to `maxSpeed`), leaves a streak (`renderTrails`) and after `warp.frames` is hidden. The next planet appears when every ship is hidden (`Player.departed`) or after `beacon.returnTimeoutFrames`.
+- **Arriving:** on a new planet every ship is hidden; `Player.updateArrival` opens the tunnel (`pending → opening`), lets the ships out at random moments within `portal.emergeWindow` at its mouth, heading out of it (`emerging`), and `linger` frames after the last closes it (`done`). In multiplayer the summary (`Summary`) is open meanwhile and the next planet also waits until every player has pressed **Next planet** (`Player.nextReady`).
 
 ## Planet levels and looks
 
@@ -89,16 +91,16 @@ The surface is split into chunks of 16³ voxels. `VoxelPlanet.remove()` and `sho
 
 ## Frames of reference and the planet spin
 
-The simulation runs in the **planet's frame**: voxels never move. To make the planet look like it spins, the camera, the sky group, the sun and the beacons (they live in the sky group) turn around the planet by `spin` (`planet.spinSpeed` per frame). The swarm flies in the planet's frame, so on screen it turns together with the planet. A beacon moves in the planet's frame, so a swarm flying home follows a slowly moving target.
+The simulation runs in the **planet's frame**: voxels never move. To make the planet look like it spins, the camera, the sky group, the sun and the tunnels (they live in the sky group) turn around the planet by `spin` (`planet.spinSpeed` per frame). The swarm flies in the planet's frame, so on screen it turns together with the planet. A beacon moves in the planet's frame, so a swarm flying home follows a slowly moving target.
 
 ## One frame (solo / host)
 
-Until the match has started (`game.started`: Single player chosen, or every player in the room pressed Start; Esc in single player sets it back to `false`, which pauses the game) the frame only draws: swarms wait at their beacons and the planet doesn't turn.
+Until the match has started (`game.started`: Single player chosen, or every player in the room pressed Start; Esc in single player sets it back to `false`, which pauses the game) the frame only draws: swarms wait at their tunnels and the planet doesn't turn.
 
 1. `spin += spinSpeed`, apply it to camera, sky and sun.
 2. For every player (`Player.update`):
    - collect exposed voxels within `leader.feedSenseRadius` of the swarm target (`VoxelPlanet.exposedNear`) and count the free (unclaimed) ones;
-   - update the leader: stay while free voxels are near, otherwise drift to the nearest free voxel; follow a click or the beacon when told to;
+   - update the leader: stay while free voxels are near, otherwise drift to the nearest free voxel; follow a click or the tunnel when told to;
    - update the swarm (`Swarm3D.update`).
 3. Drifting pieces move and turn (`Fragments.step`); voxels eaten this frame are checked for splits, and every part smaller than the rest comes loose (host: sent to the guests).
 4. If the planet's last voxel is gone: every swarm flies home; when all have gathered (or after a timeout) the next planet appears.
@@ -112,7 +114,7 @@ Until the match has started (`game.started`: Single player chosen, or every play
 - **Long trips:** `aroundPlanet()` gives a waypoint over the surface when the straight path would go through the planet, or straight up when the unit is down in a pit.
 - **Laser ships:** units `0 … lasers−1` (`Swarm3D.lasers`, from the player's `lasers` setting, at most all units) are red laser ships: they land at `laser.reach` (2.5) from their bite instead of `reachDistance`, eat it from there — but only once their heading (`look`, turned in the simulation by `turnLook`) faces the bite within `aimAngle` (`aim()`; eaters too) — and fly at `laser.speedFactor` (0.9) × the speed. `render(camera)` colours the units (instance colours) and draws a glowing band (a camera-facing quad with a white-core-to-red gradient, additive) from every firing laser ship to its bite, plus a glow sprite where it hits; on a guest the beams come from the snapshot.
 - **Storm ships:** the next `storms` units after the laser ships. They land at laser range like laser ships and, once aimed, call `world.storm` → `Game3D.stormCell` instead of `bite`: the damage a laser would do this frame (`strength / eatFrames` × the voxels of a Power crater) is split — `storm.centre` (0.4) on the bite, `storm.side` (0.3) on each of the two nearest unclaimed voxels of the same body (`VoxelPlanet.nearestAround`). `renderStorms` shows a flash every `storm.flashEvery` frames with the chain-lightning look (`Lightning3D`): ship → fork point at `storm.fork` (70%) → bite, and two weaker bolts from the fork to the side voxels.
-- **Tugs:** the next `tugs` units after the storm ships; they never pick bites. `Player.updateTugs` (host) gives each tug the nearest drifting piece nobody tows (`fragment.tug`) and a point to fly to (`Swarm3D.tugGoal`): the piece's near side, or — once within `tug.range` and holding it (`fragment.towed`, no damping or drift limit) — ahead of the piece towards home, while it sets the piece's velocity towards the beacon (`aroundPlanet` waypoints) at `tug.pull` × the swarm speed. At the beacon `deliver` removes the piece's voxels as eaten (logged for guests) and adds `tug.reward` × their number to the score. `Swarm3D.tows` ([unit, piece id]) drives the tractor beam meshes (`shapeTow`): the piece's outer voxels (a sample of `tug.outlinePoints`) are flattened across the beam onto the piece's centre, their convex hull grown to `tug.outlineScale` (5% larger) plus half a voxel is the outline, and the beam is a fan of additive triangles from the tug to it (glow fading away from the tug) plus light streaks ending inside it, re-drawn every few frames; guests get the tows from the snapshot.
+- **Tugs:** the next `tugs` units after the storm ships; they never pick bites. `Player.updateTugs` (host) gives each tug the nearest drifting piece nobody tows (`fragment.tug`) and a point to fly to (`Swarm3D.tugGoal`): the piece's near side, or — once within `tug.range` and holding it (`fragment.towed`, no damping or drift limit) — ahead of the piece towards home, while it sets the piece's velocity towards the tunnel (`aroundPlanet` waypoints) at `tug.pull` × the swarm speed. At the tunnel (it opens for a moment) `deliver` removes the piece's voxels as eaten (logged for guests) and adds `tug.reward` × their number to the score. `Swarm3D.tows` ([unit, piece id]) drives the tractor beam meshes (`shapeTow`): the piece's outer voxels (a sample of `tug.outlinePoints`) are flattened across the beam onto the piece's centre, their convex hull grown to `tug.outlineScale` (5% larger) plus half a voxel is the outline, and the beam is a fan of additive triangles from the tug to it (glow fading away from the tug) plus light streaks ending inside it, re-drawn every few frames; guests get the tows from the snapshot.
 - **Bombers:** the next `bombers` units after the tugs. They pick bites like eaters; landed, they call `world.bomb` → `Game3D.explode`: every voxel within `bomber.radius` of the bite (grid and drifting pieces) is removed as eaten, a point each, and a black hole is added (and sent to the guests). The bomber is put on `Swarm3D.dying`; after the update `Player.removeDead` swaps it to the end of the swarm (past the other bombers and the eaters, so every type keeps its places) and lowers the Units and Bombers settings by one (guests are told with a `settings` message).
 - **Black holes** (`BlackHoles.js`): per hole a strength 0 → 1 → 0 over `grow` / `hold` / `shrink` frames. Each frame it pulls debris and (host) drifting pieces within `range`, gently (`pullDebris`, `pullPieces`, `maxPieceSpeed`); debris within `core` is gone, a piece is swallowed (`Game3D.swallow`). Drawing: while a hole is up the scene is rendered into a texture and then drawn through a full-screen shader that moves each pixel's sample point like a point lens (β = θ − θE²/θ, θE = `size` × strength projected on screen), with a black disc inside 0.55 θE and a thin ring.
 - **Orb ships:** the next `orbs` units after the bombers. They land at `orb.range` from their bite and, aimed, call `world.fireOrb` → `Game3D.fireOrb` (`Orbs.js`) unless their orb is still flying (`Swarm3D.orbOut` = its id). The orb flies at `orb.speed`, following its target voxel (on the host), leaving tail sparks; at the target `Game3D.orbBurst` → `destroySphere(orb.blast)` and `Player.orbDone` lets the ship fire again. Guests get `{t:'orb'}` and fly the same orb (the burst's voxels arrive in snapshots).

@@ -2,6 +2,15 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.25.0] — 2026-10-16
+
+### Added
+- **Subspace tunnel** at the spawn point instead of the beacon: a blue vortex of light streaks swirling around a bright white-blue core, facing the planet. When the ships arrive (the start of a planet, a level switch) it opens, the ships fly out of it one after another, and once they are all out it closes to a small, dim swirl. Click it to call the swarm back (it glows brighter meanwhile). When a tug brings a piece home the tunnel opens for a moment and takes the piece in.
+- **Escape into hyperspace**: when the planet is eaten the ships no longer fly home — each jumps to hyperspace at a random moment within 2.5 s (with many ships several at once): it speeds up away from the planet, leaving a blue streak with lighter lines along it (like a tractor beam, but not the same), and is gone. The next planet appears once every ship has left. Guests see the same jumps.
+
+### Removed
+- The amber beacon (`SpawnBeacon.js`) and the return home after a planet.
+
 ## [0.24.0] — 2026-10-16
 
 ### Added

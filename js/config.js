@@ -151,6 +151,11 @@ export const CONFIG = Object.freeze({
     support: { count: SHARE, every: 180, jumps: 6, jumpRange: 10, color: 0xffffff, glowColor: 0xdfe8ff,
       life: 90, fadeIn: 4, fadeOut: 25, points: 24, bend: 0.09, jag: 0.025, glowPx: 4, branchGlowPx: 2,
       branches: 3, branchLength: 1.6, branchBrightness: 0.6, flowWaves: 3, flowSpeed: 0.05 },
+    // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
+    // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
+    // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames
+    warp: { window: 150, frames: 40, accel: 1.16, maxSpeed: 4, outward: 0.8, trailFade: 25, width: 0.35,
+      color: 0x3a8dff, streakColor: 0xb5ecff, streaks: 6 },
     aimAngle: 12,            // a ship eats (a laser ship fires) only once it faces its bite within this many degrees
     // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
     // (0.5 s), then takes another bite — or the same one if there is no other
@@ -171,9 +176,15 @@ export const CONFIG = Object.freeze({
     { id: 'turn',   label: 'Turning',  min: 0.02, max: 0.3,  step: 0.01, decimals: 2 }, // how fast ships turn their nose (turnSmoothing)
   ],
 
-  // beacon at the spawn point: click it to call the swarm back; after a planet is eaten
-  // the swarm returns here and the next planet appears once it has gathered
-  beacon: { color: 0xffc861, size: 0.9, hitRadius: 3, arriveRadius: 2.5, gatherRadius: 10, returnTimeoutFrames: 1500 },
+  // the spawn point: a subspace tunnel. Closed: a small vortex (`closedRadius`); it opens (`openFrames`)
+  // to `openRadius` when the ships arrive — they come out over `emergeWindow` frames — and closes
+  // (`closeFrames`) `linger` frames after the last; a tug's delivery opens it for `pulseFrames`
+  portal: { closedRadius: 0.7, openRadius: 4, openFrames: 50, closeFrames: 60, pulseFrames: 90, emergeWindow: 90, linger: 40,
+    hitRadius: 2.5, color: 0x2f7dff, innerColor: 0x8fe0ff, rimColor: 0x1d46ff, coreColor: 0xd6f2ff },
+
+  // after a planet is eaten the swarms jump to hyperspace; the next planet appears once every
+  // swarm is gone (or after this many frames)
+  beacon: { returnTimeoutFrames: 1500 },
 
   // multiplayer (WebRTC via PeerJS)
   net: {

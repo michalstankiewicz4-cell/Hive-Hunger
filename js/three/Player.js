@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 import { Swarm3D, aroundPlanet } from './Swarm3D.js';
-import { SpawnBeacon } from './SpawnBeacon.js';
+import { Portal3D } from './Portal3D.js';
 import { Leader } from '../core/Leader.js';
 import { SkillTree } from '../core/SkillTree.js';
 
@@ -15,7 +15,7 @@ const THREE = window.THREE;
 export class Player {
   /**
    * @param {object} game the Game3D instance (planet, scene, debris…)
-   * @param {{index:number, name:string, color:number, beaconColor:number, spawn:{x,y,z}}} info
+   * @param {{index:number, name:string, color:number, spawn:{x,y,z}}} info
    *   spawn is in the space frame (the beacon stays put in space while the planet turns)
    */
   constructor(game, info) {
@@ -38,14 +38,16 @@ export class Player {
     this.tree = new SkillTree();
     this.bolt = null;       // chain lightning settings once bought
     this.boltClock = 0;     // seconds since the last bolt
-    this.homeMode = null;   // null | 'recall' (called back by the beacon) | 'return' (planet eaten)
+    this.homeMode = null;   // null | 'recall' (called back to the tunnel) | 'jump' (planet eaten: off to hyperspace)
     this.score = 0;         // voxels eaten in total
     this.planetScore = 0;   // voxels eaten of the current planet
     this.wins = 0;          // planets won (PvP)
     this.ready = false;     // multiplayer: pressed Start in the waiting room
     this.nextReady = true;  // multiplayer: pressed Next planet on the summary (true while there is none)
 
-    this.beacon = new SpawnBeacon(game.space.group, this.spawnSpace.clone(), { ...CONFIG.beacon, color: info.beaconColor });
+    // the spawn point: a subspace tunnel (still called the beacon: click it to call the swarm back)
+    this.beacon = new Portal3D(game.space.group, this.spawnSpace.clone(), CONFIG.portal);
+    this.arrival = { phase: 'pending', t: 0, delays: null }; // ships come out of the tunnel (see updateArrival)
     const start = this.spawnWorld();
     this.leader = new Leader(CONFIG.leader, start, ['x', 'y', 'z']);
     this.swarm = new Swarm3D(game.scene, { ...CONFIG.swarm, color: info.color }, new THREE.Vector3(start.x, start.y, start.z));
@@ -57,6 +59,7 @@ export class Player {
     this.swarm.supports = Math.min(this.supports, this.swarm.count - this.swarm.lasers - this.swarm.storms - this.swarm.tugs - this.swarm.bombers - this.swarm.orbs);
     this.swarm.fragmentById = (id) => game.planet?.fragments?.byId.get(id);
     this.swarm.fragments = () => game.planet?.fragments || null;
+    this.swarm.hidden.fill(1); // still in the tunnel
 
     // exposed voxels near the swarm target — computed once per frame
     this.candidates = [];
@@ -94,6 +97,58 @@ export class Player {
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
       fireOrb: (i, idx, x, y, z) => game.fireOrb(this, i, idx, x, y, z),
     };
+  }
+
+  /**
+   * Ships arriving through the tunnel (each planet): it opens; once it is nearly open the ships
+   * come out one after another over `portal.emergeWindow` frames, heading out of it; when the
+   * last one is out (and a moment later) it closes again.
+   */
+  updateArrival() {
+    const a = this.arrival, s = this.swarm, c = CONFIG.portal, portal = this.beacon;
+    if (a.phase === 'done') return;
+    if (a.phase === 'pending') {
+      portal.open();
+      a.phase = 'opening';
+      a.t = 0;
+      a.delays = Array.from({ length: s.count }, () => Math.floor(Math.random() * c.emergeWindow));
+      return;
+    }
+    if (a.phase === 'opening') {
+      if (portal.openness >= 0.85) a.phase = 'emerging';
+      return;
+    }
+    a.t++;
+    const p = new THREE.Vector3(), out = portal.outward(new THREE.Vector3());
+    let waiting = false;
+    for (let i = 0; i < s.count; i++) {
+      if (!s.hidden[i] || s.warpT[i] > 0) continue;
+      if ((a.delays[i] ?? 0) > a.t) { waiting = true; continue; }
+      s.hidden[i] = 0;
+      portal.exitPoint(p);
+      const i3 = i * 3;
+      s.pos[i3] = p.x; s.pos[i3 + 1] = p.y; s.pos[i3 + 2] = p.z;
+      const jx = out.x + (Math.random() - 0.5) * 0.5, jy = out.y + (Math.random() - 0.5) * 0.5, jz = out.z + (Math.random() - 0.5) * 0.5;
+      const l = Math.hypot(jx, jy, jz) || 1;
+      s.dir[i3] = s.look[i3] = jx / l; s.dir[i3 + 1] = s.look[i3 + 1] = jy / l; s.dir[i3 + 2] = s.look[i3 + 2] = jz / l;
+    }
+    if (!waiting && a.t > c.emergeWindow + c.linger) {
+      portal.close();
+      a.phase = 'done';
+    }
+  }
+
+  /** The planet is eaten: every ship jumps to hyperspace, one after another. */
+  jumpOut() {
+    this.homeMode = 'jump';
+    this.dropAllBites(0);
+    for (const [i, t] of this.towing) this.letGo(i, t);
+    this.swarm.jumpAll();
+  }
+
+  /** Every ship is gone to hyperspace (the next planet may come). */
+  departed() {
+    return this.swarm.allHidden;
   }
 
   /** Move this player's spawn (and beacon) to a new point in the space frame. */
@@ -143,7 +198,7 @@ export class Player {
    * the nearest free voxel to the clicked point.
    */
   command(point) {
-    if (this.homeMode === 'return' || !this.game.planet.alive) return;
+    if (this.homeMode === 'jump' || !this.game.planet.alive) return;
     this.homeMode = null;
     this.leader.command(point);
     this.swarmWorld.clickPoint = point;
@@ -152,15 +207,9 @@ export class Player {
 
   /** The beacon was clicked: the swarm stops eating and flies home, and waits there for a new click. */
   recall() {
-    if (this.homeMode === 'return') return;
+    if (this.homeMode === 'jump') return;
     this.homeMode = 'recall';
     this.swarmWorld.clickPoint = null;
-    this.dropAllBites(0);
-  }
-
-  /** The planet is eaten: fly home. */
-  returnHome() {
-    this.homeMode = 'return';
     this.dropAllBites(0);
   }
 
@@ -254,18 +303,15 @@ export class Player {
     this.swarm.tows = [];
     this.swarm.food.fill(-1);
     this.swarm.landed.fill(0);
+    // a new arrival through the tunnel
+    this.swarm.resetWarp();
+    this.swarm.hidden.fill(1);
+    this.arrival = { phase: 'pending', t: 0, delays: null };
+    this.placeAtSpawn();
     this.planetScore = 0;
     this.homeMode = null;
     this.leader.commanded = false;
     this.leader.goal = null;
-  }
-
-  /** Whether the swarm has gathered at its beacon (used before the next planet appears). */
-  gatheredAtHome() {
-    const home = this.spawnWorld();
-    const c = this.swarm.center();
-    const g = Math.hypot(c.x - home.x, c.y - home.y, c.z - home.z) < CONFIG.beacon.gatherRadius;
-    return g && this.leader.distanceTo(home) < CONFIG.beacon.arriveRadius;
   }
 
   /** While travelling to a click, the swarm target flies around the planet, not through it. */
@@ -295,9 +341,10 @@ export class Player {
     this.freeCandidates = 0;
     for (const idx of this.candidates) if (planet.claims[idx] === 0) this.freeCandidates++;
 
+    this.updateArrival();
     const L = this.leader;
-    if (this.homeMode) {
-      // heading home: the swarm target keeps following the beacon (it moves as space turns)
+    if (this.homeMode === 'recall') {
+      // called home: the swarm target keeps following the tunnel (it moves as space turns)
       L.goal = this.spawnWorld();
       L.commanded = true;
       L.dwell = 0;
@@ -313,7 +360,7 @@ export class Player {
     this.updateSupport();
     this.updateLightning();
 
-    this.beacon.active = Boolean(this.homeMode);
+    this.beacon.active = this.homeMode === 'recall';
   }
 
   /**
@@ -444,6 +491,7 @@ export class Player {
     this.towing.delete(i);
     this.swarm.tugHas[i] = 0;
     this.swarm.tows = this.swarm.tows.filter(([u]) => u !== i);
+    this.beacon.pulse(); // the tunnel opens for a moment and takes it in
     this.delivered = (this.delivered || 0) + 1; // (tests)
   }
 

@@ -191,7 +191,6 @@ export class NetHost {
       index: p.index,
       name: p.name,
       color: p.color,
-      beaconColor: p.color,
       ready: p.ready,
       spawn: { x: p.spawnSpace.x, y: p.spawnSpace.y, z: p.spawnSpace.z },
     }));
@@ -232,6 +231,12 @@ export class NetHost {
   /** A bomber blew up: the guests open the same black hole. */
   broadcastHole(p) {
     const msg = JSON.stringify({ t: 'hole', p: p.map((v) => Math.round(v * 100) / 100) });
+    for (const conn of this.guests.keys()) this.send(conn, msg);
+  }
+
+  /** Ships of player `index` began their jump to hyperspace: the guests fly them away the same way. */
+  broadcastWarp(index, list) {
+    const msg = JSON.stringify({ t: 'warp', index, list: list.map(([i, x, y, z]) => [i, +x.toFixed(3), +y.toFixed(3), +z.toFixed(3)]) });
     for (const conn of this.guests.keys()) this.send(conn, msg);
   }
 
@@ -347,6 +352,7 @@ export class NetGuest {
       else if (json.t === 'hole') g.onHole(json.p);
       else if (json.t === 'orb') g.onOrb(json.a, json.b);
       else if (json.t === 'zap') g.onZap(json);
+      else if (json.t === 'warp') g.onWarp(json);
       else if (json.t === 'settings') g.onSettings?.(json.values);
       else if (json.t === 'frags') g.planet?.fragments?.applyMotions(json.list);
       else if (json.t === 'tree') g.onTree(json.tree);
