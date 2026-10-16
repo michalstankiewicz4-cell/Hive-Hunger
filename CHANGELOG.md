@@ -2,6 +2,18 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.40.0] — 2026-10-16
+
+### Added
+- **Esc menu** in single player: **Resume** (or Esc), **Save and exit**, **Exit to main menu** (without saving) and Settings.
+- **Saved game** (one, in this browser): the mission under way — its planet with the voxels eaten so far (drifting pieces go back in place) — your points, upgrades, the settings panel and the ship types. The swarm comes out of its tunnel again.
+- With a saved game **Single player** asks: **Continue** (shows the mission, points and when it was saved) or **New game** (deletes the save and the map's ticks; no points or upgrades).
+- **Settings → Delete save game** (asks once more): deletes the save and the map's ticks.
+
+### Changed
+- Search and sharing: a new description and keywords (the solar system, 13 ship types, co-op and PvP), structured data with genres, play modes and 1–4 players, a hidden description for search engines, the sitemap date; the **link preview picture is now the start screen** (`og-image.jpg`, 130 KB instead of a 900 KB PNG).
+- Exit to main menu drops that game's points and upgrades (the saved game, if any, stays).
+
 ## [0.39.0] — 2026-10-16
 
 ### Changed

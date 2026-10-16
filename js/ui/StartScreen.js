@@ -24,6 +24,7 @@ export class StartScreen {
   open(title, splash = false) {
     this.root.hidden = false;
     this.root.classList.toggle('is-splash', splash);
+    this.inPause = false;
     this.card.replaceChildren();
     this.card.classList.remove('is-wide', 'is-guide', 'is-start');
     this.onSettingsBack = null;
@@ -61,6 +62,46 @@ export class StartScreen {
     this.card.querySelector('.menu-choice')?.focus();
   }
 
+  /**
+   * Single player, Esc during a mission: the game is paused — Resume (or Esc), Save and exit, Exit to
+   * main menu (without saving), Settings.
+   */
+  showPause() {
+    this.open('Paused');
+    this.inPause = true;
+    const { onResume, onSaveExit, onExit } = this.opts;
+    this.card.append(
+      this.choice('Resume', 'Back to the game (Esc).', onResume),
+      this.choice('Save and exit', 'Keep this game and go to the main menu.', onSaveExit),
+      this.choice('Exit to main menu', 'Leave without saving.', onExit),
+      this.choice('Settings', 'Mouse, keyboard and graphics.', () => this.showSettings(() => this.showPause()), false, 'menu-choice menu-extra menu-settings'),
+    );
+    this.card.querySelector('.menu-choice')?.focus();
+  }
+
+  /**
+   * Single player with a saved game: continue it or start a new one (the save and the map's ticks are
+   * gone then). `save`: { mission name, points, when it was saved }.
+   */
+  showContinue(save) {
+    this.open('Single player', true);
+    const when = new Date(save.at).toLocaleString();
+    this.card.append(
+      this.choice('Continue', `${save.mission ? `${save.mission} · ` : ''}${save.points.toLocaleString('en')} points · saved ${when}`, this.opts.onContinue),
+      this.choice('New game', 'Start again from the edge of the solar system (the saved game is deleted).', this.opts.onNewGame),
+      button('Back', () => this.showStart(), 'lobby-button'),
+    );
+    this.card.querySelector('.menu-choice')?.focus();
+  }
+
+  /** A menu choice: a label and a note under it. */
+  choice(label, note, onClick, disabled = false, cls = 'menu-choice') {
+    const b = button('', onClick, cls);
+    b.append(el('span', 'menu-choice-label', label), el('span', 'menu-choice-note', note));
+    b.disabled = disabled;
+    return b;
+  }
+
   /** The Ship guide (from the start screen); Back (or Esc) returns to it. */
   showGuide() {
     this.open('Ship guide', true);
@@ -72,7 +113,7 @@ export class StartScreen {
   showSettings(onBack, splash = false) {
     this.open('Settings', splash);
     this.onSettingsBack = onBack; // (the waiting room may update it meanwhile, see showRoom)
-    fillSettings(this.card, () => this.closeSettings());
+    fillSettings(this.card, () => this.closeSettings(), this.opts.saves);
   }
 
   /** Is the Settings screen open (Esc goes back from it)? */

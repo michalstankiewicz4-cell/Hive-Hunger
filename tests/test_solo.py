@@ -115,7 +115,7 @@ async def main():
         await page.click('.menu-settings')
         await page.click('.settings-buttons button >> nth=0')  # Reset settings
         rs = await page.evaluate("() => ({ ratio: window.__dbg.renderer.getPixelRatio(), aa: window.__dbg.renderer.getContextAttributes().antialias, fps: document.getElementById('fps').hidden })")
-        await page.click('.settings-buttons button >> nth=1')  # Back
+        await page.click('.settings-buttons .is-primary')  # Back
         t.ok(rs['aa'] and rs['fps'] and rs['ratio'] == 1, 'Reset settings restores them (native resolution, smooth edges, no FPS counter)', rs)
         start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters'].map((k) => +document.getElementById('ships-' + k).value)""")
         title = await page.text_content('#menu-title')
@@ -154,18 +154,49 @@ async def main():
         t.ok(abs(cam - 0.35) < 0.05, 'the Kuiper Belt: the camera starts turned, so the band is seen at an angle', cam)
         t.ok(s['started'] and await page.locator('#menu').is_hidden() and kb == ['kuiper', 'belt', True], 'Start on the card begins the mission (the Kuiper Belt)', kb)
 
-        # Esc pauses and shows the start screen, Esc again carries on
+        # Esc pauses: Resume, Save and exit, Exit to main menu (and Settings); Esc again carries on
         await page.keyboard.press('Escape')
         a = await page.evaluate(STATE)
         await page.wait_for_timeout(800)
         b = await page.evaluate(STATE)
-        t.ok(not b['started'] and a['cx'] == b['cx'] and await page.locator('#menu').is_visible(),
-             'Esc pauses and shows the start screen')
+        pz = await page.evaluate("() => ({ title: document.getElementById('menu-title').textContent, choices: [...document.querySelectorAll('#menu .menu-choice-label')].map((e) => e.textContent) })")
+        t.ok(not b['started'] and a['cx'] == b['cx'] and pz['title'] == 'Paused' and pz['choices'] == ['Resume', 'Save and exit', 'Exit to main menu', 'Settings'],
+             'Esc pauses: Resume, Save and exit, Exit to main menu', pz)
         await page.keyboard.press('Escape')
         t.ok((await page.evaluate(STATE))['started'] and await page.locator('#menu').is_hidden(), 'Esc again carries on')
-        await page.keyboard.press('Escape')
+        # play a little, then Save and exit; Single player asks: Continue or New game; Continue carries on from the save
+        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('speed', 0.3); p.score += 50; }")
+        await h.fast_forward(page, 300)
+        await page.keyboard.press('Escape')  # (paused: nothing is eaten meanwhile)
+        sv0 = await page.evaluate("() => { const g = window.__dbg; return { seed: g.planet.seed, left: g.planet.left, score: g.localPlayer.score, speed: g.localPlayer.getSetting('speed') }; }")
+        await page.click('#menu .menu-choice >> text=Save and exit')
+        saved = await page.evaluate("() => ({ title: document.getElementById('menu-title').textContent, save: Boolean(localStorage.getItem('hive-hunger-save')), started: window.__dbg.started })")
+        t.ok(saved['save'] and saved['title'].startswith('Hive Hunger') and not saved['started'], 'Save and exit: saved, back on the main menu', saved)
         await page.click('.menu-choice >> nth=0')
-        t.ok((await page.evaluate(STATE))['started'], 'Single player on the start screen carries on too')
+        cq = await page.evaluate("() => [document.getElementById('menu-title').textContent, [...document.querySelectorAll('#menu .menu-choice-label')].map((e) => e.textContent), document.querySelector('#menu .menu-choice-note').textContent]")
+        t.ok(cq[0] == 'Single player' and cq[1] == ['Continue', 'New game'] and 'Kuiper Belt' in cq[2], 'Single player with a save: Continue or New game?', cq)
+        await page.evaluate("() => { const g = window.__dbg; g.planet.dispose(); g.spawnPlanet(1); g.localPlayer.score = 0; }")  # (nothing of it left in memory)
+        await page.click('#menu .menu-choice >> text=Continue')
+        sv1 = await page.evaluate("() => { const g = window.__dbg; return { seed: g.planet.seed, left: g.planet.left, score: g.localPlayer.score, speed: g.localPlayer.getSetting('speed'), started: g.started, body: g.bodyId }; }")
+        t.ok(sv1['started'] and sv1['body'] == 'kuiper' and sv1['seed'] == sv0['seed'] and sv1['left'] == sv0['left'] and sv1['score'] == sv0['score'] and sv1['speed'] == sv0['speed'],
+             'Continue: the same planet with the same voxels eaten, the points and settings back', [sv0, sv1])
+        # Exit to main menu (no saving); Settings → Delete save game (asks once more); then Single player goes straight to the map
+        await page.keyboard.press('Escape')
+        await page.click('#menu .menu-choice >> text=Exit to main menu')
+        await page.click('.menu-settings')
+        await page.click('.settings-delete')
+        ask = await page.evaluate("() => [document.querySelector('.settings-delete').textContent, Boolean(localStorage.getItem('hive-hunger-save'))]")
+        await page.click('.settings-delete')
+        gone = await page.evaluate("() => [document.querySelector('.settings-delete').textContent, document.querySelector('.settings-delete').disabled, localStorage.getItem('hive-hunger-save'), localStorage.getItem('hive-hunger-progress')]")
+        t.ok(ask == ['Really delete it?', True] and gone[0] == 'Save game deleted' and gone[1] and gone[2] is None and gone[3] is None,
+             'Settings → Delete save game: asks once more, then the save (and the map\'s ticks) are gone', [ask, gone])
+        await page.click('.settings-buttons .is-primary')  # Back
+        await page.click('.menu-choice >> nth=0')
+        await page.wait_for_timeout(300)
+        t.ok(await page.evaluate("() => !document.getElementById('map').hidden"), 'no save: Single player opens the map')
+        await page.click('.map-label >> text=Kuiper Belt', force=True)
+        await page.click('.map-start')
+        await page.evaluate("() => window.__dbg.localPlayer.setSetting('speed', window.__dbg.cfg.swarm.speed)")
         t.ok(await page.evaluate("() => !document.querySelector('[id*=menu-button]') && !window.__dbg.planet.atmosphere"),
              'no Menu button and no atmosphere')
         ui_text = await page.evaluate("() => ({ hint: document.querySelector('.hud-hint')?.textContent || '', points: document.getElementById('points').textContent })")

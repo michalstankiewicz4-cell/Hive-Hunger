@@ -16,7 +16,7 @@ A recovery file: everything needed to pick the project up again — what it is, 
 These came from the owner's requests; keep them unless he asks otherwise.
 
 - **3D only** (a 2D version existed early on and was removed on request).
-- **Points & upgrades:** 1 voxel = 1 point (counter at the top). Tab opens a pixel-art upgrade tree growing upwards: units, speed, power, chain lightning (+ jumps / voltage / capacitor). Upgrades add to the sliders (sliders stay). No saving — reset on reload; in multiplayer every player has their own. Lightning fires on its own every few seconds and only weakens voxels. Voxels have a destruction animation (on the smooth surface: it sinks in and darkens); they are still one bite for now (harder voxels planned later).
+- **Points & upgrades:** 1 voxel = 1 point (counter at the top). Tab opens a pixel-art upgrade tree growing upwards: units, speed, power, chain lightning (+ jumps / voltage / capacitor). Upgrades add to the sliders (sliders stay). Saved only by Save and exit (0.40.0; before: reset on reload); in multiplayer every player has their own. Lightning fires on its own every few seconds and only weakens voxels. Voxels have a destruction animation (on the smooth surface: it sinks in and darkens); they are still one bite for now (harder voxels planned later).
 - **Ship guide window (0.36.1, owner):** it must fit the screen; the window and the title "Ship guide" stay put and so does Back — only the content scrolls, with a scroll bar.
 - **Settings layout (0.36.0, owner):** "too tall" — split horizontally into three parts: mouse, keyboard, graphics (stacked on narrow screens: assistant's choice).
 - **Start screen (0.35.0, owner):** the owner's picture (a voxel ship's beam cutting into a voxel planet) as the start screen, a title and the menu over it, a loader if the graphics need loading. Assistant's choices: the menu on the right over the sky (bottom on phones), a darker gradient behind it, the orange glowing title, the picture also behind the Ship guide and Settings opened from the start; the loader counts the picture, the 3D library, PeerJS and the game, over a 48 × 32 blurred copy of the picture inlined in the page; the picture saved as JPEG (280 KB instead of a 2.7 MB PNG).
@@ -58,8 +58,9 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Start screen:** Single player / Multiplayer · Co-op / Multiplayer · PvP. In single player **Esc** pauses and opens it, Esc again carries on (no Menu button — removed on request). No atmosphere glow (removed on request).
 - **Fair rooms:** creating a Co-op/PvP room starts from scratch (planet 1, no points/upgrades/eaten voxels from single player); only the settings panel stays.
 - **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (voxels eaten of the planet per player, share, total, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
-- **SEO:** title, description, keywords (including "incremental free"), Open Graph/Twitter thumbnail (`og-image.png`, rendered from the game — not the owner's early screenshot), `VideoGame` JSON-LD, sitemap.
+- **SEO:** title, description, keywords (including "incremental free"; 0.40.0: solar system, 13 ship types, co-op/PvP), Open Graph/Twitter thumbnail (0.40.0, owner: the start screen — `og-image.jpg`, rendered from the page at 1200 × 630 without the version; before: a picture of the game), `VideoGame` JSON-LD, sitemap.
 
+- **Saving (0.40.0, owner):** Esc in single player shows "Save and exit" or simply "Exit to main menu"; then Single player asks whether to continue or start a new game; Settings get "Delete save game". Assistant's choices: Resume and Settings kept in the Esc menu (Esc used to toggle the menu), one save slot in localStorage (mission, seed, eaten voxels as run lengths, points, upgrades, panel settings; drifting pieces go back in place, the swarm restarts from its tunnel), the question only when a save exists, New game and Delete save game also clear the map's ticks, Delete asks once more, Exit without saving drops that game's points and upgrades.
 - **Kuiper Belt at an angle (0.39.0, owner):** "in single player at least", like the owner's screenshot (the band running off diagonally). The band is tipped back 1 rad (`pitch`, every mode) and single player starts with the camera turned 0.35 rad (`view`); turning the band itself would have tripled its grid (≈ 8 million voxels), so the camera turns instead (assistant's choice).
 - **Offline (0.38.0, owner):** the libraries are kept in the repo (`js/vendor/`) so nothing is loaded from the internet; multiplayer still needs it for PeerJS signalling.
 
@@ -169,6 +170,7 @@ Lessons from writing them:
 | 0.37.0 | tag `v0.37.0` | no automatic camera turning (planet spin off) |
 | 0.38.0 | tag `v0.38.0` | Three.js and PeerJS in the repository (`js/vendor/`), no CDNs |
 | 0.39.0 | tag `v0.39.0` | the Kuiper Belt seen at an angle |
+| 0.40.0 | tag `v0.40.0` | Esc menu with Save and exit; Continue / New game; Delete save game; SEO and the start screen as the link preview |
 
 ## Known limitations
 

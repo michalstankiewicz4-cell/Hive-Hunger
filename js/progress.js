@@ -17,6 +17,18 @@ function load() {
 export const progress = {
   done: load(),
 
+  /** A new game / Delete save game: nothing eaten yet. */
+  clear() {
+    this.done.clear();
+    try { localStorage.removeItem(KEY); } catch { /* (nothing kept anyway) */ }
+  },
+
+  /** Back to a saved game's list (Continue). */
+  set(ids) {
+    this.done = new Set(ids);
+    try { localStorage.setItem(KEY, JSON.stringify([...this.done])); } catch { /* (private window: only for now) */ }
+  },
+
   /** Body `id` was eaten. */
   complete(id) {
     this.done.add(id);

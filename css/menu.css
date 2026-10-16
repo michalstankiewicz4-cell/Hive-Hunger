@@ -244,6 +244,21 @@
   padding-top: 6px;
 }
 
+/* Delete save game: in the middle; red while it asks again */
+.settings-buttons .settings-delete {
+  margin-right: auto;
+}
+
+.settings-buttons .settings-delete.is-danger {
+  border-color: #ff6b6b;
+  color: #ff8f8f;
+}
+
+.settings-buttons .settings-delete:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* the three parts side by side: in a column a row's label goes above its control */
 .menu-card.is-settings {
   width: min(1040px, 100%);

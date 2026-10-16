@@ -18,6 +18,7 @@ import { GuestSide } from './guest.js';
 import { HudText } from './hud.js';
 import { Graphics } from './graphics.js';
 import { settings } from '../../settings.js';
+import { bytesToText, textToBytes } from '../../save.js';
 
 export { PLAYERS };
 
@@ -252,6 +253,55 @@ export class Game3D {
     this.paused = false;
     this.started = true;
     return true;
+  }
+
+  /**
+   * Single player: what "Save and exit" keeps — the mission under way (its body, the planet's seed and
+   * the voxels eaten so far; drifting pieces go back in place), points and upgrades, the settings
+   * panel and the ship types. The swarm starts again from its tunnel when it is loaded.
+   */
+  saveData(inMission = true) {
+    const p = this.localPlayer, pl = this.planet;
+    const mission = inMission ? this.bodyId : null;
+    return {
+      mission, seed: pl.seed, eaten: mission ? bytesToText(pl.eatenRuns()) : '',
+      score: p.score, planetScore: p.planetScore, tree: p.tree.toJSON(),
+      settings: Object.fromEntries(['count', 'speed', 'power', 'turn', ...SHIP_KINDS].map((k) => [k, p.getSetting(k)])),
+    };
+  }
+
+  /** Single player: Continue — back to a saved game. True if a mission was under way (it carries on). */
+  loadSave(data) {
+    const p = this.localPlayer;
+    for (const [k, v] of Object.entries(data.settings || {})) p.setSetting(k, v);
+    p.tree.load(data.tree || { owned: ['core'], spent: 0 });
+    p.score = data.score || 0;
+    p.applyUpgrades();
+    this.onTreeChange?.();
+    const n = this.cfg.levels.findIndex((l) => l.body === data.mission);
+    if (n < 0) return false;
+    this.planet.dispose();
+    this.mission = n;
+    this.level = n;
+    this.spawnPlanet(data.seed);
+    if (data.eaten) this.planet.applyEatenRuns(textToBytes(data.eaten));
+    this.planet.sync();
+    p.planetScore = data.planetScore || 0;
+    this.returnFrames = 0;
+    this.faceAngle(this.cfg.levels[n].view || 0);
+    this.paused = false;
+    this.started = true;
+    return true;
+  }
+
+  /** Single player: a new game — no points, no upgrades (the settings panel stays). */
+  resetProgress() {
+    const p = this.localPlayer;
+    p.tree.load({ owned: ['core'], spent: 0 });
+    p.score = 0;
+    p.planetScore = 0;
+    p.applyUpgrades();
+    this.onTreeChange?.();
   }
 
   spawnPlanet(seed) {

@@ -19,9 +19,10 @@ const KEYS = [
  * The Settings screen in the menu: Mouse (what it does, camera turning and zoom speed), Keyboard
  * (the keys) and Graphics (FPS counter, render resolution, smooth edges, amount of effects).
  * Changes apply at once and are remembered in this browser (settings.js). The three are side by side
- * (one under another on narrow screens).
+ * (one under another on narrow screens). `saves` ({ has(), delete() }): Delete save game — the single
+ * player save and the map's ticks; it asks once more before it deletes.
  */
-export function fillSettings(card, onBack) {
+export function fillSettings(card, onBack, saves = null) {
   card.classList.add('is-wide', 'is-settings');
   const columns = el('div', 'settings-columns');
   card.append(columns);
@@ -42,11 +43,26 @@ export function fillSettings(card, onBack) {
   const reset = button('Reset settings', () => {
     settings.reset();
     card.replaceChildren(card.firstChild); // keep the title, draw the rest again
-    fillSettings(card, onBack);
+    fillSettings(card, onBack, saves);
   });
   const back = button('Back', onBack, 'lobby-button is-primary');
   const row = el('div', 'settings-buttons');
-  row.append(reset, back);
+  row.append(reset);
+  if (saves) {
+    // a second press deletes (the first only asks)
+    let sure = false;
+    const del = button(saves.has() ? 'Delete save game' : 'No save game', () => {
+      if (!sure) { sure = true; del.textContent = 'Really delete it?'; del.classList.add('is-danger'); return; }
+      saves.delete();
+      sure = false;
+      del.textContent = 'Save game deleted';
+      del.classList.remove('is-danger');
+      del.disabled = true;
+    }, 'lobby-button settings-delete');
+    del.disabled = !saves.has();
+    row.append(del);
+  }
+  row.append(back);
   card.appendChild(row);
   back.focus();
 }

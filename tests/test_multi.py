@@ -49,6 +49,7 @@ async def main():
             await host.evaluate("() => { window.__dbg.localPlayer.score += 100; window.__dbg.buyUpgrade('units1'); }")
             solo = await host.evaluate('() => ({ score: window.__dbg.localPlayer.score, left: window.__dbg.planet.left, total: window.__dbg.planet.total, count: window.__dbg.localPlayer.base.count })')
             await host.keyboard.press('Escape')
+            await host.click('#menu .menu-choice >> text=Exit to main menu')
             # … then a PvP room: nothing carries over except the settings panel
             await host.click('.menu-choice >> nth=2')  # Multiplayer · PvP
             await host.wait_for_selector('.menu-card .lobby-link', timeout=20000)

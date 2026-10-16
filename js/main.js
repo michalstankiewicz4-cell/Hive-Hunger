@@ -11,6 +11,8 @@ import { Summary } from './ui/Summary.js';
 import { TreeView } from './ui/TreeView.js';
 import { SolarMap } from './ui/SolarMap.js';
 import { progress } from './progress.js';
+import { savedGame } from './save.js';
+import { bodyById } from './solar.js';
 import { pingText, rateText } from './ui/dom.js';
 
 const hudEl = document.getElementById('hud');
@@ -110,12 +112,44 @@ if (!window.THREE) {
   const lobby = new Lobby(lobbyEl, () => menu.showSettings(() => menu.hide()));
   const menu = new StartScreen(menuEl, {
     available: canNet,
-    // Single player: the map (or, with a mission under way, back to it — Esc does the same)
+    // Single player: with a saved game, continue it or start a new one; otherwise the map
     onSolo: () => {
-      if (soloPlayed) {
-        game.started = true;
+      const save = savedGame.read();
+      if (!save) return showSoloMap();
+      menu.showContinue({ mission: bodyById(save.mission)?.name || '', points: (save.score || 0) - (save.tree?.spent || 0), at: save.at });
+    },
+    onContinue: () => {
+      const save = savedGame.read();
+      if (save && game.loadSave(save)) {
+        soloPlayed = true;
         menu.hide();
       } else showSoloMap();
+    },
+    onNewGame: () => {
+      savedGame.clear();
+      progress.clear();
+      game.resetProgress();
+      showSoloMap();
+    },
+    // Esc during a mission: Resume, Save and exit, Exit to main menu (without saving: this game's points are dropped)
+    onResume: () => {
+      game.started = true;
+      menu.hide();
+    },
+    onSaveExit: () => {
+      savedGame.write(game.saveData(true));
+      soloPlayed = false;
+      menu.showStart();
+    },
+    onExit: () => {
+      soloPlayed = false;
+      game.resetProgress();
+      menu.showStart();
+    },
+    // Settings → Delete save game: the save and the map's ticks
+    saves: {
+      has: () => savedGame.has() || progress.done.size > 0,
+      delete: () => { savedGame.clear(); progress.clear(); },
     },
     onCreate: (mode) => {
       menu.showBusy('Multiplayer', 'Creating room…');
@@ -191,9 +225,9 @@ if (!window.THREE) {
         menu.showStart();
       } else if (menu.inSettings) menu.closeSettings(); // back to where Settings was opened
       else if (game.role === 'solo' && game.started) {
-        game.started = false;
-        menu.showStart();
-      } else if (game.role === 'solo' && soloPlayed && !menuEl.hidden) {
+        game.started = false; // paused: Resume, Save and exit, Exit to main menu
+        menu.showPause();
+      } else if (game.role === 'solo' && menu.inPause && !menuEl.hidden) {
         game.started = true;
         menu.hide();
       }
