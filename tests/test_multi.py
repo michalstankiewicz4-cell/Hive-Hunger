@@ -46,7 +46,7 @@ async def main():
             await host.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 200); p.setSetting('speed', 0.4); }")
             await h.fast_forward(host, 400)
             await host.evaluate("() => { window.__dbg.localPlayer.score += 100; window.__dbg.buyUpgrade('units1'); }")
-            solo = await host.evaluate('() => ({ score: window.__dbg.localPlayer.score, left: window.__dbg.planet.left, total: window.__dbg.planet.total })')
+            solo = await host.evaluate('() => ({ score: window.__dbg.localPlayer.score, left: window.__dbg.planet.left, total: window.__dbg.planet.total, count: window.__dbg.localPlayer.base.count })')
             await host.keyboard.press('Escape')
             # … then a PvP room: nothing carries over except the settings panel
             await host.click('.menu-choice >> nth=2')  # Multiplayer · PvP
@@ -60,7 +60,8 @@ async def main():
                 count: p.base.count, units: p.swarm.count }; }''')
             t.ok(solo['score'] > 0 and fresh['score'] == 0 and fresh['owned'] == ['core'] and fresh['level'] == 1
                  and fresh['left'] == fresh['total'], 'a room starts from scratch (no points, upgrades or eaten planet from single player)', fresh)
-            t.ok(fresh['count'] == 200 and fresh['units'] == 200, 'the settings panel values stay', fresh['count'])
+            # (Units as set in single player — bombers that blew up there took some away)
+            t.ok(fresh['count'] == solo['count'] and fresh['units'] == solo['count'], 'the settings panel values stay', [solo['count'], fresh['count']])
             await host.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('speed', 0.05); }")
 
             guests = []
@@ -122,7 +123,10 @@ async def main():
             t.ok(sum(hs['scores']) > 0, 'swarms eat', hs['scores'])
             await host.wait_for_timeout(500)
             ls = await guests[1].evaluate('() => window.__dbg.activePlayers().map(p => [p.swarm.lasers, p.swarm.storms, p.swarm.mesh.instanceColor.getX(0) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.lasers) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.count - 1) < 0.5, p.swarm.tugs, p.swarm.mesh.instanceColor.getY(p.swarm.lasers + p.swarm.storms) > 0.9 && p.swarm.mesh.instanceColor.getX(p.swarm.lasers + p.swarm.storms) < 0.6])')
-            t.ok(len(ls) == 3 and all(x == [5, 5, True, True, True, 5, True] for x in ls), 'guests see every player\'s ships in the type colours (red lasers, blue storms, green tugs, yellow eaters)', ls)
+            t.ok(len(ls) == 3 and all(x == [4, 4, True, True, True, 4, True] for x in ls), 'guests see every player\'s ships in the type colours (red lasers, blue storms, green tugs, yellow eaters)', ls)
+            hb = await host.evaluate('() => [window.__dbg.holes.made, window.__dbg.activePlayers().map(p => p.swarm.bombers)]')
+            gb = await guests[1].evaluate('() => [window.__dbg.holes.made, window.__dbg.activePlayers().map(p => p.swarm.bombers)]')
+            t.ok(gb[0] > 0 and gb[1] == hb[1], 'bombers blew up on the host: the guests saw their black holes', f'host {hb} guest {gb}')
 
             # finish the planet: summary for everyone, the next planet only after everyone pressed Next planet
             # slower for the last scraps: at high speed a unit turns in a wide arc and can circle an

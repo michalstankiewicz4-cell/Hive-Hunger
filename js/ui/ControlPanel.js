@@ -8,6 +8,7 @@
 export class ControlPanel {
   constructor(root, defs, bindings) {
     this.resets = [];
+    this.syncs = [];
 
     for (const def of defs) {
       const bind = bindings[def.id];
@@ -41,6 +42,12 @@ export class ControlPanel {
       });
 
       row.append(label, input, output);
+      // the game can change a value too (bombers that blew up: fewer units)
+      this.syncs.push(() => {
+        const v = Number(bind.get());
+        // (the slider snaps to its step; the number next to it shows the exact value)
+        if (document.activeElement !== input && Number(output.value) !== v) { input.value = v; show(v); }
+      });
       root.appendChild(row);
       this.resets.push(() => {
         input.value = initial;
@@ -56,5 +63,10 @@ export class ControlPanel {
     reset.textContent = 'Reset to default';
     reset.addEventListener('click', () => this.resets.forEach((r) => r()));
     root.appendChild(reset);
+  }
+
+  /** Shows the current values (set by the game, not the panel). */
+  sync() {
+    for (const f of this.syncs) f();
   }
 }

@@ -92,6 +92,10 @@ export class Swarm3D {
     this.tugs = 0;
     this.tugGoal = new Float32Array(this.max * 3);
     this.tugHas = new Uint8Array(this.max);
+    // the next `bombers` units are purple bombers: they fly to the nearest voxel and, touching it,
+    // blow up everything within `bomber.radius` — and die (Player removes them after the update)
+    this.bombers = 0;
+    this.dying = [];
     this.tows = [];           // [[unit, fragment id], …] — tractor beams on now
     this.fragmentById = null; // (id) => fragment (set by the player)
     this.towBeams = [];       // tractor beam meshes, one per tow being drawn
@@ -127,6 +131,8 @@ export class Swarm3D {
     this.stormColor = new THREE.Color(cfg.storm.color);
     this.tugColor = new THREE.Color(cfg.tug.color);
     this.coloredTugs = -1;
+    this.bomberColor = new THREE.Color(cfg.bomber.color);
+    this.coloredBombers = -1;
     this.scene = scene;
     this.coloredStorms = -1;
     // the storm ships' lightning (the chain-lightning look, short-lived flashes)
@@ -232,18 +238,38 @@ export class Swarm3D {
   /** Units in red (lasers) and in the swarm's colour (eaters). */
   updateColors() {
     const n = Math.min(this.lasers, this.count), m = Math.min(n + this.storms, this.count), t = Math.min(m + this.tugs, this.count);
-    if (n === this.coloredLasers && m === this.coloredStorms && t === this.coloredTugs && this.colorsFor === this.count) return;
+    const b = Math.min(t + this.bombers, this.count);
+    if (n === this.coloredLasers && m === this.coloredStorms && t === this.coloredTugs && b === this.coloredBombers && this.colorsFor === this.count) return;
+    this.coloredBombers = b;
     this.coloredLasers = n;
     this.coloredStorms = m;
     this.coloredTugs = t;
     this.colorsFor = this.count;
     for (let i = 0; i < this.count; i++) {
-      this.mesh.setColorAt(i, i < n ? this.laserColor : i < m ? this.stormColor : i < t ? this.tugColor : this.baseColor);
+      this.mesh.setColorAt(i, i < n ? this.laserColor : i < m ? this.stormColor : i < t ? this.tugColor : i < b ? this.bomberColor : this.baseColor);
     }
     this.mesh.instanceColor.needsUpdate = true;
   }
 
   /** Tugs among the units (after the storm ships). */
+  isBomber(i) {
+    const a = this.lasers + this.storms + this.tugs;
+    return i >= a && i < a + this.bombers;
+  }
+
+  /** Swaps everything about units a and b (a bomber that blew up is moved to the end to be removed). */
+  swapUnits(a, b) {
+    if (a === b) return;
+    const swap = (arr, k) => {
+      for (let j = 0; j < k; j++) { const t = arr[a * k + j]; arr[a * k + j] = arr[b * k + j]; arr[b * k + j] = t; }
+    };
+    for (const arr of [this.pos, this.dir, this.look, this.foodPos, this.beamTo, this.tugGoal]) swap(arr, 3);
+    swap(this.stormSides, 6);
+    for (const arr of [this.food, this.landed, this.redirect, this.best, this.stuck, this.lastBlock, this.blockAge,
+      this.hungry, this.pause, this.firing, this.aimed, this.stormSideN, this.tugHas]) swap(arr, 1);
+    if (this.remotePos) swap(this.remotePos, 3);
+  }
+
   isTug(i) {
     const a = this.lasers + this.storms;
     return i >= a && i < a + this.tugs;
@@ -258,7 +284,8 @@ export class Swarm3D {
    * Multiplayer guest: show positions and headings received from the host instead of
    * simulating. Units move smoothly towards the received positions between updates.
    */
-  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null) {
+  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null, bombers = 0) {
+    this.bombers = bombers;
     this.remote = true;
     this.lasers = lasers;
     this.storms = storms;
@@ -355,6 +382,7 @@ export class Swarm3D {
     for (let i = 0; i < this.count; i++) {
       const i3 = i * 3;
 
+      if (this.dying.length && this.dying.includes(i)) continue; // blew up this frame
       // giving up on a bite it couldn't reach: stays still for a moment, then picks another
       if (this.pause[i] > 0) {
         if (--this.pause[i] === 0) this.retarget(i, world);
@@ -364,6 +392,13 @@ export class Swarm3D {
       // landed on its bite: eats it until it is gone, then takes off
       if (landed[i]) {
         if (food[i] >= 0 && world.isFood(food[i]) && !this.isTug(i)) {
+          // a bomber touching its voxel blows up (and is gone)
+          if (this.isBomber(i)) {
+            world.bomb(i, foodPos[i3], foodPos[i3 + 1], foodPos[i3 + 2]);
+            this.dying.push(i);
+            landed[i] = 0;
+            continue;
+          }
           // a bite on a drifting fragment moves: the unit holds on and moves with it
           const fc = world.cellCenter(food[i]);
           pos[i3] += fc.x - foodPos[i3]; pos[i3 + 1] += fc.y - foodPos[i3 + 1]; pos[i3 + 2] += fc.z - foodPos[i3 + 2];

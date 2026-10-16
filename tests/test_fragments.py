@@ -201,6 +201,25 @@ async def main():
         t.ok(st['delivered'] == 1 and st['pieces'] == 0 and st['score'] - tg['score'] == 5 * 16 and tg['left'] - st['left'] == 16,
              'towed home: the piece is gone and the player gets 5 × its points', {**st, 'before': tg})
 
+        # a black hole pulls in a drifting piece within 15 voxels (gently) and swallows it: its voxels
+        # count as eaten, a point each for the hole's owner
+        await page.evaluate(BUILD, 1)
+        bh = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, pl = g.planet, N = pl.N, fr = pl.fragments;
+          p.onNewPlanet(); p.setSetting('count', 20); ['lasers', 'storms', 'tugs', 'bombers'].forEach(k => p.setSetting(k, 0)); g.stop();
+          const box = new Map(); for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) { const t = pl.tags[idx]; (box.get(t) || box.set(t, []).get(t)).push(idx); }
+          const a = [...box.values()].find(c => c.length === 64), k0 = Math.min(...a.map(i => (i / (N * N)) | 0));
+          for (const i of a) if (((i / (N * N)) | 0) === k0 + 2) pl.remove(i);
+          fr.step(true);
+          const f = fr.list[0];
+          const at = f.pos.clone().add(new window.THREE.Vector3(6, 0, 0)); // 12 voxels away
+          g.holes.add(at, p);
+          const d0 = f.pos.distanceTo(at), score0 = p.score, left0 = pl.left;
+          let maxSpeed = 0, frames = 0;
+          while (!f.dead && frames < 240) { g.holes.update(g.debris, fr, (x, o) => g.swallow(x, o)); fr.step(true); maxSpeed = Math.max(maxSpeed, f.vel.length()); frames++; }
+          return { d0, swallowed: f.dead, frames, maxSpeed, gained: p.score - score0, eaten: left0 - pl.left, count: 16 }; }""")
+        t.ok(bh['swallowed'] and bh['gained'] == 16 and bh['eaten'] == 16, 'a black hole pulls in a piece 12 voxels away and swallows it (points for its owner)', bh)
+        t.ok(bh['maxSpeed'] <= 0.0501 and bh['frames'] > 60, 'gently: it takes over a second', bh)
+
         await browser.close()
     return t.done(errors)
 

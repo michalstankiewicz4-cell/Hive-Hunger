@@ -2,6 +2,17 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.22.0] — 2026-10-16
+
+### Added
+- **Bombers** (purple): a fifth ship type. A bomber flies to the nearest voxel and, touching it, blows up every voxel within 10 voxels (5 units) — in the planet and on drifting pieces, claimed or not — a point each; the bomber is gone for good: the Units and Bombers settings go down by one.
+- **Black holes**: each blast leaves a black hole for 4 s (1 s growing, 2 s at full size, 1 s shrinking). It bends the picture around it (gravitational lensing: a black disc with a thin bright ring, what is behind it seen around it) and gently pulls in debris and drifting pieces within 15 voxels; debris falling in is gone, a piece falling in is swallowed — its voxels count as eaten, a point each for the bomber's owner. Guests see the same holes.
+- **Locks** in the Ship types panel: a checkbox in front of every slider locks it — it can't be moved, and moving another slider never changes it.
+- At the start the units are split evenly between the five types: 4 of each.
+
+### Changed
+- The settings panel follows values the game changes (Units after bombers blew up). The Units slider snaps to its step of 10; the number next to it is exact.
+
 ## [0.21.1] — 2026-10-16
 
 ### Changed

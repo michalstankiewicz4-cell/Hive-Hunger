@@ -1,13 +1,16 @@
 /**
  * Ship types panel (bottom-right): how many of your units are yellow eaters, red laser ships,
- * blue storm ships and green tugs — a slider each. The sliders are linked: together they are
- * always all your units (the Units slider plus upgrades).
- *  - Moving Lasers, Storms or Tugs takes the ships from the eaters; when there are none left,
- *    from the other types, the last one first (tugs, then storms, then lasers).
- *  - Moving Eaters takes the ships from the tugs first, then the storm ships, then the lasers.
+ * blue storm ships, green tugs and purple bombers — a slider each, linked: together they are
+ * always all your units (the Units slider plus upgrades). A checkbox in front of a slider locks
+ * it: it can't be moved, and moving the others never changes it.
+ *  - Moving a slider up takes the ships from the eaters first, then from the other types, the
+ *    last one first (bombers, tugs, storms, lasers); moving it down gives them to the eaters
+ *    (if the eaters are locked: to the other types, the last one first).
+ *  - Eaters are the rest: moving Eaters up takes from the other types, the last one first.
  */
-const TYPES = [['eaters', 'Eaters'], ['lasers', 'Lasers'], ['storms', 'Storms'], ['tugs', 'Tugs']];
-const OTHERS = ['lasers', 'storms', 'tugs'];
+const TYPES = [['eaters', 'Eaters'], ['lasers', 'Lasers'], ['storms', 'Storms'], ['tugs', 'Tugs'], ['bombers', 'Bombers']];
+const OTHERS = ['lasers', 'storms', 'tugs', 'bombers'];
+const LAST_FIRST = ['bombers', 'tugs', 'storms', 'lasers'];
 
 export class ShipTypes {
   /**
@@ -17,6 +20,7 @@ export class ShipTypes {
   constructor(root, opts) {
     this.opts = opts;
     this.root = root;
+    this.locked = {};
     const title = document.createElement('div');
     title.className = 'ships-title';
     title.textContent = 'Ship types';
@@ -38,32 +42,35 @@ export class ShipTypes {
     return c;
   }
 
-  /** One slider moved: fit the others around it. */
+  /** One slider moved: the other unlocked types make room (or take the ships back). */
   change(key, v) {
+    if (this.locked[key]) return;
     const c = this.counts();
-    if (key === 'eaters') {
-      let over = c.lasers + c.storms + c.tugs - (this.total - v);
-      for (const k of ['tugs', 'storms', 'lasers']) {
-        const take = Math.min(over, c[k]);
-        c[k] -= take;
-        over -= take;
+    let diff = v - c[key];
+    const free = (k) => k !== key && !this.locked[k];
+    if (diff > 0) {
+      // take: eaters first (unless it is the eaters that moved), then the others, the last one first
+      for (const k of (key === 'eaters' ? LAST_FIRST : ['eaters', ...LAST_FIRST])) {
+        if (!free(k) || diff <= 0) continue;
+        const take = Math.min(diff, c[k]);
+        c[k] -= take; c[key] += take; diff -= take;
       }
-    } else {
-      c[key] = v;
-      let over = c.lasers + c.storms + c.tugs - this.total;
-      for (const k of ['tugs', 'storms', 'lasers']) {
-        if (k === key || over <= 0) continue;
-        const take = Math.min(over, c[k]);
-        c[k] -= take;
-        over -= take;
-      }
+    } else if (diff < 0) {
+      // give back: to the eaters, or (eaters locked / moved) to the others, the last one first
+      const to = key !== 'eaters' && free('eaters') ? 'eaters' : LAST_FIRST.find(free);
+      if (to) { c[to] -= diff; c[key] += diff; }
     }
     for (const k of OTHERS) this.opts.set(k, c[k]);
   }
 
   slider(id, label, onInput) {
     const row = document.createElement('div');
-    row.className = `control ships-${id}`;
+    row.className = `control ships-row ships-${id}`;
+    const lock = document.createElement('input');
+    lock.type = 'checkbox';
+    lock.id = `ships-lock-${id}`;
+    lock.title = `Lock ${label}`;
+    lock.setAttribute('aria-label', `Lock ${label}`);
     const l = document.createElement('label');
     l.htmlFor = `ships-${id}`;
     l.textContent = label;
@@ -74,16 +81,20 @@ export class ShipTypes {
     input.step = 1;
     const out = document.createElement('output');
     out.htmlFor = input.id;
+    lock.addEventListener('change', () => {
+      this.locked[id] = lock.checked;
+      input.disabled = lock.checked;
+    });
     input.addEventListener('input', () => {
       onInput(Number(input.value));
       this.sync();
     });
-    row.append(l, input, out);
+    row.append(lock, l, input, out);
     this.root.appendChild(row);
-    return { input, out };
+    return { input, out, lock };
   }
 
-  /** Follows the number of units (Units slider, upgrades) and the current split. */
+  /** Follows the number of units (Units slider, upgrades, bombers lost) and the current split. */
   sync() {
     this.total = Math.max(0, Math.round(this.opts.total()));
     const c = this.counts();

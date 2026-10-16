@@ -81,7 +81,10 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `count`, `laser.count`, `storm.count`, `tug.count` | 20, 5, 5, 5 | units at the start and how many are lasers / storms / tugs — computed in `config.js` from `START_UNITS` as an even split (the rest are eaters) | |
+| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count` | 20, 4, 4, 4, 4 | units at the start and how many are lasers / storms / tugs — computed in `config.js` from `START_UNITS` as an even split (the rest are eaters) | |
+| `bomber.radius` | 5 | a bomber destroys everything within this (10 voxels) | |
+| `bomber.color`, `bomber.debris` | purple, 300 | colour; most debris pieces thrown by a blast | |
+| `minCount` | 0 | fewest units (the Units slider starts at 10; bombers that blew up can take the swarm lower) | |
 | `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
 | `tug.pull` | 0.9 | a towed piece's speed × the swarm speed | |
 | `tug.deliver` | 2 | how close (beyond the piece's radius) to the beacon a piece counts as home | |
@@ -142,6 +145,17 @@ Slider ranges and steps (`min`, `max`, `step`, `decimals`): Units, Speed, Power,
 | `maxSteps` | 400000 | flood-fill limit when looking for a split per eaten cluster; above it no split is found | lower = cheaper, huge halves don't come loose |
 | `syncEvery` | 30 | frames between piece positions sent to guests | |
 | `towSyncEvery` | 6 | … while a piece is being towed | |
+
+## Black holes (`holes`)
+
+| Value | Default | What it does |
+| --- | --- | --- |
+| `grow`, `hold`, `shrink` | 60, 120, 60 | frames growing (1 s), at full size (2 s), shrinking (1 s) |
+| `size` | 2.2 | Einstein radius at full size (how far around it the picture bends) |
+| `range` | 7.5 | pull range (15 voxels) |
+| `pullDebris`, `pullPieces`, `maxPieceSpeed` | 0.004, 0.0015, 0.05 | how hard it pulls debris / pieces per frame, fastest a pulled piece moves |
+| `core` | 0.9 | debris within this is gone, a piece is swallowed |
+| `ringColor` | light purple | the thin ring around the black disc |
 
 ## Other
 

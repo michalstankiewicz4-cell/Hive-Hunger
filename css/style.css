@@ -199,6 +199,23 @@ body {
   bottom: calc(30px + env(safe-area-inset-bottom, 0px));
 }
 
+.ships .ships-row {
+  grid-template-columns: 16px 7ch 1fr 4ch;
+}
+
+.ships .ships-row input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.ships .ships-row input[type='range']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .ships-title {
   color: var(--hud-dim);
 }
