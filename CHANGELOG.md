@@ -2,6 +2,15 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.24.0] — 2026-10-16
+
+### Added
+- **Support ships** (white): a seventh ship type that doesn't eat. Every 3 s each fires a lightning bolt that jumps between ships of its own swarm — the next one picked at random among those within 10 units, up to 6 jumps, none twice — running from ship to ship over 1.5 s and gone once it reaches the last one. Every voxel on its way is destroyed as it passes (a point each; drifting pieces too). The bolt is white with a 4-pixel glow and energy flowing along it, not straight but irregularly bent, with small branches (2-pixel glow) that do nothing. It follows the ships as they fly. Guests see the same bolt (same ships, same random seed).
+- The Ship types panel has a seventh slider, **Support**. At the start: 3 of each type, 2 support ships.
+
+### Fixed
+- Orbs, lightning bolts and black holes from the previous planet are cleared when a new planet appears (they could destroy voxels of the new one); an orb ship whose orb was cleared can fire again.
+
 ## [0.23.0] — 2026-10-16
 
 ### Added

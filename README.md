@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.23.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.24.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -33,12 +33,13 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Turning** — how fast ships turn their nose; a ship eats only once it faces its bite
   - **Reset to default** — restore all settings to their starting values
   - **Level 1–5** (single player) — jump straight to that level; the swarm starts again from its beacon
-- **Ship types panel in the bottom-right corner** — how many of your units are yellow **Eaters**, red **Lasers**, blue **Storms**, green **Tugs**, purple **Bombers** and magenta **Orbs** — a slider each (linked: together they are all your units; at the start split as evenly as possible — 4, 4, 3, 3, 3, 3). The checkbox in front of a slider locks it: it can't be moved, and moving the others never changes it. Every ship eats only once it faces its bite.
+- **Ship types panel in the bottom-right corner** — how many of your units are yellow **Eaters**, red **Lasers**, blue **Storms**, green **Tugs**, purple **Bombers**, magenta **Orbs** and white **Support** ships — a slider each (linked: together they are all your units; at the start split as evenly as possible — 3 of each, 2 support ships). The checkbox in front of a slider locks it: it can't be moved, and moving the others never changes it. Every ship eats only once it faces its bite.
   - **Laser** ships eat their bite from 5 voxels away with a glowing red beam, but fly 10% slower.
   - **Storm** ships fire lightning from the same distance: it forks at 70% of the way into three — the bite gets 40% of a laser's damage, the two nearest voxels 30% each. When the bite is gone, the ship picks its next one like any other.
   - **Tugs** don't eat: they fly only to drifting pieces. From 10 voxels away a green tractor beam takes in the whole piece and the tug tows it home to your beacon. There the piece is gone and you get **5 ×** the points of what is left of it — other ships (yours or other players') may eat it on the way.
   - **Bombers** fly to the nearest voxel and, touching it, blow up everything within 10 voxels (a point each) — and are gone for good (one unit fewer). The blast leaves a black hole for about 4 seconds that bends the picture around it and gently pulls in debris and drifting pieces within 15 voxels; what falls in is gone (the pieces' voxels count for the bomber's owner).
   - **Orb** ships fire, from 10 voxels away, a voxel-sized plasma orb with a pulsing glow and a fiery tail — one at a time. It flies slowly to the bite and bursts there: everything within 2 voxels is gone (a point each).
+  - **Support** ships don't eat: every 3 seconds each fires a white lightning bolt at your own ships — it jumps between them in a random order (up to 6 jumps) over 1.5 s and is gone after the last one; every voxel on its way is destroyed (a point each). The bolt is irregularly bent, with energy flowing along it and small branches.
 
 ## Multiplayer
 
@@ -115,6 +116,7 @@ js/
   ui/ShipTypes.js       ship types panel: eaters / laser ships / storm ships / tugs / bombers, with locks
   three/BlackHoles.js   black holes after bomber blasts: pull, swallow, lensing pass
   three/Orbs.js         orb ships' plasma orbs: flight, pulsing glow, fiery tail, burst flash
+  three/Zaps.js         support ships' lightning between ships: bent bolt, flowing energy, branches
   ui/StartScreen.js     start screen and multiplayer waiting room
   ui/Lobby.js           room panel during a multiplayer match
   ui/Summary.js         multiplayer summary after each planet

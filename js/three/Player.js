@@ -33,6 +33,7 @@ export class Player {
     this.tugs = CONFIG.swarm.tug.count;     // … and green tugs
     this.bombers = CONFIG.swarm.bomber.count; // … and purple bombers
     this.orbs = CONFIG.swarm.orb.count;     // … and magenta orb ships
+    this.supports = CONFIG.swarm.support.count; // … and white support ships
     this.towing = new Map();                // tug unit → { f: fragment, on: tractor beam holds it }
     this.tree = new SkillTree();
     this.bolt = null;       // chain lightning settings once bought
@@ -53,6 +54,7 @@ export class Player {
     this.swarm.tugs = Math.min(this.tugs, this.swarm.count - this.swarm.lasers - this.swarm.storms);
     this.swarm.bombers = Math.min(this.bombers, this.swarm.count - this.swarm.lasers - this.swarm.storms - this.swarm.tugs);
     this.swarm.orbs = Math.min(this.orbs, this.swarm.count - this.swarm.lasers - this.swarm.storms - this.swarm.tugs - this.swarm.bombers);
+    this.swarm.supports = Math.min(this.supports, this.swarm.count - this.swarm.lasers - this.swarm.storms - this.swarm.tugs - this.swarm.bombers - this.swarm.orbs);
     this.swarm.fragmentById = (id) => game.planet?.fragments?.byId.get(id);
     this.swarm.fragments = () => game.planet?.fragments || null;
 
@@ -170,7 +172,7 @@ export class Player {
       this.applyUpgrades();
     }
     else if (key === 'turn') s.turnSmoothing = value;
-    else if (key === 'lasers' || key === 'storms' || key === 'tugs' || key === 'bombers' || key === 'orbs') {
+    else if (key === 'lasers' || key === 'storms' || key === 'tugs' || key === 'bombers' || key === 'orbs' || key === 'supports') {
       this[key] = Math.max(0, Math.round(value));
       this.applyUpgrades();
     }
@@ -178,7 +180,7 @@ export class Player {
 
   getSetting(key) {
     const s = this.swarm;
-    return { count: this.base.count, speed: this.base.speed, power: this.base.power, lasers: this.lasers, storms: this.storms, tugs: this.tugs, bombers: this.bombers, orbs: this.orbs, turn: s.turnSmoothing }[key];
+    return { count: this.base.count, speed: this.base.speed, power: this.base.power, lasers: this.lasers, storms: this.storms, tugs: this.tugs, bombers: this.bombers, orbs: this.orbs, supports: this.supports, turn: s.turnSmoothing }[key];
   }
 
   /** Points to spend in the upgrade tree: 1 eaten voxel = 1 point. */
@@ -204,6 +206,7 @@ export class Player {
     s.tugs = Math.min(this.tugs, s.count - s.lasers - s.storms);
     s.bombers = Math.min(this.bombers, s.count - s.lasers - s.storms - s.tugs);
     s.orbs = Math.min(this.orbs, s.count - s.lasers - s.storms - s.tugs - s.bombers);
+    s.supports = Math.min(this.supports, s.count - s.lasers - s.storms - s.tugs - s.bombers - s.orbs);
     s.speed = this.base.speed * (1 + e.speed);
     this.biteRadius = this.base.power + e.power;
     this.bolt = e.bolt;
@@ -246,6 +249,7 @@ export class Player {
   /** A new planet appeared: old bites belonged to the old one. */
   onNewPlanet() {
     this.towing.clear(); // the pieces belonged to the old planet
+    this.swarm.orbOut.fill(0); // orbs in flight are gone with the old planet
     this.swarm.tugHas.fill(0);
     this.swarm.tows = [];
     this.swarm.food.fill(-1);
@@ -306,6 +310,7 @@ export class Player {
     this.updateTugs();
     this.swarm.update(L.pos, this.swarmWorld);
     this.removeDead();
+    this.updateSupport();
     this.updateLightning();
 
     this.beacon.active = Boolean(this.homeMode);
@@ -374,9 +379,9 @@ export class Player {
     // highest first, so moving one doesn't move another that is still to go
     for (const i of [...new Set(s.dying)].sort((a, b) => b - a)) {
       const bEnd = s.lasers + s.storms + s.tugs + s.bombers;
-      const oEnd = bEnd + s.orbs;
+      const oEnd = bEnd + s.orbs + s.supports;
       s.swapUnits(i, bEnd - 1);           // the last bomber's place
-      s.swapUnits(bEnd - 1, oEnd - 1);    // past the orb ships (the last of them takes the bomber's place)
+      s.swapUnits(bEnd - 1, oEnd - 1);    // past the orb and support ships (the last of them takes the bomber's place)
       s.swapUnits(oEnd - 1, s.count - 1); // the last unit's place (an eater, if any)
       if (s.food[s.count - 1] >= 0) this.game.planet.release(s.food[s.count - 1]);
       s.food[s.count - 1] = -1;
@@ -386,6 +391,38 @@ export class Player {
     }
     s.dying.length = 0;
     this.onLost?.();
+  }
+
+  /**
+   * Support ships: every `support.every` frames each fires a lightning bolt from itself through
+   * up to `support.jumps` other ships of this swarm, each the next one picked at random among
+   * those within `support.jumpRange` of the last (none twice). What lies on its way is destroyed
+   * (Game3D.zap).
+   */
+  updateSupport() {
+    const s = this.swarm, c = CONFIG.swarm.support;
+    if (!s.supports || !this.game.planet.alive) return;
+    const start = s.lasers + s.storms + s.tugs + s.bombers + s.orbs, end = Math.min(start + s.supports, s.count);
+    const P = s.pos, r2 = c.jumpRange * c.jumpRange;
+    for (let i = start; i < end; i++) {
+      if (s.zapWait[i] > 0) { s.zapWait[i]--; continue; }
+      const chain = [i], used = new Set(chain);
+      let cur = i;
+      for (let j = 0; j < c.jumps; j++) {
+        const near = [];
+        for (let k = 0; k < s.count; k++) {
+          if (used.has(k)) continue;
+          const dx = P[k * 3] - P[cur * 3], dy = P[k * 3 + 1] - P[cur * 3 + 1], dz = P[k * 3 + 2] - P[cur * 3 + 2];
+          if (dx * dx + dy * dy + dz * dz <= r2) near.push(k);
+        }
+        if (!near.length) break;
+        cur = near[(Math.random() * near.length) | 0];
+        chain.push(cur);
+        used.add(cur);
+      }
+      s.zapWait[i] = c.every; // (alone: tries again after the same wait)
+      if (chain.length > 1) this.game.zap(this, chain);
+    }
   }
 
   /** An orb burst: the ship that fired it may fire again. */

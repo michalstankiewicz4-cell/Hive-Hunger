@@ -7,6 +7,7 @@ import { Player } from './Player.js';
 import { Lightning3D } from './Lightning3D.js';
 import { BlackHoles } from './BlackHoles.js';
 import { Orbs } from './Orbs.js';
+import { Zaps } from './Zaps.js';
 
 /** How many voxels a crater of radius `r` voxels covers (what a bite of that power hits). */
 const craterCache = new Map();
@@ -96,6 +97,7 @@ export class Game3D {
     this.lightning = new Lightning3D(this.scene);
     this.holes = new BlackHoles(this.cfg.holes);
     this.orbs = new Orbs(this.scene, this.cfg.swarm.orb, this.cfg.planet.voxelSize);
+    this.zaps = new Zaps(this.scene, this.cfg.swarm.support);
     this.onTreeChange = null; // () => void — the upgrade tree view refreshes
 
     this.resize(); // camera aspect is needed to keep the spawn point on screen
@@ -207,7 +209,7 @@ export class Game3D {
     // a room starts from scratch — nothing carries over from single player (planet, points,
     // upgrades, swarm), so co-op and PvP are fair; only the settings panel values stay
     const old = this.localPlayer;
-    const keep = ['count', 'speed', 'power', 'turn', 'lasers', 'storms', 'tugs', 'bombers', 'orbs'].map((k) => [k, old.getSetting(k)]);
+    const keep = ['count', 'speed', 'power', 'turn', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'].map((k) => [k, old.getSetting(k)]);
     this.removePlayer(0);
     this.planet.dispose();
     this.level = 0;
@@ -238,6 +240,10 @@ export class Game3D {
 
   spawnPlanet(seed) {
     this.level++;
+    // orbs, bolts and black holes belonged to the old planet
+    this.orbs?.clear();
+    this.zaps?.clear();
+    this.holes?.clear();
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level), this.cfg.fragments);
     if (this.role === 'host') this.planet.log = [];
     const fr = this.planet.fragments;
@@ -443,6 +449,43 @@ export class Game3D {
     }
   }
 
+  /**
+   * A support ship's lightning through the ships `chain` of `player`: every voxel on its (bent)
+   * way is gone — in the planet and on drifting pieces — a point each. Guests draw the same bolt.
+   */
+  zap(player, chain, seed = (Math.random() * 4294967296) >>> 0) {
+    // the voxels on each jump are gone as the bolt runs through it (on the host; guests get them in snapshots)
+    const onJump = this.role === 'guest' ? null : (path) => {
+      const pl = this.planet, fr = pl.fragments, step = pl.s * 0.5, p = new THREE.Vector3(), q = new THREE.Vector3();
+      const hit = new Set();
+      for (let k = 0; k + 5 < path.length; k += 3) {
+        p.fromArray(path, k); q.fromArray(path, k + 3);
+        const n = Math.max(1, Math.ceil(p.distanceTo(q) / step));
+        for (let t = 0; t <= n; t++) {
+          const x = this.tmp.copy(p).lerp(q, t / n);
+          const idx = pl.cellAt(x);
+          if (idx >= 0 && pl.hp[idx] > 0) hit.add(idx);
+          const f = fr ? fr.at(x) : -1;
+          if (f >= 0) hit.add(f);
+        }
+      }
+      for (const idx of hit) {
+        this.debris.emit(pl.cellCenter(idx, this.tmp), pl.voxelColor(idx), 1);
+        pl.remove(idx);
+      }
+      player.score += hit.size;
+      player.planetScore += hit.size;
+    };
+    this.zaps.add(player.swarm, chain, seed, onJump);
+    if (this.role === 'host') this.net?.broadcastZap(player.index, chain, seed);
+  }
+
+  /** Guest: a support ship fired on the host — the same bolt here. */
+  onZap({ index, chain, seed }) {
+    const p = this.players[index];
+    if (p) this.zap(p, chain, seed);
+  }
+
   /** Guest: an orb ship fired on the host — the same orb here (its burst arrives in snapshots). */
   onOrb(a, b) {
     this.orbs.fire({ x: a[0], y: a[1], z: a[2] }, { x: b[0], y: b[1], z: b[2] });
@@ -510,6 +553,7 @@ export class Game3D {
     this.debris.update();
     this.marker.update();
     this.lightning.update(this.camera);
+    this.zaps.update(this.camera);
     for (const p of this.activePlayers()) p.beacon.update(this.camera);
     this.updateHud();
   }
@@ -746,7 +790,7 @@ export class Game3D {
       p.score = ps.score;
       p.planetScore = ps.planetScore;
       p.wins = ps.wins;
-      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts, ps.tugs, ps.tows, ps.bombers, ps.orbs);
+      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts, ps.tugs, ps.tows, ps.bombers, ps.orbs, ps.supports);
     }
     const pl = this.planet;
     if (pl && pl.alive) {

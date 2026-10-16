@@ -1,16 +1,16 @@
 /**
  * Ship types panel (bottom-right): how many of your units are yellow eaters, red laser ships,
- * blue storm ships, green tugs, purple bombers and magenta orb ships — a slider each, linked: together they are
+ * blue storm ships, green tugs, purple bombers, magenta orb ships and white support ships — a slider each, linked: together they are
  * always all your units (the Units slider plus upgrades). A checkbox in front of a slider locks
  * it: it can't be moved, and moving the others never changes it.
  *  - Moving a slider up takes the ships from the eaters first, then from the other types, the
- *    last one first (orbs, bombers, tugs, storms, lasers); moving it down gives them to the eaters
+ *    last one first (support, orbs, bombers, tugs, storms, lasers); moving it down gives them to the eaters
  *    (if the eaters are locked: to the other types, the last one first).
  *  - Eaters are the rest: moving Eaters up takes from the other types, the last one first.
  */
-const TYPES = [['eaters', 'Eaters'], ['lasers', 'Lasers'], ['storms', 'Storms'], ['tugs', 'Tugs'], ['bombers', 'Bombers'], ['orbs', 'Orbs']];
-const OTHERS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs'];
-const LAST_FIRST = ['orbs', 'bombers', 'tugs', 'storms', 'lasers'];
+const TYPES = [['eaters', 'Eaters'], ['lasers', 'Lasers'], ['storms', 'Storms'], ['tugs', 'Tugs'], ['bombers', 'Bombers'], ['orbs', 'Orbs'], ['supports', 'Support']];
+const OTHERS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports'];
+const LAST_FIRST = ['supports', 'orbs', 'bombers', 'tugs', 'storms', 'lasers'];
 
 export class ShipTypes {
   /**

@@ -100,6 +100,10 @@ export class Swarm3D {
     // their bite (one at a time) that bursts there; orbOut = the id of the orb a ship has in flight
     this.orbs = 0;
     this.orbOut = new Int32Array(this.max);
+    // the next `supports` units are white support ships: they don't eat — every `support.every`
+    // frames one fires a lightning bolt that jumps between ships of its swarm (Player.updateSupport)
+    this.supports = 0;
+    this.zapWait = new Uint16Array(this.max);
     this.tows = [];           // [[unit, fragment id], …] — tractor beams on now
     this.fragmentById = null; // (id) => fragment (set by the player)
     this.towBeams = [];       // tractor beam meshes, one per tow being drawn
@@ -139,6 +143,8 @@ export class Swarm3D {
     this.coloredBombers = -1;
     this.orbColor = new THREE.Color(cfg.orb.color);
     this.coloredOrbs = -1;
+    this.supportColor = new THREE.Color(cfg.support.color);
+    this.coloredSupports = -1;
     this.scene = scene;
     this.coloredStorms = -1;
     // the storm ships' lightning (the chain-lightning look, short-lived flashes)
@@ -244,9 +250,10 @@ export class Swarm3D {
   /** Units in red (lasers) and in the swarm's colour (eaters). */
   updateColors() {
     const n = Math.min(this.lasers, this.count), m = Math.min(n + this.storms, this.count), t = Math.min(m + this.tugs, this.count);
-    const b = Math.min(t + this.bombers, this.count), o = Math.min(b + this.orbs, this.count);
+    const b = Math.min(t + this.bombers, this.count), o = Math.min(b + this.orbs, this.count), u = Math.min(o + this.supports, this.count);
     if (n === this.coloredLasers && m === this.coloredStorms && t === this.coloredTugs && b === this.coloredBombers
-      && o === this.coloredOrbs && this.colorsFor === this.count) return;
+      && o === this.coloredOrbs && u === this.coloredSupports && this.colorsFor === this.count) return;
+    this.coloredSupports = u;
     this.coloredBombers = b;
     this.coloredOrbs = o;
     this.coloredLasers = n;
@@ -254,12 +261,17 @@ export class Swarm3D {
     this.coloredTugs = t;
     this.colorsFor = this.count;
     for (let i = 0; i < this.count; i++) {
-      this.mesh.setColorAt(i, i < n ? this.laserColor : i < m ? this.stormColor : i < t ? this.tugColor : i < b ? this.bomberColor : i < o ? this.orbColor : this.baseColor);
+      this.mesh.setColorAt(i, i < n ? this.laserColor : i < m ? this.stormColor : i < t ? this.tugColor : i < b ? this.bomberColor : i < o ? this.orbColor : i < u ? this.supportColor : this.baseColor);
     }
     this.mesh.instanceColor.needsUpdate = true;
   }
 
   /** Tugs among the units (after the storm ships). */
+  isSupport(i) {
+    const a = this.lasers + this.storms + this.tugs + this.bombers + this.orbs;
+    return i >= a && i < a + this.supports;
+  }
+
   isOrb(i) {
     const a = this.lasers + this.storms + this.tugs + this.bombers;
     return i >= a && i < a + this.orbs;
@@ -279,7 +291,7 @@ export class Swarm3D {
     for (const arr of [this.pos, this.dir, this.look, this.foodPos, this.beamTo, this.tugGoal]) swap(arr, 3);
     swap(this.stormSides, 6);
     for (const arr of [this.food, this.landed, this.redirect, this.best, this.stuck, this.lastBlock, this.blockAge,
-      this.hungry, this.pause, this.firing, this.aimed, this.stormSideN, this.tugHas, this.orbOut]) swap(arr, 1);
+      this.hungry, this.pause, this.firing, this.aimed, this.stormSideN, this.tugHas, this.orbOut, this.zapWait]) swap(arr, 1);
     if (this.remotePos) swap(this.remotePos, 3);
   }
 
@@ -297,9 +309,10 @@ export class Swarm3D {
    * Multiplayer guest: show positions and headings received from the host instead of
    * simulating. Units move smoothly towards the received positions between updates.
    */
-  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null, bombers = 0, orbs = 0) {
+  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null, bombers = 0, orbs = 0, supports = 0) {
     this.bombers = bombers;
     this.orbs = orbs;
+    this.supports = supports;
     this.remote = true;
     this.lasers = lasers;
     this.storms = storms;
@@ -405,7 +418,7 @@ export class Swarm3D {
 
       // landed on its bite: eats it until it is gone, then takes off
       if (landed[i]) {
-        if (food[i] >= 0 && world.isFood(food[i]) && !this.isTug(i)) {
+        if (food[i] >= 0 && world.isFood(food[i]) && !this.isTug(i) && !this.isSupport(i)) {
           // a bomber touching its voxel blows up (and is gone)
           if (this.isBomber(i)) {
             world.bomb(i, foodPos[i3], foodPos[i3 + 1], foodPos[i3 + 2]);
@@ -471,8 +484,9 @@ export class Swarm3D {
         food[i] = -1;
       }
       const tug = this.isTug(i);
-      if (tug && food[i] >= 0) { world.release(food[i]); food[i] = -1; } // was an eater a moment ago
-      if (food[i] < 0 && !tug && !world.holding) {
+      const passive = tug || this.isSupport(i); // tugs and support ships don't eat
+      if (passive && food[i] >= 0) { world.release(food[i]); food[i] = -1; } // was an eater a moment ago
+      if (food[i] < 0 && !passive && !world.holding) {
         p.x = px; p.y = py; p.z = pz;
         if (this.redirect[i] && world.clickPoint) {
           food[i] = world.pickFood(world.clickPoint);
@@ -536,7 +550,7 @@ export class Swarm3D {
       if (stuck[i] > c.stuck.frames) {
         const b = lastBlock[i];
         if (blockAge[i] < c.stuck.recentContact && world.isFood(b)) {
-          if (!world.holding && !tug && world.canBite(b, food[i])) {
+          if (!world.holding && !passive && world.canBite(b, food[i])) {
             if (b !== food[i]) {
               world.release(food[i]);
               world.claim(b);

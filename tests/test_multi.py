@@ -123,7 +123,7 @@ async def main():
             t.ok(sum(hs['scores']) > 0, 'swarms eat', hs['scores'])
             await host.wait_for_timeout(500)
             ls = await guests[1].evaluate('() => window.__dbg.activePlayers().map(p => [p.swarm.lasers, p.swarm.storms, p.swarm.mesh.instanceColor.getX(0) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.lasers) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.count - 1) < 0.5, p.swarm.tugs, p.swarm.mesh.instanceColor.getY(p.swarm.lasers + p.swarm.storms) > 0.9 && p.swarm.mesh.instanceColor.getX(p.swarm.lasers + p.swarm.storms) < 0.6])')
-            t.ok(len(ls) == 3 and all(x == [4, 3, True, True, True, 3, True] for x in ls), 'guests see every player\'s ships in the type colours (red lasers, blue storms, green tugs, yellow eaters)', ls)
+            t.ok(len(ls) == 3 and all(x == [3, 3, True, True, True, 3, True] for x in ls), 'guests see every player\'s ships in the type colours (red lasers, blue storms, green tugs, yellow eaters)', ls)
             hb = await host.evaluate('() => [window.__dbg.holes.made, window.__dbg.activePlayers().map(p => p.swarm.bombers)]')
             gb = await guests[1].evaluate('() => [window.__dbg.holes.made, window.__dbg.activePlayers().map(p => p.swarm.bombers)]')
             t.ok(gb[0] > 0 and gb[1] == hb[1], 'bombers blew up on the host: the guests saw their black holes', f'host {hb} guest {gb}')

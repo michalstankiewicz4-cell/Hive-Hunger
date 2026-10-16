@@ -1,8 +1,9 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
-// units at the start, split as evenly as possible between the six ship types
-// (eaters, laser ships, storm ships, tugs, bombers, orb ships; what doesn't divide goes to eaters, then lasers, …)
+// units at the start, split as evenly as possible between the seven ship types
+// (eaters, laser ships, storm ships, tugs, bombers, orb ships, support ships; what doesn't divide
+// goes to eaters, then lasers, …)
 const START_UNITS = 20;
-const SHARE = Math.floor(START_UNITS / 6), REST = START_UNITS % 6;
+const SHARE = Math.floor(START_UNITS / 7), REST = START_UNITS % 7;
 
 export const CONFIG = Object.freeze({
   background: 0x0b0c14,
@@ -138,10 +139,18 @@ export const CONFIG = Object.freeze({
     // magenta orb ships: from `range` (10 voxels) fire a voxel-sized plasma orb with a pulsing glow,
     // one at a time; it flies at `speed` and bursts at the target, destroying everything within
     // `blast` (2 voxels)
-    orb: { count: SHARE, range: 5, speed: 0.045, blast: 1, color: 0xff3ed8, glowColor: 0xff5ae6, glowSize: 3.2, pulse: 0.25,
+    orb: { count: SHARE + (REST > 5 ? 1 : 0), range: 5, speed: 0.045, blast: 1, color: 0xff3ed8, glowColor: 0xff5ae6, glowSize: 3.2, pulse: 0.25,
       flashFrames: 14, flashSize: 6, debris: 30,
       // the fiery tail: sparks per frame, frames they live, their size (× voxel), spread
       tailPerFrame: 3, tailFrames: 22, tailSize: 1.6, tailJitter: 0.12, tailMax: 4000 },
+    // white support ships: don't eat; every `every` frames each fires a lightning bolt that jumps up
+    // to `jumps` times between ships of its swarm (random, each within `jumpRange` of the last) and
+    // destroys every voxel on its way. The bolt lives `life` frames (1.5 s): a white core with a
+    // `glowPx` glow and energy flowing along it, bent (`bend`, `jag`), with `branches` forked side
+    // bolts per jump (`branchGlowPx` glow) that do nothing
+    support: { count: SHARE, every: 180, jumps: 6, jumpRange: 10, color: 0xffffff, glowColor: 0xdfe8ff,
+      life: 90, fadeIn: 4, fadeOut: 25, points: 24, bend: 0.09, jag: 0.025, glowPx: 4, branchGlowPx: 2,
+      branches: 3, branchLength: 1.6, branchBrightness: 0.6, flowWaves: 3, flowSpeed: 0.05 },
     aimAngle: 12,            // a ship eats (a laser ship fires) only once it faces its bite within this many degrees
     // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
     // (0.5 s), then takes another bite — or the same one if there is no other

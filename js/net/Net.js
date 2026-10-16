@@ -235,6 +235,12 @@ export class NetHost {
     for (const conn of this.guests.keys()) this.send(conn, msg);
   }
 
+  /** A support ship's lightning: the guests draw the same bolt (same ships, same seed). */
+  broadcastZap(index, chain, seed) {
+    const msg = JSON.stringify({ t: 'zap', index, chain, seed });
+    for (const conn of this.guests.keys()) this.send(conn, msg);
+  }
+
   /** An orb ship fired: the guests fly the same orb. */
   broadcastOrb(a, b) {
     const r = (p) => p.map((v) => Math.round(v * 100) / 100);
@@ -340,6 +346,7 @@ export class NetGuest {
       else if (json.t === 'bolt') g.onBolt(json);
       else if (json.t === 'hole') g.onHole(json.p);
       else if (json.t === 'orb') g.onOrb(json.a, json.b);
+      else if (json.t === 'zap') g.onZap(json);
       else if (json.t === 'settings') g.onSettings?.(json.values);
       else if (json.t === 'frags') g.planet?.fragments?.applyMotions(json.list);
       else if (json.t === 'tree') g.onTree(json.tree);
