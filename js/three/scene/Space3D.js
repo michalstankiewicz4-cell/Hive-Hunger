@@ -1,4 +1,4 @@
-import { nebulaColor, starColor } from '../utils/space.js';
+import { nebulaColor, starColor } from '../../utils/space.js';
 
 const THREE = window.THREE;
 

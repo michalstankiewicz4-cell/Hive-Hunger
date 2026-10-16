@@ -1,3 +1,5 @@
+import { radialTexture } from '../textures.js';
+
 const THREE = window.THREE;
 
 /**
@@ -112,7 +114,7 @@ export class Orbs {
    */
   update(onBurst, targetPos = null) {
     this.time++;
-    const c = this.cfg, v = new THREE.Vector3();
+    const c = this.cfg, v = this._v || (this._v = new THREE.Vector3());
     for (const o of this.list) {
       if (targetPos) targetPos(o, o.to);
       const p = o.group.position;
@@ -168,15 +170,4 @@ export class Orbs {
     for (const o of this.list) this.remove(o);
     this.list = [];
   }
-}
-
-function radialTexture(stops) {
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const g = c.getContext('2d');
-  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  for (const [t, col] of stops) grad.addColorStop(t, col);
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 64, 64);
-  return new THREE.CanvasTexture(c);
 }

@@ -257,6 +257,9 @@ export class Fragments {
       hp: new Float32Array(M * M * M),
       orig: new Int32Array(M * M * M).fill(-1),
       voxelColor: (li) => pl.voxelColor(local.orig[li]),
+      // colours stay in the planet's table (see PlanetSurface's smooth builder)
+      colors: pl.colors,
+      colorOffset: (li) => pl.colorOffset(local.orig[li]),
       scene: null,
     };
     let radius = 0;

@@ -22,7 +22,7 @@ const roomCode = (new URLSearchParams(location.search).get('room') || '').toUppe
 if (!window.THREE) {
   hudEl.textContent = 'Could not load the 3D library. Check your connection and reload the page.';
 } else {
-  const { Game3D } = await import('./three/Game3D.js');
+  const { Game3D } = await import('./three/game/Game3D.js');
   const { NetHost, NetGuest } = await import('./net/Net.js');
   const canNet = Boolean(window.Peer);
   const role = roomCode && canNet ? 'guest' : 'solo';
@@ -40,7 +40,7 @@ if (!window.THREE) {
   });
   const panel = new ControlPanel(document.getElementById('controls'), CONFIG.controls,
     Object.fromEntries(['count', 'speed', 'power', 'turn'].map((k) => [k, bind(k)])));
-  // single player: jump straight to any level (the swarm starts again from its beacon)
+  // single player: jump straight to any level (the swarm starts again from its tunnel)
   const levels = new LevelSwitch(document.getElementById('controls'), CONFIG.levels, {
     isSolo: () => game.role === 'solo',
     current: () => game.level,

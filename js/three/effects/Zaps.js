@@ -1,3 +1,5 @@
+import { bandGlowTexture } from '../textures.js';
+
 const THREE = window.THREE;
 
 /**
@@ -19,7 +21,7 @@ export class Zaps {
     this.cfg = cfg;
     this.list = [];
     this.made = 0; // (tests)
-    this.glowTexture = glowTexture();
+    this.glowTexture = bandGlowTexture();
     this._a = new THREE.Vector3();
     this._b = new THREE.Vector3();
     this._d = new THREE.Vector3();
@@ -249,20 +251,4 @@ function mulberry(seed) {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-/** Across a glow ribbon: transparent edge → glow → bright middle → glow → edge. */
-function glowTexture() {
-  const c = document.createElement('canvas');
-  c.width = 4; c.height = 32;
-  const g = c.getContext('2d');
-  const grad = g.createLinearGradient(0, 0, 0, 32);
-  grad.addColorStop(0, 'rgba(255,255,255,0)');
-  grad.addColorStop(0.3, 'rgba(255,255,255,0.35)');
-  grad.addColorStop(0.5, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.7, 'rgba(255,255,255,0.35)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 4, 32);
-  return new THREE.CanvasTexture(c);
 }

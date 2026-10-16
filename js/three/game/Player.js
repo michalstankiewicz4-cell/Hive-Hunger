@@ -1,13 +1,17 @@
-import { CONFIG } from '../config.js';
-import { Swarm3D, aroundPlanet } from './Swarm3D.js';
-import { Portal3D } from './Portal3D.js';
-import { Leader } from '../core/Leader.js';
-import { SkillTree } from '../core/SkillTree.js';
+import { CONFIG } from '../../config.js';
+import { Swarm3D } from '../swarm/Swarm3D.js';
+import { aroundPlanet } from '../swarm/steering.js';
+import { Portal3D } from '../scene/Portal3D.js';
+import { Leader } from '../../core/Leader.js';
+import { SkillTree } from '../../core/SkillTree.js';
 
 const THREE = window.THREE;
 
+// scratch vectors for updateTugs
+const TUG_P = new THREE.Vector3(), TUG_G = new THREE.Vector3(), TUG_D = new THREE.Vector3();
+
 /**
- * One player: a swarm with its own target ("brain"), spawn beacon, settings and score.
+ * One player: a swarm with its own target ("brain"), spawn tunnel (`tunnel`), settings and score.
  * In single player there is one; in multiplayer the host runs one per player.
  * All players eat the same planet and share its voxel claims, so a voxel is only ever
  * eaten by one unit of one swarm.
@@ -16,7 +20,7 @@ export class Player {
   /**
    * @param {object} game the Game3D instance (planet, scene, debris…)
    * @param {{index:number, name:string, color:number, spawn:{x,y,z}}} info
-   *   spawn is in the space frame (the beacon stays put in space while the planet turns)
+   *   spawn is in the space frame (the tunnel stays put in space while the planet turns)
    */
   constructor(game, info) {
     this.game = game;
@@ -151,16 +155,16 @@ export class Player {
     return this.swarm.allHidden;
   }
 
-  /** Move this player's spawn (and beacon) to a new point in the space frame. */
+  /** Move this player's spawn (and tunnel) to a new point in the space frame. */
   setSpawn(spawn) {
     this.spawnSpace.set(spawn.x, spawn.y, spawn.z);
     this.beacon.group.position.copy(this.spawnSpace);
     this.beacon.group.updateWorldMatrix(true, false);
-    // before the match starts the swarm waits at its beacon, so it moves along with it
+    // before the match starts the swarm waits at its tunnel, so it moves along with it
     if (!this.game.started) this.placeAtSpawn();
   }
 
-  /** Moves the whole swarm (and its target) to the beacon. */
+  /** Moves the whole swarm (and its target) to the tunnel. */
   placeAtSpawn() {
     const home = this.spawnWorld();
     const s = this.swarm;
@@ -174,7 +178,7 @@ export class Player {
     L.vel.x = L.vel.y = L.vel.z = 0;
   }
 
-  /** Current world position of this player's spawn beacon. */
+  /** Current world position of this player's spawn tunnel (`tunnel`). */
   spawnWorld() {
     const p = this.beacon.worldPosition(new THREE.Vector3());
     return { x: p.x, y: p.y, z: p.z };
@@ -205,7 +209,7 @@ export class Player {
     this.dropAllBites(1);
   }
 
-  /** The beacon was clicked: the swarm stops eating and flies home, and waits there for a new click. */
+  /** The tunnel was clicked: the swarm stops eating and flies home, and waits there for a new click. */
   recall() {
     if (this.homeMode === 'jump') return;
     this.homeMode = 'recall';
@@ -366,7 +370,7 @@ export class Player {
   /**
    * Tugs: each takes the nearest drifting piece nobody tows yet and flies to it; within `tug.range`
    * (10 voxels) of it, its tractor beam holds the whole piece and it flies home, the piece
-   * following (around the planet, not through it). At the beacon the piece is gone and the player
+   * following (around the planet, not through it). At the tunnel the piece is gone and the player
    * gets `tug.reward` × the points of what is left of it. Others may eat the piece on the way.
    */
   updateTugs() {
@@ -376,7 +380,7 @@ export class Player {
     s.tows = [];
     if (!fr || start >= end) return;
     const home = this.spawnWorld();
-    const p = new THREE.Vector3(), g = new THREE.Vector3(), d = new THREE.Vector3();
+    const p = TUG_P, g = TUG_G, d = TUG_D;
     for (let i = start; i < end; i++) {
       s.tugHas[i] = 0;
       p.fromArray(s.pos, i * 3);

@@ -1,0 +1,71 @@
+/* Colours, page, canvas, hidden helpers, version */
+
+:root {
+  color-scheme: dark;
+  --bg: #0b0c14;
+  --hud-text: #cfe8ff;
+  --hud-dim: #7f93ad;
+  --panel-bg: rgba(18, 22, 36, 0.82);
+  --panel-border: #2a3550;
+  --accent: #8fd0ff;
+  --track: #2a3550;
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  touch-action: none;
+}
+
+.game-canvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  cursor: crosshair;
+}
+
+
+/* Visually hidden, but read by search engines and screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.noscript {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 16px;
+  color: var(--hud-text);
+  font: 16px/1.5 monospace;
+  text-align: center;
+}
+
+
+.version {
+  position: fixed;
+  right: 16px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  color: var(--hud-dim);
+  font: 11px monospace;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.lobby[hidden],
+.menu[hidden] {
+  display: none;
+}

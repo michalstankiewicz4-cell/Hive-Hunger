@@ -4,40 +4,81 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 
 ## Modules
 
+```
+js/
+  main.js, config.js, version.js
+  core/          rules without graphics: the swarm's brain, the upgrade tree
+  three/
+    game/        the game: Game3D (+ its parts), Player
+    swarm/       the swarm: Swarm3D (+ its parts), steering
+    planet/      the voxel planet, its smooth surface, drifting pieces, level shapes
+    effects/     lightning, support bolts, orbs, black holes, debris
+    scene/       sky, spawn tunnel, click marker
+    textures.js  small glow / gradient textures shared by the effects
+  net/           multiplayer over PeerJS, binary messages
+  ui/            HTML panels and menus
+  utils/         noise, terrain and sky colours
+css/             one stylesheet per part of the page
+```
+
+**Classes split over several files.** `Game3D` and `Swarm3D` are big, so their methods live in several files: each part file exports an object of methods (`export const Input = { bindInput() {…}, … }`), and the class file adds them to its prototype at the end (`Object.defineProperties(Game3D.prototype, Object.getOwnPropertyDescriptors(part))`). The methods behave exactly as if they were written in the class (`this` is the game / swarm); to find one, search for its name. A new part: write the file, import it in the class file and add it to the list there.
+
 | File | What it does |
 | --- | --- |
 | `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the settings panel, the start screen, room panel, summary and upgrade tree; Tab / Esc keys; starts the loop |
-| `js/config.js` | All parameters: planet, flock, feeding, spawn tunnel, hyperspace jump, marker, network, slider ranges |
+| `js/config.js` | All parameters: planet, flock, feeding, ship types, spawn tunnel, hyperspace jump, marker, network, slider ranges |
 | `js/version.js` | Game version (keep in sync with `CHANGELOG.md`) |
-| `js/three/Game3D.js` | Scene, camera, input, roles (solo / host / guest), planet lifecycle, HUD data, guest-side handling of network messages |
-| `js/three/Player.js` | One player: swarm + leader + tunnel + settings + score; per-player simulation step, commands, recall, arrival through the tunnel, jump to hyperspace |
-| `js/three/Swarm3D.js` | The flock (boids), feeding, collisions, getting unstuck, drawing; `aroundPlanet()` path helper |
-| `js/core/Leader.js` | The swarm's "brain": a point the flock heads for; stays at matter, finds new matter, follows clicks |
-| `js/three/VoxelPlanet.js` | Voxel planet: terrain, claims, eating, exposed-voxel instancing, raycast, seed, removal log, eaten-voxel run lengths for late joiners; knows about drifting fragment voxels |
-| `js/three/Fragments.js` | Pieces bitten off the planet: finding splits (flood fill from the neighbours of eaten voxels), drifting and turning, their own smooth surfaces, eating them, the spatial hash the swarm uses to find and avoid them |
-| `js/three/PlanetSurface.js` | Extra planet graphics over the voxels: `smooth` (surface nets) and `wedges` (ramps and corner pieces in the steps), built per 16³ chunk and rebuilt as voxels are eaten |
-| `js/three/shapes.js` | Which voxels are solid for a level's `shape`: `sphere`, `cube`, `text` (voxel letters with a colour per letter) |
-| `js/core/SkillTree.js` | Upgrade tree data and rules: nodes (branch, parent, cost, effect, layout), buying, adding up the effects |
-| `js/ui/TreeView.js` | The tree view (Tab): drawn on a small canvas and scaled up without smoothing (pixel art); hover tooltip, click to buy |
-| `js/three/Lightning3D.js` | Lightning bolts (chain lightning, storm ships): a jagged 1-px white core with a thin glow ribbon (`glowPx` = 2 px each side, turned to the camera every frame), flickering out |
-| `js/three/Debris3D.js` | Debris point cloud |
-| `js/three/Space3D.js` | Sky sphere with nebulae + star layers (one group, turned by the spin) |
-| `js/three/Portal3D.js` | The subspace tunnel at each player's spawn point: opens, closes, pulses; ships come out of it; click it to call the swarm back |
-| `js/three/ClickMarker.js` | Ring shown where the player clicked |
-| `js/net/Net.js` | `NetHost` / `NetGuest` over PeerJS: rooms, joining, pings, timeouts |
-| `js/net/Protocol.js` | Binary snapshot, planet and fragment messages |
-| `js/ui/Hud.js` | Planet counter, points counter, hints, notices, multiplayer scoreboard and banner |
-| `js/ui/ControlPanel.js` | Sliders (Units, Speed, Power, Turning), "Reset to default" |
-| `js/ui/ShipTypes.js` | Ship types panel (bottom-right): linked Eaters / Lasers / Storms / Tugs / Bombers / Orbs / Support sliders (together all your units), each with a lock checkbox |
-| `js/three/Orbs.js` | Plasma orbs of orb ships: flight to the target, pulsing glow, fiery tail (a point cloud with per-point size and colour), burst flash |
-| `js/three/Zaps.js` | Support ships' lightning: a seeded, bent bolt through a chain of ships with flowing energy and branches, run from ship to ship; reports each finished jump |
-| `js/three/BlackHoles.js` | Black holes after bomber blasts: strength over time, pulling and swallowing debris and pieces, the lensing render pass |
-| `js/ui/LevelSwitch.js` | Level buttons 1–5 under the panel (single player only): `Game3D.jumpToLevel` builds that planet and lets the swarm out of its tunnel again |
-| `js/ui/StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
-| `js/ui/Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
-| `js/ui/Lobby.js` | Room panel during a multiplayer match: room, link, leave |
-| `js/ui/dom.js` | Small DOM helpers for the menus |
+| **`js/three/game/`** | |
+| `Game3D.js` | Scene, camera, renderer, roles (solo / host / guest), players and their spawns, planet lifecycle, the frame loop (`update`, `updateSim`, `start`) |
+| `input.js` | (Game3D) mouse and touch: tap to steer or to call the swarm back at its tunnel, camera turning and zoom, screen → world point |
+| `destruction.js` | (Game3D) what ships do to voxels: bites, storm bolts, bomber blasts, orb bursts, support lightning, black holes swallowing pieces |
+| `host.js` | (Game3D) host side: summary after a planet, PvP winner, Next planet, guests' commands and purchases, buying upgrades |
+| `guest.js` | (Game3D) guest side: following the host — snapshots, planets, pieces, jumps, orbs, bolts, black holes, settings, tree |
+| `hud.js` | (Game3D) HUD text: progress, hint line, scores and pings, notices |
+| `players.js` | Player names and colours in multiplayer |
+| `Player.js` | One player: swarm + leader + tunnel + settings + score; per-player simulation step, commands, recall, arrival through the tunnel, jump to hyperspace, tugs, support ships |
+| **`js/three/swarm/`** | |
+| `Swarm3D.js` | The flock (boids): per-unit state, neighbour grid, feeding, collisions, getting unstuck, aiming, drawing the ships |
+| `types.js` | (Swarm3D) ship types by unit index, their colours, swapping two units |
+| `remote.js` | (Swarm3D) a guest's copy of a swarm; the beam and bolt lists sent to guests |
+| `warp.js` | (Swarm3D) the jump to hyperspace and its streaks |
+| `beams.js` | (Swarm3D) laser beams, storm ships' forked lightning |
+| `tows.js` | (Swarm3D) tugs' tractor beams shaped to the piece |
+| `steering.js` | `aroundPlanet()` (fly around the planet, not through it), `nearOwnBite()` |
+| **`js/three/planet/`** | |
+| `VoxelPlanet.js` | Voxel planet: terrain, claims, eating, exposed-voxel instancing, raycast, seed, removal log, eaten-voxel run lengths for late joiners; knows about drifting fragment voxels |
+| `Fragments.js` | Pieces bitten off the planet: finding splits (flood fill from the neighbours of eaten voxels), drifting and turning, their own smooth surfaces, eating them, the spatial hash the swarm uses to find and avoid them |
+| `PlanetSurface.js` | Extra planet graphics over the voxels: `smooth` (surface nets) and `wedges` (ramps and corner pieces in the steps), built per 16³ chunk and rebuilt as voxels are eaten (within `budgetMs` per frame) |
+| `shapes.js` | Which voxels are solid for a level's `shape`: `sphere`, `cube`, `pair`, `boxes`, `text` |
+| **`js/three/effects/`** | |
+| `Lightning3D.js` | Lightning bolts (chain lightning, storm ships): a jagged 1-px white core with a thin glow ribbon (`glowPx` = 2 px each side, turned to the camera every frame), flickering out |
+| `Zaps.js` | Support ships' lightning: a seeded, bent bolt through a chain of ships with flowing energy and branches, run from ship to ship; reports each finished jump |
+| `Orbs.js` | Plasma orbs of orb ships: flight to the target, pulsing glow, fiery tail (a point cloud with per-point size and colour), burst flash |
+| `BlackHoles.js` | Black holes after bomber blasts: strength over time, pulling and swallowing debris and pieces, the lensing render pass |
+| `Debris3D.js` | Debris point cloud |
+| **`js/three/scene/`** | |
+| `Space3D.js` | Sky sphere with nebulae + star layers (one group, turned by the spin) |
+| `Portal3D.js` | The subspace tunnel at each player's spawn point: opens, closes, pulses; ships come out of it; click it to call the swarm back |
+| `ClickMarker.js` | Ring shown where the player clicked |
+| `js/three/textures.js` | Canvas textures: radial and linear gradients, the shared glow-band texture |
+| **`js/core/`** | |
+| `Leader.js` | The swarm's "brain": a point the flock heads for; stays at matter, finds new matter, follows clicks |
+| `SkillTree.js` | Upgrade tree data and rules: nodes (branch, parent, cost, effect, layout), buying, adding up the effects |
+| **`js/net/`** | |
+| `Net.js` | `NetHost` / `NetGuest` over PeerJS: rooms, joining, pings, timeouts, events |
+| `Protocol.js` | Binary snapshot, planet and fragment messages |
+| **`js/ui/`** | |
+| `Hud.js` | Planet counter, points counter, hints, notices, multiplayer scoreboard and banner |
+| `ControlPanel.js` | Sliders (Units, Speed, Power, Turning), "Reset to default" |
+| `ShipTypes.js` | Ship types panel (bottom-right): linked Eaters / Lasers / Storms / Tugs / Bombers / Orbs / Support sliders (together all your units), each with a lock checkbox |
+| `LevelSwitch.js` | Level buttons 1–5 under the panel (single player only): `Game3D.jumpToLevel` builds that planet and lets the swarm out of its tunnel again |
+| `StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
+| `Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
+| `Lobby.js` | Room panel during a multiplayer match: room, link, leave |
+| `TreeView.js` | The tree view (Tab): drawn on a small canvas and scaled up without smoothing (pixel art); hover tooltip, click to buy |
+| `dom.js` | Small DOM helpers for the menus |
 | `js/utils/*` | Noise (fBm), terrain colours, nebula/star colours |
+| **`css/`** | Loaded in this order (later files may override earlier ones): `base.css` (colours, page, hidden helpers, version), `hud.css`, `panel.css` (settings, level switch, ship types; narrow screens), `lobby.css`, `menu.css` (start screen, waiting room), `summary.css`, `points.css`, `tree.css` |
 
 ## Game states
 
@@ -135,3 +176,18 @@ Until the match has started (`game.started`: Single player chosen, or every play
 - **solo** — everything above runs locally; one player.
 - **host** — the same, with up to 3 more players whose commands and settings arrive over the network, plus snapshots sent out.
 - **guest** — no simulation: builds the planet from the host's seed, removes the voxels the host reports (emitting debris locally), makes the pieces the host sends and moves them with the same physics (corrected from the host), shows swarm positions from snapshots (eased towards them every frame), sends clicks, recall, settings, Start / Not ready, Next planet and upgrade purchases. See `docs/MULTIPLAYER.md`.
+
+## Performance
+
+Where the time goes, measured in headless Chromium (software WebGL, so drawing is far slower than on a real GPU) on planet 2 with Speed 0.2 and Power 1.5:
+
+| Units | Simulation per frame | Biggest parts |
+| --- | --- | --- |
+| 20 | ≈ 3.5 ms | rebuilding the smooth surface (up to `budgetMs` = 3 ms, see below) |
+| 300 | ≈ 7 ms | surface 3–4 ms, swarm 2 ms, pieces 1–2 ms |
+| 1500 | ≈ 16 ms | surface (planet and pieces), swarm ≈ 2 ms of its own, bites (`biteSphere`), finding food, pieces (≈ 250) |
+
+- **The smooth surface** is the biggest cost while a lot is eaten: every bite marks 16³ chunks dirty and `PlanetSurface.sync` rebuilds them for up to `budgetMs` per frame (the rest waits for the next frames), so the frame time stays bounded and a faster builder shows changes sooner rather than saving time. Each drifting piece has its own small surface, rebuilt when it is bitten.
+- **Black holes** draw the scene twice (into a render target, then the lensing pass) while one is open.
+- **Simple things to keep:** no allocation in per-unit loops (scratch vectors at module level or on the object), typed arrays for per-unit state, one shared texture for effects that come in many copies (`textures.js`, warp streaks, tractor beams).
+- **Measuring:** a CPU profile of `game.update()` through Playwright's CDP session (`Profiler.start` / `Profiler.stop`, self time per function) shows the hot functions; wrapping methods with `performance.now()` gives per-part times per frame.

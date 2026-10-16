@@ -1,5 +1,10 @@
+import { radialTexture } from '../textures.js';
+
 const THREE = window.THREE;
 const ORIGIN = new THREE.Vector3(); // the planet's centre: the tunnel faces it
+const OUT = new THREE.Vector3(0, 0, 1);
+// scratch values for update()
+const _p = new THREE.Vector3(), _d = new THREE.Vector3(), _q = new THREE.Quaternion(), _pq = new THREE.Quaternion();
 
 /**
  * The spawn point: a subspace tunnel. Closed it is a small, dim, slowly turning vortex (click it
@@ -46,7 +51,7 @@ export class Portal3D {
       layer(0.8, 3.2, 0.7, cfg.innerColor, 5),
       layer(1.25, 1.4, 0.45, cfg.rimColor, 2),
     ];
-    const glow = radialTexture();
+    const glow = radialTexture([[0, 'rgba(255,255,255,1)'], [0.25, 'rgba(255,255,255,0.8)'], [0.6, 'rgba(255,255,255,0.2)'], [1, 'rgba(255,255,255,0)']]);
     this.core = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: cfg.coreColor, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     this.core.position.z = -0.6;
     this.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: cfg.color, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -115,10 +120,10 @@ export class Portal3D {
     // face the planet (the origin)
     if (facing) {
       this.group.updateWorldMatrix(true, false);
-      const p = this.group.getWorldPosition(new THREE.Vector3());
-      const dir = facing.clone().sub(p).normalize();
-      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
-      const parentQ = this.group.parent ? this.group.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
+      const p = this.group.getWorldPosition(_p);
+      const dir = _d.copy(facing).sub(p).normalize();
+      const q = _q.setFromUnitVectors(OUT, dir);
+      const parentQ = this.group.parent ? this.group.parent.getWorldQuaternion(_pq) : _pq.identity();
       this.inner.quaternion.copy(parentQ.invert().multiply(q));
     }
     this.apply();
@@ -164,19 +169,5 @@ function streakTexture() {
     g.fillStyle = grad;
     g.fillRect(x, 0, w, 128);
   }
-  return new THREE.CanvasTexture(c);
-}
-
-function radialTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const g = c.getContext('2d');
-  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grad.addColorStop(0, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.25, 'rgba(255,255,255,0.8)');
-  grad.addColorStop(0.6, 'rgba(255,255,255,0.2)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 64, 64);
   return new THREE.CanvasTexture(c);
 }

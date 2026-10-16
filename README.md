@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.25.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.25.1 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -76,7 +76,7 @@ Browser tests (single player and multiplayer with a local PeerJS server) are in 
 ## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — versions and what changed
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — modules, the frame loop, the swarm and the planet
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — folders and modules, how the big classes are split over files, the frame loop, the swarm, the planet and performance
 - [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) — rooms, roles and the network protocol
 - [docs/CONFIG.md](docs/CONFIG.md) — what the values in `js/config.js` do and what changing them does
 - [tests/README.md](tests/README.md) — running the browser tests
@@ -90,42 +90,23 @@ og-image.png          1200×630 thumbnail for link previews
 favicon.svg, favicon-48.png, apple-touch-icon.png
 sitemap.xml           sitemap for Google Search Console
 .github/workflows/    GitHub Pages deployment
-css/style.css
+css/                  one stylesheet per part of the page (base, hud, panel, lobby, menu, summary, points, tree)
 js/
   main.js               entry point: start screen, single player, hosting or joining a room
   config.js             all game, network and slider parameters
   version.js            game version
-  core/Leader.js        the swarm's "brain": finds matter on its own + follows clicks
-  core/SkillTree.js     upgrade tree: nodes, costs, effects
-  three/Game3D.js       scene, camera, input, game loop, roles (solo / host / guest)
-  three/Player.js       one player: swarm, brain, tunnel, settings, score
-  three/VoxelPlanet.js  voxel planet
-  three/Fragments.js    pieces bitten off the planet: finding splits, drifting, eating them
-  three/PlanetSurface.js smooth / wedge surfaces over the voxels (levels 3 and 4)
-  three/shapes.js       shapes of the levels: sphere, cube, text
-  three/Swarm3D.js      the flock (boids) with collisions and feeding
-  three/Debris3D.js     debris
-  three/ClickMarker.js  ring marking the clicked spot
-  three/Portal3D.js     the subspace tunnel at the spawn point (ships arrive through it; click it to call the swarm back)
-  three/Space3D.js      sky (nebulae + stars)
-  net/Net.js            multiplayer host and guest over PeerJS
-  net/Protocol.js       binary network messages
-  ui/Hud.js             planet counter, points counter, hints, notices, scoreboard
-  ui/ControlPanel.js    sliders, toggle and reset button
-  ui/LevelSwitch.js     level buttons in the panel (single player)
-  ui/ShipTypes.js       ship types panel: eaters / laser ships / storm ships / tugs / bombers, with locks
-  three/BlackHoles.js   black holes after bomber blasts: pull, swallow, lensing pass
-  three/Orbs.js         orb ships' plasma orbs: flight, pulsing glow, fiery tail, burst flash
-  three/Zaps.js         support ships' lightning between ships: bent bolt, flowing energy, branches
-  ui/StartScreen.js     start screen and multiplayer waiting room
-  ui/Lobby.js           room panel during a multiplayer match
-  ui/Summary.js         multiplayer summary after each planet
-  ui/TreeView.js        the upgrade tree (Tab), pixel art
-  three/Lightning3D.js  chain-lightning bolts
-  ui/dom.js             small DOM helpers for the menus
-  utils/noise.js        3D noise / fBm
-  utils/terrain.js      terrain colours
-  utils/space.js        nebula and star colours
+  core/                 rules without graphics: Leader (the swarm's "brain"), SkillTree (upgrades)
+  three/game/           Game3D (scene, roles, planets, frame loop) and its parts: input, destruction,
+                        host, guest, hud; Player (one player's swarm, brain, tunnel, settings, score)
+  three/swarm/          Swarm3D (the flock: feeding, collisions, drawing) and its parts: ship types,
+                        a guest's copy, hyperspace, laser and storm beams, tractor beams; steering
+  three/planet/         VoxelPlanet, its smooth surface, drifting pieces (Fragments), level shapes
+  three/effects/        lightning, support ships' bolts, orbs, black holes, debris
+  three/scene/          sky, the subspace tunnel at the spawn point, click marker
+  three/textures.js     glow and gradient textures shared by the effects
+  net/                  multiplayer host and guest over PeerJS, binary messages
+  ui/                   HUD, settings panel, ship types, level switch, menus, summary, upgrade tree
+  utils/                noise, terrain colours, sky colours
 docs/                 architecture, multiplayer and configuration docs
 tests/                browser tests (Playwright): solo, multiplayer, levels, upgrade tree and a local PeerJS server
 LICENSE               MIT

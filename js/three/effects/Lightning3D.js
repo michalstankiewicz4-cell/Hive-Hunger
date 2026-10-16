@@ -1,3 +1,5 @@
+import { bandGlowTexture } from '../textures.js';
+
 const THREE = window.THREE;
 
 /**
@@ -17,7 +19,7 @@ export class Lightning3D {
     this.glowPx = glowPx;
     this.bolts = [];
     this.shown = 0; // bolts drawn so far (tests)
-    this.glowTexture = glowTexture();
+    this.glowTexture = bandGlowTexture();
     this._a = new THREE.Vector3();
     this._b = new THREE.Vector3();
     this._s = new THREE.Vector3();
@@ -129,20 +131,4 @@ export class Lightning3D {
     }
     if (done.length) this.bolts = this.bolts.filter((b) => b.age < this.life);
   }
-}
-
-/** Across the glow ribbon: transparent edge → glow → bright middle (under the core) → glow → edge. */
-function glowTexture() {
-  const c = document.createElement('canvas');
-  c.width = 4; c.height = 32;
-  const g = c.getContext('2d');
-  const grad = g.createLinearGradient(0, 0, 0, 32);
-  grad.addColorStop(0, 'rgba(255,255,255,0)');
-  grad.addColorStop(0.3, 'rgba(255,255,255,0.35)');
-  grad.addColorStop(0.5, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.7, 'rgba(255,255,255,0.35)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 4, 32);
-  return new THREE.CanvasTexture(c);
 }

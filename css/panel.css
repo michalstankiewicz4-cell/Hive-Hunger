@@ -1,0 +1,154 @@
+/* Settings panel (top right), level switch, ship types (bottom right) */
+
+/* Slider panel in the top-right corner */
+.controls {
+  position: fixed;
+  top: calc(12px + var(--safe-top));
+  right: 16px;
+  display: grid;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  color: var(--hud-text);
+  font: 600 12px monospace;
+  letter-spacing: 0.04em;
+  z-index: 2;
+}
+
+.control {
+  display: grid;
+  grid-template-columns: 9ch 1fr 5ch;
+  align-items: center;
+  gap: 10px;
+}
+
+.control input[type='range'] {
+  width: 150px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.control input[type='range']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.control output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .controls {
+    left: 16px;
+  }
+
+  .control input[type='range'] {
+    width: 100%;
+  }
+
+  .hud {
+    top: calc(230px + var(--safe-top));
+    max-width: calc(100% - 32px);
+  }
+}
+
+
+.control-reset {
+  margin-top: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--hud-text);
+  font: 600 12px monospace;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.control-reset:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.control-reset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.control-levels {
+  display: grid;
+  grid-template-columns: 9ch 1fr;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.control-levels[hidden] {
+  display: none;
+}
+
+.control-levels-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.control-levels-buttons button {
+  flex: 1;
+  min-width: 26px;
+  padding: 4px 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hud-text);
+  font: 600 12px monospace;
+  cursor: pointer;
+}
+
+.control-levels-buttons button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.control-levels-buttons button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.control-levels-buttons button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Ship types panel in the bottom-right corner (above the version) */
+.ships {
+  top: auto;
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+}
+
+.ships .ships-row {
+  grid-template-columns: 16px 7ch 1fr 4ch;
+}
+
+.ships .ships-row input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.ships .ships-row input[type='range']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ships-title {
+  color: var(--hud-dim);
+}

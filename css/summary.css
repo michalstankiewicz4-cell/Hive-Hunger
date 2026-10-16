@@ -1,0 +1,65 @@
+/* Multiplayer summary after a planet */
+
+/* multiplayer summary after a planet */
+.summary {
+  background: rgba(5, 6, 12, 0.35);
+}
+
+.summary-card {
+  width: min(460px, 100%);
+}
+
+.summary-result {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-table th {
+  padding: 4px 6px;
+  color: var(--hud-dim);
+  font-weight: 400;
+  text-align: right;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.summary-table th:first-child,
+.summary-name {
+  text-align: left;
+}
+
+.summary-table td {
+  padding: 4px 6px;
+}
+
+.summary-table tr.is-local {
+  font-weight: 700;
+}
+
+.summary-num,
+.summary-next,
+.summary-wait {
+  text-align: right;
+}
+
+.summary-next {
+  color: var(--accent);
+}
+
+.summary-wait {
+  color: var(--hud-dim);
+}
+
+@media (max-width: 480px) {
+  .summary-table th,
+  .summary-table td {
+    padding: 4px 3px;
+    font-size: 12px;
+  }
+}

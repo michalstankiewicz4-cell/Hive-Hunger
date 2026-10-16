@@ -112,7 +112,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `biteRadius` | 0.5 | *slider Power* — crater radius per bite | |
 | `spawnSpread` | 4 | size of the cloud new units appear in | |
 | `spawnGap` | 1 | spawn distance from the surface, in planet radii | |
-| `color`, `size` | | `color` is unused (swarm colours come from `PLAYERS` in `Game3D.js`); `size` — unit box size | |
+| `color`, `size` | | `color` is unused (swarm colours come from `PLAYERS` in `js/three/game/players.js`); `size` — unit box size | |
 
 ## Settings panel (`controls`)
 
@@ -210,6 +210,6 @@ Every node is bought once and needs its parent; effects add up on top of the sli
 
 ## Other constants outside `config.js`
 
-- `js/three/PlanetSurface.js`: `CHUNK = 16` (voxels per chunk edge of the smooth / wedge surfaces), `budgetMs = 3` (time per frame for rebuilding changed chunks; at least one is rebuilt).
-- `js/three/Fragments.js`: `HASH = 8` (cell size of the spatial hash used to find drifting pieces near a unit).
-- `js/three/Lightning3D.js`: `life = 20` (frames a bolt stays visible), `jag` (how jagged it is), `pieces` (kinks per jump).
+- `js/three/planet/PlanetSurface.js`: `CHUNK = 16` (voxels per chunk edge of the smooth / wedge surfaces), `budgetMs = 3` (time per frame for rebuilding changed chunks; at least one is rebuilt).
+- `js/three/planet/Fragments.js`: `HASH = 8` (cell size of the spatial hash used to find drifting pieces near a unit).
+- `js/three/effects/Lightning3D.js`: `life = 20` (frames a bolt stays visible), `jag` (how jagged it is), `pieces` (kinks per jump).

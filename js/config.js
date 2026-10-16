@@ -128,7 +128,7 @@ export const CONFIG = Object.freeze({
     // flash every `flashEvery` frames, `flashFrames` long; side bolts drawn at `sideGlow` brightness
     storm: { count: SHARE + (REST > 2 ? 1 : 0), centre: 0.4, side: 0.3, fork: 0.7, color: 0x8fd0ff, boltColor: 0x6fbaff, flashEvery: 4, flashFrames: 6, sideGlow: 0.6 },
     // green tugs: fly only to drifting pieces; within `range` (10 voxels) a tractor beam holds the whole
-    // piece and they tow it home at `pull` × their speed; at the beacon (`deliver` units from it) the
+    // piece and they tow it home at `pull` × their speed; at the tunnel (`deliver` units from it) the
     // piece is gone and the player gets `reward` × its points. `streaks` = light streaks in the beam;
     // the beam ends on the piece's outline as seen from the tug, `outlineScale` × its size
     tug: { count: SHARE + (REST > 3 ? 1 : 0), range: 5, pull: 0.9, deliver: 2, reward: 5, color: 0x6dff7a, beamColor: 0x3dff86, streaks: 14,
@@ -149,7 +149,7 @@ export const CONFIG = Object.freeze({
     // `glowPx` glow and energy flowing along it, bent (`bend`, `jag`), with `branches` forked side
     // bolts per jump (`branchGlowPx` glow) that do nothing
     support: { count: SHARE, every: 180, jumps: 6, jumpRange: 10, color: 0xffffff, glowColor: 0xdfe8ff,
-      life: 90, fadeIn: 4, fadeOut: 25, points: 24, bend: 0.09, jag: 0.025, glowPx: 4, branchGlowPx: 2,
+      life: 90, fadeOut: 25, points: 24, bend: 0.09, jag: 0.025, glowPx: 4, branchGlowPx: 2,
       branches: 3, branchLength: 1.6, branchBrightness: 0.6, flowWaves: 3, flowSpeed: 0.05 },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
@@ -163,7 +163,7 @@ export const CONFIG = Object.freeze({
     biteRadius: 0.5,         // power: radius of the crater eaten out of a bite
     spawnSpread: 4,
     spawnGap: 1,             // spawn distance from the planet's surface, in planet radii
-    color: 0x8fd0ff,         // the swarm's colour in single player (beacon, click marker)
+    color: 0x8fd0ff,         // the swarm's colour in single player (click marker)
     eaterColor: 0xffd84a,    // eaters are yellow (every player)
     size: [0.14, 0.14, 0.7],
   },

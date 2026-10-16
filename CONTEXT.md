@@ -48,7 +48,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 
 ## Code map
 
-See `docs/ARCHITECTURE.md` (modules, game states, frame loop, swarm, planet), `docs/MULTIPLAYER.md` (rooms, protocol) and `docs/CONFIG.md` (what the values in `js/config.js` do).
+See `docs/ARCHITECTURE.md` (modules and folders, how `Game3D` / `Swarm3D` are split over several files, game states, frame loop, swarm, planet, performance), `docs/MULTIPLAYER.md` (rooms, protocol) and `docs/CONFIG.md` (what the values in `js/config.js` do).
 
 Licence: MIT (`LICENSE`), chosen by the owner.
 
@@ -68,7 +68,7 @@ Older way (0.6.0–0.11.1), only as a fallback: fast-forwarding through the Linu
 
 ## Testing
 
-Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` instead of the CDNs, a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the level cycle and the smooth / wedge surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). `test_fragments.py` checks pieces coming loose, drifting and being eaten. Run all five after every change to the game.
+Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` instead of the CDNs, a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the level cycle and the smooth / wedge surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). `test_fragments.py` checks pieces coming loose, drifting and being eaten. Run all five after every change to the game. A refactor that should not change anything can also be checked by comparing with the previous version in a `git worktree`: geometry checksums of the smooth surface, screenshots of the panels with the canvas hidden.
 
 Lessons from writing them:
 
@@ -80,10 +80,12 @@ Lessons from writing them:
 ## Pitfalls (bugs that already happened)
 
 - **`started` vs `running`** in `Game3D`: `running` = the render loop is on (`start()` / `stop()`); `started` = the match has begun (start screen / waiting room / Esc pause before or between). A text replacement once put `started = false` into `stop()`, which froze single player in tests.
-- **Planet frame:** the simulation (swarms, voxels) never rotates; the camera, sky, sun and beacons turn around the planet by `spin`. Beacon positions are in the space frame (`spawnSpace`), compare them with swarm positions only through `spawnWorld()`.
+- **Planet frame:** the simulation (swarms, voxels) never rotates; the camera, sky, sun and tunnels turn around the planet by `spin`. Tunnel positions are in the space frame (`spawnSpace`), compare them with swarm positions only through `spawnWorld()`.
 - **No `hp <= 0` guard in `VoxelPlanet.remove()`**: an early return there once stopped every voxel from being removed (scores went up, the planet never shrank).
 - **Ending at 100%:** never shatter the planet early (it used to shatter at 97%); units must be able to land on isolated scraps (`reachDistance`), or the last voxels are circled forever.
 - **Claims:** a voxel claimed by a unit must be released whenever the unit drops it (`dropAllBites`, new planet, player leaving), or other units will never eat it.
+- **Classes split over files (0.25.1):** methods of `Game3D` and `Swarm3D` live partly in other files of their folder (`game/input.js`, `swarm/warp.js`, …) and are added to the prototype at the end of the class file. Search for a method's name, not just the class file. A getter in such a part needs `Object.defineProperties` (as done there), `Object.assign` would read it once instead.
+- **Smooth-surface colours:** the builder reads colours straight from the planet's `colors` table via `colorOffset`; a fragment's small grid passes the planet's table and an index mapping — keep both when changing either.
 - **Guests don't simulate.** Anything that changes the game must happen on the host and reach guests through messages (`players`, `planet`, `stats`, `notice`, `summary`, `bolt`, `tree`) or snapshots.
 
 ## Version history (short)
@@ -127,6 +129,7 @@ Lessons from writing them:
 | 0.23.0 | tag `v0.23.0` | orb ships (plasma orbs with a fiery tail) |
 | 0.24.0 | tag `v0.24.0` | support ships (lightning between own ships) |
 | 0.25.0 | tag `v0.25.0` | subspace tunnel at the spawn point; ships escape into hyperspace after a planet |
+| 0.25.1 | tag `v0.25.1` | code split into folders and files, CSS per panel; faster smooth-surface rebuilds, shared textures, fewer per-frame allocations (no gameplay change) |
 
 ## Known limitations
 

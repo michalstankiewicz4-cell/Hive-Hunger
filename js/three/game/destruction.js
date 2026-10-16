@@ -1,0 +1,157 @@
+import { BITE } from '../planet/VoxelPlanet.js';
+
+const THREE = window.THREE;
+
+/** How many voxels a crater of radius `r` voxels covers (what a bite of that power hits). */
+const craterCache = new Map();
+function craterSize(r) {
+  const key = Math.round(r * 100);
+  if (craterCache.has(key)) return craterCache.get(key);
+  let n = 0;
+  const ri = Math.ceil(r), r2 = r * r;
+  for (let c = -ri; c <= ri; c++) for (let b = -ri; b <= ri; b++) for (let a = -ri; a <= ri; a++) if (a * a + b * b + c * c <= r2) n++;
+  craterCache.set(key, n);
+  return n;
+}
+
+/**
+ * What ships do to voxels: bites, storm bolts, bomber blasts, orb bursts, support ships' lightning
+ * and black holes swallowing pieces (points go to the player who did it).
+ * (Part of Game3D: these become its methods.)
+ */
+export const Destruction = {
+  /** A feeding unit of `player` eats a small crater around the voxel it sits on. */
+  biteCell(idx, ownFood, player) {
+    const pl = this.planet;
+    // eating takes time: every frame on a bite removes part of its strength
+    const damage = this.cfg.planet.strength / this.cfg.swarm.eatFrames;
+    pl.biteSphere(idx, player.biteRadius, damage, (n) => {
+      player.score++;
+      player.planetScore++;
+      this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
+    }, ownFood);
+  },
+
+  /**
+   * A storm ship's lightning on voxel `idx`: the damage a laser would do this frame (its whole
+   * crater, `power`), split over three voxels — `storm.centre` of it on the bite, `storm.side`
+   * on each of the two nearest others. Returns the side voxels' positions (for drawing),
+   * taken before the hit.
+   */
+  stormCell(idx, ownFood, player) {
+    const pl = this.planet, sc = this.cfg.swarm.storm;
+    const total = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * craterSize(player.biteRadius / pl.s);
+    const sides = pl.nearestAround(idx, 2, ownFood);
+    const at = [];
+    for (const n of sides) { pl.cellCenter(n, this.tmp); at.push(this.tmp.x, this.tmp.y, this.tmp.z); }
+    const hit = (n, amount) => {
+      if (pl.bite(n, amount) !== BITE.REMOVED) return;
+      player.score++;
+      player.planetScore++;
+      this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
+    };
+    hit(idx, total * sc.centre);
+    for (const n of sides) hit(n, total * sc.side);
+    return at;
+  },
+
+  /**
+   * A bomber blew up at (x, y, z): every voxel within `bomber.radius` (10 voxels) is gone — in the
+   * planet and on drifting pieces, claimed or not — worth a point each to `player`; a black hole
+   * opens there for a while (and on the guests' screens). Returns the number of voxels destroyed.
+   */
+  explode(x, y, z, player) {
+    const n = this.destroySphere(x, y, z, this.cfg.swarm.bomber.radius, player, this.cfg.swarm.bomber.debris);
+    this.holes.add({ x, y, z }, player);
+    if (this.role === 'host') this.net?.broadcastHole([x, y, z]);
+    return n;
+  },
+
+  /**
+   * Every voxel within `R` of (x, y, z) — in the planet and on drifting pieces, claimed or not —
+   * is gone, a point each to `player`; at most `debrisMax` pieces of debris. Returns how many.
+   */
+  destroySphere(x, y, z, R, player, debrisMax) {
+    const pl = this.planet, s = pl.s, v = this.tmp;
+    const hit = [];
+    const [ci, cj, ck] = [x, y, z].map((c) => Math.floor((c + pl.half) / s));
+    const rv = Math.ceil(R / s);
+    for (let k = ck - rv; k <= ck + rv; k++) for (let j = cj - rv; j <= cj + rv; j++) for (let i = ci - rv; i <= ci + rv; i++) {
+      const idx = pl.index(i, j, k);
+      if (idx < 0 || pl.hp[idx] <= 0) continue;
+      pl.gridCenter(idx, v);
+      if ((v.x - x) ** 2 + (v.y - y) ** 2 + (v.z - z) ** 2 <= R * R) hit.push(idx);
+    }
+    const fr = pl.fragments;
+    if (fr) {
+      fr.near({ x, y, z }, R, (f) => {
+        for (const c of fr.cellsOf(f)) {
+          fr.worldCenter(c, v);
+          if ((v.x - x) ** 2 + (v.y - y) ** 2 + (v.z - z) ** 2 <= R * R) hit.push(c);
+        }
+      });
+    }
+    const every = Math.max(1, Math.floor(hit.length / debrisMax));
+    hit.forEach((idx, n) => {
+      if (n % every === 0) this.debris.emit(pl.cellCenter(idx, v), pl.voxelColor(idx), 1);
+      pl.remove(idx);
+    });
+    if (player) { player.score += hit.length; player.planetScore += hit.length; }
+    return hit.length;
+  },
+
+  /** An orb ship of `player` (unit i) fires at voxel `idx` from (x, y, z); returns the orb's id. */
+  fireOrb(player, i, idx, x, y, z) {
+    const to = this.planet.cellCenter(idx, this.tmp);
+    const orb = this.orbs.fire({ x, y, z }, to, { target: idx, owner: player, unit: i });
+    if (this.role === 'host') this.net?.broadcastOrb([x, y, z], [to.x, to.y, to.z]);
+    return orb.id;
+  },
+
+  /** An orb reached its target: everything within `orb.blast` (2 voxels) is gone. */
+  orbBurst(o) {
+    const p = o.group.position;
+    if (o.owner) {
+      this.destroySphere(p.x, p.y, p.z, this.cfg.swarm.orb.blast, o.owner, this.cfg.swarm.orb.debris);
+      o.owner.orbDone(o.id);
+    }
+  },
+
+  /**
+   * A support ship's lightning through the ships `chain` of `player`: every voxel on its (bent)
+   * way is gone — in the planet and on drifting pieces — a point each. Guests draw the same bolt.
+   */
+  zap(player, chain, seed = (Math.random() * 4294967296) >>> 0) {
+    // the voxels on each jump are gone as the bolt runs through it (on the host; guests get them in snapshots)
+    const onJump = this.role === 'guest' ? null : (path) => {
+      const pl = this.planet, fr = pl.fragments, step = pl.s * 0.5, p = new THREE.Vector3(), q = new THREE.Vector3();
+      const hit = new Set();
+      for (let k = 0; k + 5 < path.length; k += 3) {
+        p.fromArray(path, k); q.fromArray(path, k + 3);
+        const n = Math.max(1, Math.ceil(p.distanceTo(q) / step));
+        for (let t = 0; t <= n; t++) {
+          const x = this.tmp.copy(p).lerp(q, t / n);
+          const idx = pl.cellAt(x);
+          if (idx >= 0 && pl.hp[idx] > 0) hit.add(idx);
+          const f = fr ? fr.at(x) : -1;
+          if (f >= 0) hit.add(f);
+        }
+      }
+      for (const idx of hit) {
+        this.debris.emit(pl.cellCenter(idx, this.tmp), pl.voxelColor(idx), 1);
+        pl.remove(idx);
+      }
+      player.score += hit.size;
+      player.planetScore += hit.size;
+    };
+    this.zaps.add(player.swarm, chain, seed, onJump);
+    if (this.role === 'host') this.net?.broadcastZap(player.index, chain, seed);
+  },
+
+  /** A black hole swallowed a drifting piece: its voxels are gone, a point each to the hole's owner. */
+  swallow(f, owner) {
+    const pl = this.planet, cells = pl.fragments.cellsOf(f);
+    for (const c of cells) pl.remove(c);
+    if (owner) { owner.score += cells.length; owner.planetScore += cells.length; }
+  },
+};

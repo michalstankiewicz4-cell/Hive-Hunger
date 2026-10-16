@@ -1,4 +1,4 @@
-import { terrainColor, mix } from '../utils/terrain.js';
+import { terrainColor, mix } from '../../utils/terrain.js';
 import { PlanetSurface } from './PlanetSurface.js';
 import { buildShape } from './shapes.js';
 import { Fragments } from './Fragments.js';
@@ -268,13 +268,19 @@ export class VoxelPlanet {
 
   /** Colour of a voxel (0..1 RGB), cached — used by the extra surfaces. */
   voxelColor(idx) {
+    const c = this.colors, o = this.colorOffset(idx);
+    return [c[o] / 255, c[o + 1] / 255, c[o + 2] / 255];
+  }
+
+  /** Where voxel idx's colour (0…255 × 3) is in `colors`, worked out the first time it is needed. */
+  colorOffset(idx) {
     const c = this.colors, o = idx * 3;
     if (!this.colored[idx]) {
       const [r, g, b] = this.colorOf(idx);
       c[o] = r * 255; c[o + 1] = g * 255; c[o + 2] = b * 255;
       this.colored[idx] = 1;
     }
-    return [c[o] / 255, c[o + 1] / 255, c[o + 2] / 255];
+    return o;
   }
 
   // --- instances ---
@@ -341,7 +347,8 @@ export class VoxelPlanet {
       this.surface.touch(i, j, k);
     }
     const slot = this.slotOf[idx];
-    if (slot < 0) return;
+    // the cubes are hidden under the smooth surface: nothing to show on them
+    if (slot < 0 || !this.mesh.visible) return;
     const f = Math.max(0, Math.min(1, this.hp[idx] / this.cfg.strength));
     const k = 0.45 + 0.55 * f, shake = (1 - f) * 0.08 * this.s;
     const c = this.gridCenter(idx, this._v);
@@ -600,10 +607,6 @@ export class VoxelPlanet {
       if (this.isSolid(out)) return out;
     }
     return null;
-  }
-
-  get eatenFraction() {
-    return this.alive ? 1 - this.left / this.total : 1;
   }
 
   /** Shatters the rest of the planet; the callback gets (idx, colour) for exposed voxels. */

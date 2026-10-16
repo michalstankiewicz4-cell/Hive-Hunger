@@ -127,6 +127,9 @@ for (let a = 0; a < 8; a++) for (let b = a + 1; b < 8; b++) {
   const d = (a ^ b);
   if (d === 1 || d === 2 || d === 4) EDGES.push([a, b]);
 }
+// the same as flat arrays (the inner loops below run for every surface cell)
+const CX = Int8Array.from(CORNERS, (c) => c[0]), CY = Int8Array.from(CORNERS, (c) => c[1]), CZ = Int8Array.from(CORNERS, (c) => c[2]);
+const EA = Int8Array.from(EDGES, (e) => e[0]), EB = Int8Array.from(EDGES, (e) => e[1]);
 
 function buildSmooth(planet, x0, y0, z0, size, out) {
   const { N, hp, s } = planet, R = planet.half;
@@ -142,8 +145,6 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
     const h = hp[(vk * N + vj) * N + vi];
     if (h > 0) block[(k * B + j) * B + i] = 0.5 + 0.5 * Math.min(1, h / strength);
   }
-  const density = (i, j, k) => block[((k - z0 + 1) * B + (j - y0 + 1)) * B + (i - x0 + 1)];
-  const solid = (i, j, k) => (density(i, j, k) > 0 ? 1 : 0);
   // cells (cubes between voxel centres) this chunk needs: its own plus one before on each axis
   const W = size + 1;
   const vert = new Int32Array(W * W * W).fill(-1);
@@ -151,25 +152,28 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
   const corner = new Float32Array(8);
   const col = [0, 0, 0];
 
+  const colors = planet.colors;
   const vertexAt = (ci, cj, ck) => {
     const kk = cellKey(ci, cj, ck);
     if (vert[kk] !== -1) return vert[kk];
     let mask = 0;
+    // the cell's 8 corners in the block: (ci, cj, ck) + (a, b, d)
+    const base = ((ck - z0 + 1) * B + (cj - y0 + 1)) * B + (ci - x0 + 1);
     for (let c = 0; c < 8; c++) {
-      const [a, b, d] = CORNERS[c];
-      corner[c] = density(ci + a, cj + b, ck + d);
+      corner[c] = block[base + (CZ[c] * B + CY[c]) * B + CX[c]];
       if (corner[c] > 0) mask |= 1 << c;
     }
     if (mask === 0 || mask === 255) { vert[kk] = -2; return -2; }
     // average of the edge crossings of the 0.5 level (the middle of the edge for full-strength voxels)
     let px = 0, py = 0, pz = 0, n = 0;
-    for (const [a, b] of EDGES) {
+    for (let e = 0; e < EA.length; e++) {
+      const a = EA[e], b = EB[e];
       const fa = corner[a], fb = corner[b];
       if ((fa > 0) === (fb > 0)) continue;
       const t = (0.5 - fa) / (fb - fa);
-      px += CORNERS[a][0] + (CORNERS[b][0] - CORNERS[a][0]) * t;
-      py += CORNERS[a][1] + (CORNERS[b][1] - CORNERS[a][1]) * t;
-      pz += CORNERS[a][2] + (CORNERS[b][2] - CORNERS[a][2]) * t;
+      px += CX[a] + (CX[b] - CX[a]) * t;
+      py += CY[a] + (CY[b] - CY[a]) * t;
+      pz += CZ[a] + (CZ[b] - CZ[a]) * t;
       n++;
     }
     px /= n; py /= n; pz /= n;
@@ -179,13 +183,13 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
     col[0] = col[1] = col[2] = 0;
     let solids = 0;
     for (let c = 0; c < 8; c++) {
-      const [a, b, d] = CORNERS[c];
+      const a = CX[c], b = CY[c], d = CZ[c];
       const w = 1 - 2 * corner[c];
       gx += w * (a ? 1 : -1); gy += w * (b ? 1 : -1); gz += w * (d ? 1 : -1);
       if (corner[c] > 0) {
-        const rgb = planet.voxelColor((ck + d) * N * N + (cj + b) * N + (ci + a));
+        const o = planet.colorOffset((ck + d) * N * N + (cj + b) * N + (ci + a));
         const dark = 0.35 + 0.65 * (corner[c] - 0.5) * 2;
-        col[0] += rgb[0] * dark; col[1] += rgb[1] * dark; col[2] += rgb[2] * dark;
+        col[0] += (colors[o] / 255) * dark; col[1] += (colors[o + 1] / 255) * dark; col[2] += (colors[o + 2] / 255) * dark;
         solids++;
       }
     }
@@ -215,9 +219,10 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
   // one quad for every grid edge (between two voxel centres) where solid meets empty;
   // edges owned by this chunk start at voxels x0..x0+size-1
   for (let k = z0; k < z0 + size; k++) for (let j = y0; j < y0 + size; j++) for (let i = x0; i < x0 + size; i++) {
-    const a = solid(i, j, k);
+    const at = ((k - z0 + 1) * B + (j - y0 + 1)) * B + (i - x0 + 1);
+    const a = block[at] > 0 ? 1 : 0;
     for (let axis = 0; axis < 3; axis++) {
-      const b = axis === 0 ? solid(i + 1, j, k) : axis === 1 ? solid(i, j + 1, k) : solid(i, j, k + 1);
+      const b = block[at + (axis === 0 ? 1 : axis === 1 ? B : B * B)] > 0 ? 1 : 0;
       if (a === b) continue;
       // the four cells around this edge
       let v0, v1, v2, v3;

@@ -2,6 +2,20 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.25.1] — 2026-10-16
+
+No change to how the game plays or looks.
+
+### Changed
+- **Code split into folders:** `js/three/` now has `game/`, `swarm/`, `planet/`, `effects/` and `scene/`. `Game3D` is split into `Game3D.js` (setup, players, planets, frame loop), `input.js`, `destruction.js`, `host.js`, `guest.js`, `hud.js`; `Swarm3D` into `Swarm3D.js` (flock, feeding, collisions, drawing), `types.js`, `remote.js`, `warp.js`, `beams.js`, `tows.js` and `steering.js`. The parts add their methods to the class, so everything is called as before.
+- **Styles split by part of the page:** `css/style.css` became `base`, `hud`, `panel`, `lobby`, `menu`, `summary`, `points` and `tree`.
+- **Faster smooth surface:** rebuilding it is about 25–35% faster (flat corner and edge tables, no per-voxel colour arrays), so eaten craters show sooner. The output is exactly the same.
+- One shared texture for all hyperspace streaks and one for all tractor beams instead of one each; the glow textures come from one helper (`js/three/textures.js`).
+- Hidden cubes under the smooth surface are no longer updated when a voxel is damaged; the tunnel, tugs and orbs reuse their scratch vectors every frame.
+
+### Removed
+- Unused code: `Swarm3D.isLaser`, `VoxelPlanet.eatenFraction`, the `support.fadeIn` setting.
+
 ## [0.25.0] — 2026-10-16
 
 ### Added

@@ -1,7 +1,7 @@
 /**
  * Level switch in the settings panel (single player only): a button per level of the cycle
  * (CONFIG.levels). A click builds that planet right away, and the swarm starts again from its
- * beacon — so it never ends up inside the new shape. Hidden in multiplayer.
+ * tunnel — so it never ends up inside the new shape. Hidden in multiplayer.
  */
 const NAMES = { boxes: 'Boxes', sphere: 'Planet', cube: 'Cube', text: 'Text', pair: 'Sphere + cube' };
 
