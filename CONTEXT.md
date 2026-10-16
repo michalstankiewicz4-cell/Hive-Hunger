@@ -126,7 +126,7 @@ Lessons from writing them:
 
 ## The owner's ideas for later (not built yet — wait for him to ask)
 
-- **Tug ship (holownik):** flies only to drifting pieces (fragments); from 10 voxels away it sends a tractor beam that takes in the whole piece and pulls it to the player's spawn; it gets 5× the points the whole piece is worth. (2026-10-16)
+- **Tug ship (holownik):** flies only to drifting pieces (fragments); from 10 voxels away it sends a tractor beam that takes in the whole piece and pulls it to the player's spawn; it gets 5× the points the whole piece is worth. (2026-10-16) Look of the beam (from a reference picture the owner sent): a cyan cone widening from the ship towards the piece, made of many translucent streaks of light (brighter lines inside a soft glow), glowing brightest at the ship.
 - Decided against: drifting pieces bouncing off each other (2026-10-16).
 
 ## Ideas proposed earlier but not done
