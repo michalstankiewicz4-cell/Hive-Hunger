@@ -52,6 +52,7 @@ The missions that can be played, in the solar system map's order (`js/solar.js`)
 | `radiusScale` | radius (sphere) or half-edge (cube) = `radiusScale × planet.radius` (0.7 = 30% smaller; voxel count grows with the cube of it) |
 | `text`, `pixel`, `depth`, `colors` | text only: the words (letters T, E, S, L, V and space so far), voxels per font pixel, thickness in voxels, letter colours in turn |
 | `count`, `minSize`, `maxSize` | `belt`: how many rocks (335) and how big, voxels across (2–6) |
+| `pitch`, `view` | `belt`: the band tipped back −1 rad; single player starts with the camera turned 0.35 rad round (any level may have `view`) |
 | `width`, `length`, `curve`, `thick` | `belt`: the band 0.95 × `planet.radius` wide and 9.5 × long (five times its width ×2), its middle 0.06 × its length nearer the camera than its ends, 6 voxels deep |
 | `colors` | `belt`: rock colours in turn (icy greys), each a little lighter or darker |
 | `style` | graphics only: `smooth` (smooth surface, cubes hidden), `cubes` or `wedges` (cubes + ramps and corners in the steps) |

@@ -97,6 +97,8 @@ async def main():
             b.n++; b.i0 = Math.min(b.i0, i); b.i1 = Math.max(b.i1, i); b.j0 = Math.min(b.j0, j); b.j1 = Math.max(b.j1, j); b.k0 = Math.min(b.k0, k); b.k1 = Math.max(b.k1, k);
             rock.set(t, b);
             pl.gridCenter(idx, v);
+            // back into the band's own frame (it is tipped back by pitch and turned by yaw)
+            v.applyAxisAngle(new window.THREE.Vector3(0, 1, 0), -(L.yaw || 0)).applyAxisAngle(new window.THREE.Vector3(1, 0, 0), -(L.pitch || 0));
             x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
             if (Math.abs(v.x) < 10) { zMid += v.z; nMid++; } else if (Math.abs(v.x) > 90) { zEnd += v.z; nEnd++; }
           }
@@ -110,11 +112,12 @@ async def main():
           const first = pl.total;
           g.planet.dispose(); g.spawnPlanet(12345);
           return { rocks: list.length, want: L.count, pl: pl.rocks, touching, minSpan: Math.min(...span), maxSpan: Math.max(...span), total: first, again: g.planet.total,
-            grid: [pl.NX, pl.NY, pl.NZ], length: Math.round(x1 - x0), width: Math.round(y1 - y0), bent: Math.round((zMid / nMid - zEnd / nEnd) * 10) / 10,
+            grid: [pl.NX, pl.NY, pl.NZ], tilted: Boolean(L.pitch) && Boolean(L.view), length: Math.round(x1 - x0), width: Math.round(y1 - y0), bent: Math.round((zMid / nMid - zEnd / nEnd) * 10) / 10,
             colours: new Set(list.map((_, n) => pl.tagColors[n + 1].join(','))).size, irregular: list.filter((b) => b.n < (b.i1 - b.i0 + 1) * (b.j1 - b.j0 + 1) * (b.k1 - b.k0 + 1) * 0.6).length }; }''')
         t.ok(belt['rocks'] == belt['want'] == belt['pl'] and belt['touching'] == 0, f"planet 1: the Kuiper Belt — {belt['want']} asteroids, none touching another", belt)
-        t.ok(8.5 <= belt['length'] / belt['width'] <= 11 and belt['width'] >= 20 and 4 < belt['bent'] < 30 and belt['grid'][0] > 4 * belt['grid'][2],
+        t.ok(8.5 <= belt['length'] / belt['width'] <= 11 and belt['width'] >= 20 and 4 < belt['bent'] < 30 and belt['grid'][0] > 3 * belt['grid'][1],
              'a band as wide as the old ring\'s radius and five rings long, very slightly bent; its grid long and flat', belt)
+        t.ok(belt['tilted'] and belt['grid'][1] > 30 and belt['grid'][2] > 40, 'the band is tipped back (and the camera turned at the start): it is seen at an angle', belt['grid'])
         t.ok(belt['minSpan'] >= 2 and belt['maxSpan'] <= 9 and belt['irregular'] > belt['rocks'] // 3, 'small, irregular rocks (lumps of overlapping balls)', belt)
         t.ok(belt['colours'] > 10 and belt['total'] == belt['again'], 'each in its own shade; the same seed builds the same belt', belt)
 

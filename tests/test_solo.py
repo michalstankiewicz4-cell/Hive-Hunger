@@ -150,6 +150,8 @@ async def main():
         kb = await page.evaluate("() => [window.__dbg.bodyId, window.__dbg.planet.shape, document.getElementById('map').hidden]")
         await page.wait_for_timeout(500)
         t.ok((await page.evaluate(STATE))['spin'] == 0, 'the camera doesn\'t turn by itself (no planet spin)')
+        cam = await page.evaluate("() => { const c = window.__dbg.camera.position; return Math.round(Math.atan2(c.x, c.z) * 100) / 100; }")
+        t.ok(abs(cam - 0.35) < 0.05, 'the Kuiper Belt: the camera starts turned, so the band is seen at an angle', cam)
         t.ok(s['started'] and await page.locator('#menu').is_hidden() and kb == ['kuiper', 'belt', True], 'Start on the card begins the mission (the Kuiper Belt)', kb)
 
         # Esc pauses and shows the start screen, Esc again carries on

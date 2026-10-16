@@ -240,11 +240,15 @@ export class Game3D {
     }
   }
 
-  /** Single player: Start on the map — mission of body `id` begins (false if it can't be played yet). */
+  /**
+   * Single player: Start on the map — mission of body `id` begins (false if it can't be played yet).
+   * The camera starts turned the level's `view` radians round (the Kuiper Belt: seen at an angle).
+   */
   startMission(id) {
     const n = this.cfg.levels.findIndex((l) => l.body === id);
     if (this.role !== 'solo' || n < 0) return false;
     this.jumpToLevel(n + 1);
+    this.faceAngle(this.cfg.levels[n].view || 0);
     this.paused = false;
     this.started = true;
     return true;

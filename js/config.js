@@ -95,7 +95,8 @@ export const CONFIG = Object.freeze({
   // `body` = the map's body. Only these bodies can be played yet — the rest of the map is "coming soon".
   // shape: 'sphere' (default), 'belt' (a long band of small irregular asteroids facing the starting
   // camera: `length` × planet.radius long, `width` × planet.radius across, bent very slightly — its
-  // middle `curve` × its length nearer than its ends — `thick` voxels deep; `count` rocks of `minSize` …
+  // middle `curve` × its length nearer than its ends — `thick` voxels deep, tipped back `pitch` radians; `view` turns the
+  // camera that many radians round at the start of the mission (single player) so it is seen at an angle; `count` rocks of `minSize` …
   // `maxSize` voxels across, `colors` per rock) — see shapes.js (cube, pair, boxes and text are there too).
   // radiusScale × planet.radius = the sphere's radius.
   // style = graphics only (physics and eating always use the voxels): 'cubes' — the voxels;
@@ -103,7 +104,7 @@ export const CONFIG = Object.freeze({
   // Every level uses 'smooth' (the owner's choice); the other styles stay available.
   // In multiplayer the missions go in this order, one after another (and round again).
   levels: [
-    { body: 'kuiper', shape: 'belt', count: 335, minSize: 2, maxSize: 6, width: 0.95, length: 9.5, curve: 0.06, thick: 6, style: 'smooth',
+    { body: 'kuiper', shape: 'belt', count: 335, minSize: 2, maxSize: 6, width: 0.95, length: 9.5, curve: 0.06, thick: 6, pitch: -1, view: 0.35, style: 'smooth',
       colors: [[176, 190, 214], [150, 160, 180], [200, 206, 218], [130, 136, 150], [186, 176, 168]] },
     { body: 'earth', radiusScale: 1, style: 'smooth' },
   ],

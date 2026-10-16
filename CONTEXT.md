@@ -60,6 +60,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (voxels eaten of the planet per player, share, total, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
 - **SEO:** title, description, keywords (including "incremental free"), Open Graph/Twitter thumbnail (`og-image.png`, rendered from the game — not the owner's early screenshot), `VideoGame` JSON-LD, sitemap.
 
+- **Kuiper Belt at an angle (0.39.0, owner):** "in single player at least", like the owner's screenshot (the band running off diagonally). The band is tipped back 1 rad (`pitch`, every mode) and single player starts with the camera turned 0.35 rad (`view`); turning the band itself would have tripled its grid (≈ 8 million voxels), so the camera turns instead (assistant's choice).
 - **Offline (0.38.0, owner):** the libraries are kept in the repo (`js/vendor/`) so nothing is loaded from the internet; multiplayer still needs it for PeerJS signalling.
 
 ## Working with the owner
@@ -167,6 +168,7 @@ Lessons from writing them:
 | 0.36.1 | tag `v0.36.1` | Ship guide fits the screen: only the ships scroll |
 | 0.37.0 | tag `v0.37.0` | no automatic camera turning (planet spin off) |
 | 0.38.0 | tag `v0.38.0` | Three.js and PeerJS in the repository (`js/vendor/`), no CDNs |
+| 0.39.0 | tag `v0.39.0` | the Kuiper Belt seen at an angle |
 
 ## Known limitations
 

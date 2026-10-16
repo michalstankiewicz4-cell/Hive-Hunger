@@ -116,7 +116,9 @@ function boxes(max, gap, s) {
  * middle `curve` × the length nearer than its ends), `thick` voxels deep — of `count` irregular rocks
  * (each two or three overlapping balls, `minSize` … `maxSize` voxels across), never touching each
  * other. Placed from the seed (the same belt for every player); every rock has its own colour from
- * `colors`, a little lighter or darker. Its grid is long and flat (`dims`), not a cube.
+ * `colors`, a little lighter or darker. The band is then tipped back by `pitch` and turned by `yaw`
+ * (radians) so the camera sees it at an angle (the level uses only `pitch`: turning it would make the
+ * grid much bigger — the camera is turned instead, see the level's `view`). Its grid is long and flat (`dims`), not a cube.
  */
 function belt(look, s) {
   const rnd = mulberry32((look.seed ?? 1) + 7919);
@@ -126,9 +128,7 @@ function belt(look, s) {
   // the bend: an arc through the band's ends and its middle, `sag` voxels deep
   const sag = L * (look.curve ?? 0.06), bend = (L * L) / (8 * sag) + sag / 2; // the arc's radius
   const bendZ = (x) => -(bend - Math.sqrt(Math.max(0, bend * bend - x * x))); // 0 in the middle, −sag at the ends
-  const pad = maxSize + 3;
-  const NX = (Math.ceil(L + pad * 2) + 1) & ~1, NY = (Math.ceil(W + pad * 2) + 1) & ~1, NZ = (Math.ceil(sag + thick + pad * 2) + 1) & ~1;
-  const mx = NX / 2, my = NY / 2, mz = NZ / 2, zMid = sag / 2; // (the band's depth range centred in the grid)
+  const pad = maxSize + 3, zMid = sag / 2; // (the band's depth range centred on the origin)
   const palette = look.colors || [[150, 140, 130]];
   const rocks = [];
   for (let tries = 0; rocks.length < (look.count ?? 300) && tries < 60000; tries++) {
@@ -144,6 +144,19 @@ function belt(look, s) {
     }
     rocks.push({ x: cx, y: cy, z: cz, rad: rad * 1.3, balls });
   }
+  // the whole band turned so it is seen at an angle: tipped back by `pitch` (its top edge away from the
+  // starting camera) and turned by `yaw` (one end further away than the other)
+  const pitch = look.pitch ?? 0, yaw = look.yaw ?? 0, cp = Math.cos(pitch), sp = Math.sin(pitch), cy0 = Math.cos(yaw), sy0 = Math.sin(yaw);
+  const ext = [0, 0, 0];
+  for (const rock of rocks) for (const b of rock.balls) {
+    const y1 = b[1] * cp - b[2] * sp, z1 = b[1] * sp + b[2] * cp; // about x
+    const x2 = b[0] * cy0 + z1 * sy0, z2 = -b[0] * sy0 + z1 * cy0; // about y
+    b[0] = x2; b[1] = y1; b[2] = z2;
+    ext[0] = Math.max(ext[0], Math.abs(x2) + b[3]); ext[1] = Math.max(ext[1], Math.abs(y1) + b[3]); ext[2] = Math.max(ext[2], Math.abs(z2) + b[3]);
+  }
+  // the grid round it, centred on the origin
+  const [NX, NY, NZ] = ext.map((e) => (Math.ceil(e + pad) * 2 + 1) & ~1);
+  const mx = NX / 2, my = NY / 2, mz = NZ / 2;
   const tags = new (rocks.length > 255 ? Uint16Array : Uint8Array)(NX * NY * NZ);
   const colors = [null];
   rocks.forEach((rock, n) => {
