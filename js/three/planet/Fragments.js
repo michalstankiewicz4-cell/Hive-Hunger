@@ -136,7 +136,7 @@ export class Fragments {
           if (left.has(n)) { left.delete(n); cluster.push(n); } else if (hp[n] > 0) cands.add(n);
         }
       }
-      for (const part of this.splitGrid(hp, pl.N, cands)) this.create(part);
+      for (const part of this.splitGrid(hp, [pl.NX, pl.NY, pl.NZ], cands)) this.create(part);
     }
   }
 
@@ -159,7 +159,7 @@ export class Fragments {
           if (left.has(n)) { left.delete(n); cluster.push(n); } else if (hp[n] > 0) cands.add(n);
         }
       }
-      for (const part of this.splitGrid(hp, M, cands)) {
+      for (const part of this.splitGrid(hp, [M, M, M], cands)) {
         if (f.dead) return;
         this.create(part.map((li) => f.local.orig[li]), undefined, null, f);
       }
@@ -167,13 +167,13 @@ export class Fragments {
   }
 
   /**
-   * In grid `hp` (edge N), from candidate cells `cands`: flood fills from every candidate at once, one voxel per fill in turn; fills that touch
+   * In grid `hp` (`dims` = [NX, NY, NZ] voxels), from candidate cells `cands`: flood fills from every candidate at once, one voxel per fill in turn; fills that touch
    * merge. When at most one fill is still growing, every fill that ran out is a closed part
    * smaller than the rest — it comes loose. If all of them ran out, the biggest stays (and
    * parts of equal biggest size all stay). Gives up after `cfg.maxSteps` voxels (no split).
    * Returns the parts that come loose (arrays of cell indices).
    */
-  splitGrid(hp, N, cands) {
+  splitGrid(hp, [NX, NY, NZ], cands) {
     if (cands.size < 2) return [];
     if (this.mark.length < hp.length) { this.mark = new Int32Array(hp.length); this.groupOf = null; }
     const stamp = ++this.stamp, mark = this.mark;
@@ -194,11 +194,11 @@ export class Fragments {
         if (G.parent !== g || G.done) continue;
         if (G.head >= G.pending.length) { G.done = true; active--; continue; }
         const v = G.pending[G.head++];
-        const i = v % N, j = ((v / N) | 0) % N, k = (v / (N * N)) | 0;
+        const i = v % NX, j = ((v / NX) | 0) % NY, k = (v / (NX * NY)) | 0;
         for (const [a, b, c] of NEIGHBORS) {
           const ni = i + a, nj = j + b, nk = k + c;
-          if (ni < 0 || nj < 0 || nk < 0 || ni >= N || nj >= N || nk >= N) continue;
-          const n = (nk * N + nj) * N + ni;
+          if (ni < 0 || nj < 0 || nk < 0 || ni >= NX || nj >= NY || nk >= NZ) continue;
+          const n = (nk * NY + nj) * NX + ni;
           if (hp[n] <= 0) continue;
           if (mark[n] !== stamp) {
             mark[n] = stamp; groupOf[n] = g; G.cells.push(n); G.pending.push(n);
@@ -233,14 +233,14 @@ export class Fragments {
    * guest `id` and the motion come from the host.
    */
   create(cells, id = this.nextId++, motion = null, parent = null) {
-    const pl = this.planet, N = pl.N, s = pl.s;
+    const pl = this.planet, s = pl.s;
     cells = Array.from(cells).filter((c) => pl.hp[c] > 0 || (this.fragOf[c] >= 0 && this.hpOf(c) > 0));
     if (cells.length === 0) return null;
     // strength of every voxel, from wherever it is now
     const strength = cells.map((c) => (pl.hp[c] > 0 ? pl.hp[c] : this.hpOf(c)));
     this.nextId = Math.max(this.nextId, id + 1);
     // bounding box in grid coordinates, the original centre
-    let i0 = N, j0 = N, k0 = N, i1 = 0, j1 = 0, k1 = 0, cx = 0, cy = 0, cz = 0;
+    let i0 = pl.NX, j0 = pl.NY, k0 = pl.NZ, i1 = 0, j1 = 0, k1 = 0, cx = 0, cy = 0, cz = 0;
     const v = this._v;
     for (const c of cells) {
       const [i, j, k] = pl.coords(c);
@@ -317,7 +317,7 @@ export class Fragments {
       if (f.spin.length() > maxSpin) f.spin.setLength(maxSpin);
     }
     // local grid cell li's centre is (li + 0.5)·s − half; shift so it lands at original − pivot
-    f.inner.position.set(g0[0] * s - pl.half + local.half - pivot.x, g0[1] * s - pl.half + local.half - pivot.y, g0[2] * s - pl.half + local.half - pivot.z);
+    f.inner.position.set(g0[0] * s - pl.HX + local.half - pivot.x, g0[1] * s - pl.HY + local.half - pivot.y, g0[2] * s - pl.HZ + local.half - pivot.z);
     f.group.add(f.inner);
     local.scene = f.inner;
     f.surface = new PlanetSurface(local, 'smooth', this.material, Math.min(16, M + 1));
@@ -429,7 +429,7 @@ export class Fragments {
       // the point in the fragment's own grid (turning keeps distances), then a scan like the planet's
       v.set(dx, dy, dz).applyQuaternion(q.copy(f.quat).invert()).add(f.pivot);
       const M = f.M;
-      const ci = (v.x + pl.half) / s - f.g0[0], cj = (v.y + pl.half) / s - f.g0[1], ck = (v.z + pl.half) / s - f.g0[2];
+      const ci = (v.x + pl.HX) / s - f.g0[0], cj = (v.y + pl.HY) / s - f.g0[1], ck = (v.z + pl.HZ) / s - f.g0[2];
       const rv = r / s, rv2 = rv * rv;
       const i0 = Math.max(0, Math.floor(ci - rv)), i1 = Math.min(M - 1, Math.floor(ci + rv));
       const j0 = Math.max(0, Math.floor(cj - rv)), j1 = Math.min(M - 1, Math.floor(cj + rv));

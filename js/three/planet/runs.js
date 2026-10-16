@@ -10,14 +10,14 @@ export const EatenRuns = {
    * craters, so this stays small — a plain bitset of a large grid would not fit a WebRTC message.
    */
   eatenRuns() {
-    const N = this.N, n = this.hp.length;
+    const n = this.hp.length;
     const out = [];
     const put = (v) => { while (v >= 128) { out.push((v & 127) | 128); v >>>= 7; } out.push(v); };
     let state = false, run = 0;
     for (let idx = 0; idx < n; idx++) {
       let eaten = false;
       if (this.hp[idx] <= 0 && !this.fragments?.has(idx)) {
-        const i = idx % N, j = ((idx / N) | 0) % N, k = (idx / (N * N)) | 0;
+        const [i, j, k] = this.coords(idx);
         eaten = this.fill(i, j, k) > 0;
       }
       if (eaten !== state) { put(run); run = 0; state = eaten; }

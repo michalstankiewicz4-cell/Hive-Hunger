@@ -2,7 +2,8 @@
  * Shapes of a "planet" for the levels: which voxels of the grid are solid.
  *
  * buildShape(look, voxelSize) returns
- *   N        grid size in voxels per axis (the grid is a cube, centred on the origin)
+ *   N        grid size in voxels per axis (the grid is a cube, centred on the origin) — or
+ *   dims     [NX, NY, NZ] for a grid that isn't a cube (the belt)
  *   half     half of the grid's edge in world units (voxel i's centre is (i + 0.5)·s − half)
  *   radius   the radius the swarm flies around on long trips (keeps paths off the shape)
  *   bound    radius of a sphere that contains the whole shape (clicks, ray casts)
@@ -110,26 +111,30 @@ function boxes(max, gap, s) {
 }
 
 /**
- * A belt of small asteroids: `count` irregular rocks (each two or three overlapping balls, `minSize` …
- * `maxSize` voxels across) in a flat ring round the centre — between `inner` and `outer` × the radius,
- * up to `thick` / 2 voxels above and below, the ring tilted by `tilt` radians — never touching each other. Placed from the seed (the same
- * belt for every player); every rock has its own colour from `colors`, a little lighter or darker.
+ * A belt of small asteroids: a long band facing the starting camera — `length` × the radius along x,
+ * `width` × the radius across (y), bent very slightly away from the camera along its length (its
+ * middle `curve` × the length nearer than its ends), `thick` voxels deep — of `count` irregular rocks
+ * (each two or three overlapping balls, `minSize` … `maxSize` voxels across), never touching each
+ * other. Placed from the seed (the same belt for every player); every rock has its own colour from
+ * `colors`, a little lighter or darker. Its grid is long and flat (`dims`), not a cube.
  */
 function belt(look, s) {
   const rnd = mulberry32((look.seed ?? 1) + 7919);
   const R = look.radius / s; // voxels
-  const inner = R * (look.inner ?? 0.55), outer = R * (look.outer ?? 0.95), thick = look.thick ?? 6;
-  const minSize = look.minSize ?? 2, maxSize = look.maxSize ?? 6, tilt = look.tilt ?? 0;
-  const N = (Math.ceil(outer + maxSize) * 2 + 4) & ~1, mid = N / 2;
+  const L = R * (look.length ?? 9.5), W = R * (look.width ?? 0.95), thick = look.thick ?? 6;
+  const minSize = look.minSize ?? 2, maxSize = look.maxSize ?? 6;
+  // the bend: an arc through the band's ends and its middle, `sag` voxels deep
+  const sag = L * (look.curve ?? 0.06), bend = (L * L) / (8 * sag) + sag / 2; // the arc's radius
+  const bendZ = (x) => -(bend - Math.sqrt(Math.max(0, bend * bend - x * x))); // 0 in the middle, −sag at the ends
+  const pad = maxSize + 3;
+  const NX = (Math.ceil(L + pad * 2) + 1) & ~1, NY = (Math.ceil(W + pad * 2) + 1) & ~1, NZ = (Math.ceil(sag + thick + pad * 2) + 1) & ~1;
+  const mx = NX / 2, my = NY / 2, mz = NZ / 2, zMid = sag / 2; // (the band's depth range centred in the grid)
   const palette = look.colors || [[150, 140, 130]];
   const rocks = [];
-  for (let tries = 0; rocks.length < (look.count ?? 60) && tries < 20000; tries++) {
-    const a = rnd() * Math.PI * 2, r = Math.sqrt(inner * inner + rnd() * (outer * outer - inner * inner));
+  for (let tries = 0; rocks.length < (look.count ?? 300) && tries < 60000; tries++) {
     const size = minSize + rnd() * (maxSize - minSize), rad = size / 2;
-    // in the ring's plane, then the ring tilted by `tilt` (towards the starting camera) so it isn't seen edge-on
-    const fx = Math.cos(a) * r, fz = Math.sin(a) * r, fy = (rnd() - 0.5) * thick, ct = Math.cos(tilt), st = Math.sin(tilt);
-    const cx = fx, cy = fy * ct - fz * st, cz = fy * st + fz * ct;
-    if (rocks.some((q) => Math.hypot(q.x - cx, q.y - cy, q.z - cz) < q.rad + rad + 3)) continue; // apart
+    const cx = (rnd() - 0.5) * L, cy = (rnd() - 0.5) * W, cz = bendZ(cx) + zMid + (rnd() - 0.5) * thick;
+    if (rocks.some((q) => Math.abs(q.x - cx) < 14 && Math.hypot(q.x - cx, q.y - cy, q.z - cz) < q.rad + rad + 3)) continue; // apart
     // two or three balls, the extra ones smaller and off the centre: a lumpy rock
     const balls = [[cx, cy, cz, rad]];
     const extra = 1 + (rnd() < 0.5 ? 1 : 0);
@@ -139,25 +144,25 @@ function belt(look, s) {
     }
     rocks.push({ x: cx, y: cy, z: cz, rad: rad * 1.3, balls });
   }
-  const tags = new Uint8Array(N * N * N);
+  const tags = new (rocks.length > 255 ? Uint16Array : Uint8Array)(NX * NY * NZ);
   const colors = [null];
   rocks.forEach((rock, n) => {
     const base = palette[n % palette.length], shade = 0.85 + rnd() * 0.3;
     colors.push(base.map((c) => Math.max(0, Math.min(255, Math.round(c * shade)))));
     for (const [bx, by, bz, br] of rock.balls) {
       const r2 = Math.max(1, br * br);
-      const i0 = Math.floor(bx + mid - br - 1), i1 = Math.ceil(bx + mid + br + 1);
-      const j0 = Math.floor(by + mid - br - 1), j1 = Math.ceil(by + mid + br + 1);
-      const k0 = Math.floor(bz + mid - br - 1), k1 = Math.ceil(bz + mid + br + 1);
-      for (let k = Math.max(0, k0); k <= Math.min(N - 1, k1); k++) for (let j = Math.max(0, j0); j <= Math.min(N - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(N - 1, i1); i++) {
-        const x = i + 0.5 - mid - bx, y = j + 0.5 - mid - by, z = k + 0.5 - mid - bz;
-        if (x * x + y * y + z * z <= r2) tags[(k * N + j) * N + i] = n + 1;
+      const i0 = Math.max(0, Math.floor(bx + mx - br - 1)), i1 = Math.min(NX - 1, Math.ceil(bx + mx + br + 1));
+      const j0 = Math.max(0, Math.floor(by + my - br - 1)), j1 = Math.min(NY - 1, Math.ceil(by + my + br + 1));
+      const k0 = Math.max(0, Math.floor(bz + mz - br - 1)), k1 = Math.min(NZ - 1, Math.ceil(bz + mz + br + 1));
+      for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const x = i + 0.5 - mx - bx, y = j + 0.5 - my - by, z = k + 0.5 - mz - bz;
+        if (x * x + y * y + z * z <= r2) tags[(k * NY + j) * NX + i] = n + 1;
       }
     }
   });
   return {
-    N, half: (N * s) / 2, radius: 2 * s, bound: (outer + maxSize) * s, surface: 'none', colors, rocks: rocks.length,
-    fill: (i, j, k) => tags[(k * N + j) * N + i],
+    dims: [NX, NY, NZ], half: (NX * s) / 2, radius: 2 * s, bound: (Math.hypot(L, W) / 2 + maxSize) * s, surface: 'none', colors, rocks: rocks.length,
+    fill: (i, j, k) => tags[(k * NY + j) * NX + i],
   };
 }
 

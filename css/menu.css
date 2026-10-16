@@ -244,6 +244,58 @@
   padding-top: 6px;
 }
 
+/* the three parts side by side: in a column a row's label goes above its control */
+.menu-card.is-settings {
+  width: min(1040px, 100%);
+}
+
+.settings-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 22px;
+}
+
+.settings-columns .settings-section {
+  align-content: start;
+}
+
+.settings-columns .settings-row {
+  grid-template-columns: 1fr 6ch;
+  gap: 4px 10px;
+}
+
+.settings-columns .settings-row > :first-child {
+  grid-column: 1 / -1;
+}
+
+.settings-columns .settings-row.is-check {
+  grid-template-columns: 1fr auto;
+}
+
+.settings-columns .settings-row.is-check > :first-child {
+  grid-column: auto;
+}
+
+.settings-columns .settings-choices {
+  grid-column: 1 / -1;
+}
+
+.settings-columns .settings-keys {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.settings-columns .settings-keys dd {
+  margin-bottom: 6px;
+}
+
+@media (max-width: 820px) {
+  .settings-columns {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
 @media (max-width: 420px) {
   .settings-row {
     grid-template-columns: 1fr 5ch;

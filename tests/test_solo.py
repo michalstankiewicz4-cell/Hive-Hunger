@@ -232,11 +232,16 @@ async def main():
         sp = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm;
           // (the ships come out of the tunnel first)
           for (let n = 0; n < 400 && g.localPlayer.arrival.phase !== 'done'; n++) g.update();
-          g.update();
-          const before = Array.from(s.pos); g.update();
-          const step = (i) => Math.hypot(s.pos[i * 3] - before[i * 3], s.pos[i * 3 + 1] - before[i * 3 + 1], s.pos[i * 3 + 2] - before[i * 3 + 2]);
-          const L = [], E = []; for (let i = 0; i < s.count; i++) (i < s.lasers ? L : E).push(step(i)); // storm ships fly at full speed
-          return { laser: Math.max(...L), eater: Math.max(...E) }; }""")
+          // (a frame in which a laser ship is flying, not sitting at its bite)
+          let out = null;
+          for (let f = 0; f < 120 && !(out && out.laser > 0); f++) {
+            g.update();
+            const before = Array.from(s.pos); g.update();
+            const step = (i) => Math.hypot(s.pos[i * 3] - before[i * 3], s.pos[i * 3 + 1] - before[i * 3 + 1], s.pos[i * 3 + 2] - before[i * 3 + 2]);
+            const L = [], E = []; for (let i = 0; i < s.count; i++) (i < s.lasers ? L : E).push(step(i)); // storm ships fly at full speed
+            out = { laser: Math.max(...L), eater: Math.max(...E) };
+          }
+          return out; }""")
         t.ok(abs(sp['laser'] - 0.27) < 0.005 and abs(sp['eater'] - 0.3) < 0.005, 'laser ships fly 10% slower', sp)
         await h.fast_forward(page, 500)
         lz = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm; s.render(g.camera);

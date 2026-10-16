@@ -2,6 +2,13 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.36.0] — 2026-10-16
+
+### Changed
+- **The Kuiper Belt is a band**, not a ring: as wide as the ring's radius was and five rings long (about 230 × 23 units), very slightly bent along its length, facing the camera — 335 small irregular icy asteroids, none touching another. Zoom out to see all of it.
+- **Settings** are no longer one tall column: Mouse, Keyboard and Graphics side by side (one under another on narrow screens).
+- A planet's voxel grid may be long and flat instead of a cube (the band needs only about 1.6 million voxels' room instead of 100 million).
+
 ## [0.35.0] — 2026-10-16
 
 ### Added

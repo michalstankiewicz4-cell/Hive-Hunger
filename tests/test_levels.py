@@ -86,28 +86,35 @@ async def main():
                     await page.wait_for_timeout(600)
                     await page.screenshot(path=os.path.join(shots, f'level{level}-eaten.png'))
 
-        # planet 1: the Kuiper Belt — small irregular asteroids in a tilted ring, none touching another;
-        # every one in its own (icy) colour; the same belt from the same seed
+        # planet 1: the Kuiper Belt — a long band of small irregular asteroids (10 × as long as it is wide,
+        # very slightly bent), none touching another; every one in its own (icy) shade; the same belt from the same seed
         await page.evaluate(BUILD, 1)
-        belt = await page.evaluate('''() => { const g = window.__dbg, pl = g.planet, N = pl.N, L = g.cfg.levels[0]; const rock = new Map();
+        belt = await page.evaluate('''() => { const g = window.__dbg, pl = g.planet, L = g.cfg.levels[0]; const rock = new Map(), v = new window.THREE.Vector3();
+          let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, zMid = 0, nMid = 0, zEnd = 0, nEnd = 0;
           for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) {
-            const t = pl.tags[idx], i = idx % N, j = ((idx / N) | 0) % N, k = (idx / (N * N)) | 0;
+            const t = pl.tags[idx], [i, j, k] = pl.coords(idx);
             const b = rock.get(t) || { n: 0, i0: 1e9, i1: -1, j0: 1e9, j1: -1, k0: 1e9, k1: -1 };
             b.n++; b.i0 = Math.min(b.i0, i); b.i1 = Math.max(b.i1, i); b.j0 = Math.min(b.j0, j); b.j1 = Math.max(b.j1, j); b.k0 = Math.min(b.k0, k); b.k1 = Math.max(b.k1, k);
             rock.set(t, b);
+            pl.gridCenter(idx, v);
+            x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
+            if (Math.abs(v.x) < 10) { zMid += v.z; nMid++; } else if (Math.abs(v.x) > 90) { zEnd += v.z; nEnd++; }
           }
           // a voxel of one rock next to a voxel of another (they would touch)
           let touching = 0;
           for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) {
-            const i = idx % N, j = ((idx / N) | 0) % N, k = (idx / (N * N)) | 0;
+            const [i, j, k] = pl.coords(idx);
             for (const [a, b, c] of [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) { const n = pl.index(i + a, j + b, k + c); if (n >= 0 && pl.hp[n] > 0 && pl.tags[n] !== pl.tags[idx]) touching++; }
           }
           const list = [...rock.values()], span = list.map((b) => Math.max(b.i1 - b.i0, b.j1 - b.j0, b.k1 - b.k0) + 1);
           const first = pl.total;
           g.planet.dispose(); g.spawnPlanet(12345);
           return { rocks: list.length, want: L.count, pl: pl.rocks, touching, minSpan: Math.min(...span), maxSpan: Math.max(...span), total: first, again: g.planet.total,
+            grid: [pl.NX, pl.NY, pl.NZ], length: Math.round(x1 - x0), width: Math.round(y1 - y0), bent: Math.round((zMid / nMid - zEnd / nEnd) * 10) / 10,
             colours: new Set(list.map((_, n) => pl.tagColors[n + 1].join(','))).size, irregular: list.filter((b) => b.n < (b.i1 - b.i0 + 1) * (b.j1 - b.j0 + 1) * (b.k1 - b.k0 + 1) * 0.6).length }; }''')
-        t.ok(belt['rocks'] == belt['want'] == belt['pl'] and belt['touching'] == 0, 'planet 1: the Kuiper Belt — 70 asteroids, none touching another', belt)
+        t.ok(belt['rocks'] == belt['want'] == belt['pl'] and belt['touching'] == 0, f"planet 1: the Kuiper Belt — {belt['want']} asteroids, none touching another", belt)
+        t.ok(8.5 <= belt['length'] / belt['width'] <= 11 and belt['width'] >= 20 and 4 < belt['bent'] < 30 and belt['grid'][0] > 4 * belt['grid'][2],
+             'a band as wide as the old ring\'s radius and five rings long, very slightly bent; its grid long and flat', belt)
         t.ok(belt['minSpan'] >= 2 and belt['maxSpan'] <= 9 and belt['irregular'] > belt['rocks'] // 3, 'small, irregular rocks (lumps of overlapping balls)', belt)
         t.ok(belt['colours'] > 10 and belt['total'] == belt['again'], 'each in its own shade; the same seed builds the same belt', belt)
 

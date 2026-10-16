@@ -13,12 +13,12 @@ export const Search = {
   exposedNear(p, r, out) {
     out.length = 0;
     if (!this.alive) return 0;
-    const s = this.s, h = this.half;
-    const ci = (p.x + h) / s, cj = (p.y + h) / s, ck = (p.z + h) / s;
+    const s = this.s;
+    const ci = (p.x + this.HX) / s, cj = (p.y + this.HY) / s, ck = (p.z + this.HZ) / s;
     const rv = r / s, rv2 = rv * rv;
-    const i0 = Math.max(0, Math.floor(ci - rv)), i1 = Math.min(this.N - 1, Math.floor(ci + rv));
-    const j0 = Math.max(0, Math.floor(cj - rv)), j1 = Math.min(this.N - 1, Math.floor(cj + rv));
-    const k0 = Math.max(0, Math.floor(ck - rv)), k1 = Math.min(this.N - 1, Math.floor(ck + rv));
+    const i0 = Math.max(0, Math.floor(ci - rv)), i1 = Math.min(this.NX - 1, Math.floor(ci + rv));
+    const j0 = Math.max(0, Math.floor(cj - rv)), j1 = Math.min(this.NY - 1, Math.floor(cj + rv));
+    const k0 = Math.max(0, Math.floor(ck - rv)), k1 = Math.min(this.NZ - 1, Math.floor(ck + rv));
     for (let k = k0; k <= k1; k++) {
       const dk = k + 0.5 - ck;
       for (let j = j0; j <= j1; j++) {
@@ -26,7 +26,7 @@ export const Search = {
         for (let i = i0; i <= i1; i++) {
           const di = i + 0.5 - ci;
           if (di * di + dj * dj + dk * dk > rv2) continue;
-          const idx = (k * this.N + j) * this.N + i;
+          const idx = (k * this.NY + j) * this.NX + i;
           if (this.slotOf[idx] >= 0) out.push(idx);
         }
       }

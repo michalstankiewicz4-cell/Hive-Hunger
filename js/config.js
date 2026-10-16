@@ -91,16 +91,17 @@ export const CONFIG = Object.freeze({
 
   // The missions' planets, in the order of the solar system map (js/solar.js: from the outside in);
   // `body` = the map's body. Only these bodies can be played yet — the rest of the map is "coming soon".
-  // shape: 'sphere' (default), 'belt' (a ring of small irregular asteroids: `count` rocks of
-  // `minSize` … `maxSize` voxels across, between `inner` and `outer` × planet.radius, `thick` voxels
-  // up and down, the ring tilted `tilt` radians, `colors` per rock) — see shapes.js (cube, pair, boxes and text are there too).
+  // shape: 'sphere' (default), 'belt' (a long band of small irregular asteroids facing the starting
+  // camera: `length` × planet.radius long, `width` × planet.radius across, bent very slightly — its
+  // middle `curve` × its length nearer than its ends — `thick` voxels deep; `count` rocks of `minSize` …
+  // `maxSize` voxels across, `colors` per rock) — see shapes.js (cube, pair, boxes and text are there too).
   // radiusScale × planet.radius = the sphere's radius.
   // style = graphics only (physics and eating always use the voxels): 'cubes' — the voxels;
   // 'smooth' — a smooth surface over them; 'wedges' — cubes plus low-poly wedges in the steps.
   // Every level uses 'smooth' (the owner's choice); the other styles stay available.
   // In multiplayer the missions go in this order, one after another (and round again).
   levels: [
-    { body: 'kuiper', shape: 'belt', count: 70, minSize: 2, maxSize: 6, inner: 0.55, outer: 0.95, thick: 6, tilt: 0.55, style: 'smooth',
+    { body: 'kuiper', shape: 'belt', count: 335, minSize: 2, maxSize: 6, width: 0.95, length: 9.5, curve: 0.06, thick: 6, style: 'smooth',
       colors: [[176, 190, 214], [150, 160, 180], [200, 206, 218], [130, 136, 150], [186, 176, 168]] },
     { body: 'earth', radiusScale: 1, style: 'smooth' },
   ],

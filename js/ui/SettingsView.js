@@ -18,11 +18,14 @@ const KEYS = [
 /**
  * The Settings screen in the menu: Mouse (what it does, camera turning and zoom speed), Keyboard
  * (the keys) and Graphics (FPS counter, render resolution, smooth edges, amount of effects).
- * Changes apply at once and are remembered in this browser (settings.js).
+ * Changes apply at once and are remembered in this browser (settings.js). The three are side by side
+ * (one under another on narrow screens).
  */
 export function fillSettings(card, onBack) {
-  card.classList.add('is-wide');
-  card.append(
+  card.classList.add('is-wide', 'is-settings');
+  const columns = el('div', 'settings-columns');
+  card.append(columns);
+  columns.append(
     section('Mouse', [
       keyList(MOUSE),
       slider('Camera turning', 'rotateSpeed', 0.25, 3, 0.05, (v) => `${v.toFixed(2)}×`),

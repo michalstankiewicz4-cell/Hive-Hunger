@@ -35,25 +35,29 @@ export class PlanetSurface {
     this.material = material;
     this.group = new THREE.Group();
     planet.scene.add(this.group);
-    // edges of cells (smooth) go from voxel -1 to N-1, so chunks cover N+1 positions
-    this.C = Math.ceil((planet.N + 1) / chunk);
+    // edges of cells (smooth) go from voxel -1 to N-1, so chunks cover N+1 positions (per axis: a
+    // belt's grid is long and flat; a fragment's small grid has only N)
+    const [NX, NY, NZ] = dimsOf(planet);
+    this.CI = Math.ceil((NX + 1) / chunk);
+    this.CJ = Math.ceil((NY + 1) / chunk);
+    this.CK = Math.ceil((NZ + 1) / chunk);
     this.meshes = new Map(); // chunk key → mesh
     this.dirty = new Set();
     this.budgetMs = 3; // time per frame for rebuilding chunks (at least one is rebuilt)
-    for (let k = 0; k < this.C; k++) for (let j = 0; j < this.C; j++) for (let i = 0; i < this.C; i++) {
+    for (let k = 0; k < this.CK; k++) for (let j = 0; j < this.CJ; j++) for (let i = 0; i < this.CI; i++) {
       this.rebuild(i, j, k);
     }
   }
 
   key(i, j, k) {
-    return (k * this.C + j) * this.C + i;
+    return (k * this.CJ + j) * this.CI + i;
   }
 
   /** A voxel changed: its chunk and the neighbouring ones it touches need rebuilding. */
   touch(vi, vj, vk) {
     const lo = (v) => Math.max(0, Math.floor(v / this.chunk));
-    const hi = (v) => Math.min(this.C - 1, Math.floor((v + 2) / this.chunk));
-    for (let k = lo(vk); k <= hi(vk); k++) for (let j = lo(vj); j <= hi(vj); j++) for (let i = lo(vi); i <= hi(vi); i++) {
+    const hi = (v, C) => Math.min(C - 1, Math.floor((v + 2) / this.chunk));
+    for (let k = lo(vk); k <= hi(vk, this.CK); k++) for (let j = lo(vj); j <= hi(vj, this.CJ); j++) for (let i = lo(vi); i <= hi(vi, this.CI); i++) {
       this.dirty.add(this.key(i, j, k));
     }
   }
@@ -65,7 +69,7 @@ export class PlanetSurface {
     for (const key of this.dirty) {
       if (!all && n > 0 && performance.now() - t0 > this.budgetMs) break;
       this.dirty.delete(key);
-      const i = key % this.C, j = ((key / this.C) | 0) % this.C, k = (key / (this.C * this.C)) | 0;
+      const i = key % this.CI, j = ((key / this.CI) | 0) % this.CJ, k = (key / (this.CI * this.CJ)) | 0;
       this.rebuild(i, j, k);
       n++;
     }
@@ -131,8 +135,18 @@ for (let a = 0; a < 8; a++) for (let b = a + 1; b < 8; b++) {
 const CX = Int8Array.from(CORNERS, (c) => c[0]), CY = Int8Array.from(CORNERS, (c) => c[1]), CZ = Int8Array.from(CORNERS, (c) => c[2]);
 const EA = Int8Array.from(EDGES, (e) => e[0]), EB = Int8Array.from(EDGES, (e) => e[1]);
 
+/** Grid size per axis: [NX, NY, NZ] (a fragment's small grid: N each). */
+function dimsOf(planet) {
+  return planet.NX ? [planet.NX, planet.NY, planet.NZ] : [planet.N, planet.N, planet.N];
+}
+
+/** Half the grid's size per axis (voxel i's centre on x is (i + 0.5)·s − HX). */
+function halfsOf(planet) {
+  return planet.NX ? [planet.HX, planet.HY, planet.HZ] : [planet.half, planet.half, planet.half];
+}
+
 function buildSmooth(planet, x0, y0, z0, size, out) {
-  const { N, hp, s } = planet, R = planet.half;
+  const { hp, s } = planet, [NX, NY, NZ] = dimsOf(planet), [HX, HY, HZ] = halfsOf(planet);
   const strength = planet.cfg.strength;
   // density of a voxel: 0 empty; 0.5 … 1 solid, by how much strength is left — so a voxel being
   // eaten (or weakened by lightning) sinks smoothly into the surface before it disappears.
@@ -141,8 +155,8 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
   const block = new Float32Array(B * B * B);
   for (let k = 0; k < B; k++) for (let j = 0; j < B; j++) for (let i = 0; i < B; i++) {
     const vi = x0 - 1 + i, vj = y0 - 1 + j, vk = z0 - 1 + k;
-    if (vi < 0 || vj < 0 || vk < 0 || vi >= N || vj >= N || vk >= N) continue;
-    const h = hp[(vk * N + vj) * N + vi];
+    if (vi < 0 || vj < 0 || vk < 0 || vi >= NX || vj >= NY || vk >= NZ) continue;
+    const h = hp[(vk * NY + vj) * NX + vi];
     if (h > 0) block[(k * B + j) * B + i] = 0.5 + 0.5 * Math.min(1, h / strength);
   }
   // cells (cubes between voxel centres) this chunk needs: its own plus one before on each axis
@@ -187,14 +201,14 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
       const w = 1 - 2 * corner[c];
       gx += w * (a ? 1 : -1); gy += w * (b ? 1 : -1); gz += w * (d ? 1 : -1);
       if (corner[c] > 0) {
-        const o = planet.colorOffset((ck + d) * N * N + (cj + b) * N + (ci + a));
+        const o = planet.colorOffset(((ck + d) * NY + (cj + b)) * NX + (ci + a));
         const dark = 0.35 + 0.65 * (corner[c] - 0.5) * 2;
         col[0] += (colors[o] / 255) * dark; col[1] += (colors[o + 1] / 255) * dark; col[2] += (colors[o + 2] / 255) * dark;
         solids++;
       }
     }
     // world position: voxel centre of index i is (i + 0.5) * s - half
-    const wx = (ci + 0.5 + px) * s - R, wy = (cj + 0.5 + py) * s - R, wz = (ck + 0.5 + pz) * s - R;
+    const wx = (ci + 0.5 + px) * s - HX, wy = (cj + 0.5 + py) * s - HY, wz = (ck + 0.5 + pz) * s - HZ;
     let gl = Math.hypot(gx, gy, gz);
     if (gl < 1e-6) { gx = wx; gy = wy; gz = wz; gl = Math.hypot(wx, wy, wz) || 1; }
     // several objects: on a sphere, tilt the normal towards that sphere's own centre — the same
@@ -269,8 +283,8 @@ const OUTER = { // fill under u = a + b - 1 (solid only at the +a+b diagonal)
 };
 
 function buildWedges(planet, x0, y0, z0, size, out) {
-  const { N, hp, s } = planet, R = planet.half;
-  const solid = (i, j, k) => i >= 0 && j >= 0 && k >= 0 && i < N && j < N && k < N && hp[(k * N + j) * N + i] > 0;
+  const { hp, s } = planet, [NX, NY, NZ] = dimsOf(planet), [HX, HY, HZ] = halfsOf(planet);
+  const solid = (i, j, k) => i >= 0 && j >= 0 && k >= 0 && i < NX && j < NY && k < NZ && hp[(k * NY + j) * NX + i] > 0;
   const lo = Math.max(0, x0), loJ = Math.max(0, y0), loK = Math.max(0, z0);
   const e = [0, 0, 0];
   const add = (shape, origin, up, ax, bx, sa, sb, color) => {
@@ -280,7 +294,7 @@ function buildWedges(planet, x0, y0, z0, size, out) {
       e[ax] = sa > 0 ? a : 1 - a;
       e[bx] = sb > 0 ? b : 1 - b;
       e[up.axis] = up.sign > 0 ? u : 1 - u;
-      return [(origin[0] + e[0]) * s - R, (origin[1] + e[1]) * s - R, (origin[2] + e[2]) * s - R];
+      return [(origin[0] + e[0]) * s - HX, (origin[1] + e[1]) * s - HY, (origin[2] + e[2]) * s - HZ];
     };
     const [cx, cy, cz] = toWorld(shape.inside);
     for (const tri of shape.tris) {
@@ -302,10 +316,10 @@ function buildWedges(planet, x0, y0, z0, size, out) {
     }
   };
 
-  for (let k = loK; k < Math.min(N, z0 + size); k++) for (let j = loJ; j < Math.min(N, y0 + size); j++) for (let i = lo; i < Math.min(N, x0 + size); i++) {
-    if (hp[(k * N + j) * N + i] > 0) continue;
+  for (let k = loK; k < Math.min(NZ, z0 + size); k++) for (let j = loJ; j < Math.min(NY, y0 + size); j++) for (let i = lo; i < Math.min(NX, x0 + size); i++) {
+    if (hp[(k * NY + j) * NX + i] > 0) continue;
     // "down" = the axis pointing most towards the planet centre
-    const cx = i + 0.5 - N / 2, cy = j + 0.5 - N / 2, cz = k + 0.5 - N / 2;
+    const cx = i + 0.5 - NX / 2, cy = j + 0.5 - NY / 2, cz = k + 0.5 - NZ / 2;
     const ab = [Math.abs(cx), Math.abs(cy), Math.abs(cz)];
     const axis = ab[0] >= ab[1] && ab[0] >= ab[2] ? 0 : ab[1] >= ab[2] ? 1 : 2;
     const sign = [cx, cy, cz][axis] >= 0 ? 1 : -1; // up = away from the centre
@@ -315,7 +329,7 @@ function buildWedges(planet, x0, y0, z0, size, out) {
     below[axis] = -sign;
     if (!at(...below)) continue;
     const below3 = c.map((v, n) => v + below[n]);
-    const color = planet.voxelColor((below3[2] * N + below3[1]) * N + below3[0]);
+    const color = planet.voxelColor((below3[2] * NY + below3[1]) * NX + below3[0]);
     const [ax, bx] = [0, 1, 2].filter((n) => n !== axis);
     const side = (n, sg) => { const d = [0, 0, 0]; d[n] = sg; return at(...d); };
     const diag = (sa, sb) => { const d = [0, 0, 0]; d[ax] = sa; d[bx] = sb; return at(...d); };

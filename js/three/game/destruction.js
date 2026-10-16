@@ -149,7 +149,7 @@ export const Destruction = {
   destroySphere(x, y, z, R, player, debrisMax) {
     const pl = this.planet, s = pl.s, v = this.tmp;
     const hit = [];
-    const [ci, cj, ck] = [x, y, z].map((c) => Math.floor((c + pl.half) / s));
+    const ci = Math.floor((x + pl.HX) / s), cj = Math.floor((y + pl.HY) / s), ck = Math.floor((z + pl.HZ) / s);
     const rv = Math.ceil(R / s);
     for (let k = ck - rv; k <= ck + rv; k++) for (let j = cj - rv; j <= cj + rv; j++) for (let i = ci - rv; i <= ci + rv; i++) {
       const idx = pl.index(i, j, k);

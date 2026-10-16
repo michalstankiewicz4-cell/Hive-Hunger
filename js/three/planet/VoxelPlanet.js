@@ -42,8 +42,12 @@ export class VoxelPlanet {
     // (the seed also places a belt's asteroids: the same on every player's screen)
     const shape = buildShape({ ...look, radius: look.radius || cfg.radius, seed: this.seed }, this.s);
     this.shape = look.shape || 'sphere';
-    this.N = shape.N;
-    this.half = shape.half;     // half of the grid's edge: voxel i's centre is (i + 0.5)·s − half
+    // the grid: NX × NY × NZ voxels centred on the origin (a cube for most shapes; a belt is long and flat);
+    // voxel (i, j, k)'s centre is ((i + 0.5)·s − HX, (j + 0.5)·s − HY, (k + 0.5)·s − HZ)
+    [this.NX, this.NY, this.NZ] = shape.dims || [shape.N, shape.N, shape.N];
+    [this.HX, this.HY, this.HZ] = [this.NX, this.NY, this.NZ].map((n) => (n * this.s) / 2);
+    this.N = this.NX;           // (a cube's edge)
+    this.half = Math.max(this.HX, this.HY, this.HZ); // half of the grid's longest edge
     this.R = shape.radius;      // what the swarm flies around on long trips (the sphere's radius)
     this.bound = shape.bound;   // a sphere containing the whole shape
     this.surfaceKind = shape.surface;
@@ -55,7 +59,7 @@ export class VoxelPlanet {
     this.fragments = null; // set at the end (pieces bitten off — Fragments.js)
     this.log = null; // multiplayer host: indices of removed voxels since the last network update
 
-    const N = this.N, n3 = N * N * N;
+    const NX = this.NX, NY = this.NY, NZ = this.NZ, n3 = NX * NY * NZ;
     this.hp = new Float32Array(n3);
     // voxel colours, computed when first needed
     this.colors = new Uint8Array(n3 * 3);
@@ -64,15 +68,15 @@ export class VoxelPlanet {
     // how many units have claimed this voxel to eat
     this.claims = new Uint16Array(n3);
     // shape tag of each solid voxel (the text's letter number, for its colour)
-    this.tags = shape.colors ? new Uint8Array(n3) : null;
+    this.tags = shape.colors ? new (shape.colors.length > 256 ? Uint16Array : Uint8Array)(n3) : null;
 
     let total = 0;
-    for (let k = 0; k < N; k++) {
-      for (let j = 0; j < N; j++) {
-        for (let i = 0; i < N; i++) {
+    for (let k = 0; k < NZ; k++) {
+      for (let j = 0; j < NY; j++) {
+        for (let i = 0; i < NX; i++) {
           const tag = shape.fill(i, j, k);
           if (tag) {
-            const idx = (k * N + j) * N + i;
+            const idx = (k * NY + j) * NX + i;
             this.hp[idx] = cfg.strength;
             if (this.tags) this.tags[idx] = tag;
             total++;
@@ -109,14 +113,13 @@ export class VoxelPlanet {
   }
 
   coords(idx) {
-    const N = this.N;
-    return [idx % N, ((idx / N) | 0) % N, (idx / (N * N)) | 0];
+    const NX = this.NX;
+    return [idx % NX, ((idx / NX) | 0) % this.NY, (idx / (NX * this.NY)) | 0];
   }
 
   index(i, j, k) {
-    const N = this.N;
-    if (i < 0 || j < 0 || k < 0 || i >= N || j >= N || k >= N) return -1;
-    return (k * N + j) * N + i;
+    if (i < 0 || j < 0 || k < 0 || i >= this.NX || j >= this.NY || k >= this.NZ) return -1;
+    return (k * this.NY + j) * this.NX + i;
   }
 
   isExposed(idx) {
@@ -142,15 +145,13 @@ export class VoxelPlanet {
   gridCenter(idx, out) {
     const [i, j, k] = this.coords(idx);
     const s = this.s;
-    const h = this.half;
-    return out.set((i + 0.5) * s - h, (j + 0.5) * s - h, (k + 0.5) * s - h);
+    return out.set((i + 0.5) * s - this.HX, (j + 0.5) * s - this.HY, (k + 0.5) * s - this.HZ);
   }
 
   /** Index of the voxel at a point (object with x, y, z), or -1. */
   cellAt(p) {
     const s = this.s;
-    const h = this.half;
-    return this.index(Math.floor((p.x + h) / s), Math.floor((p.y + h) / s), Math.floor((p.z + h) / s));
+    return this.index(Math.floor((p.x + this.HX) / s), Math.floor((p.y + this.HY) / s), Math.floor((p.z + this.HZ) / s));
   }
 
   isSolid(p) {
