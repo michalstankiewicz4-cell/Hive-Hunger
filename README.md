@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.27.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.28.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -22,11 +22,12 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 
 - **Click / tap** — send the swarm there (a pulsing ring marks the spot): every unit drops its current bite, the swarm flies over (around the planet, not through it) and starts eating at the clicked spot. A unit stuck in a corner of a crater or tunnel bites through the blocking voxel (if it isn't someone else's) and carries on
 - **Click the tunnel** (the small blue vortex at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
-- **Right mouse button / two fingers** — rotate the camera
+- **Right mouse button / two fingers** — turn the camera, any way round (it can go over the poles)
 - **Mouse wheel** — zoom
-- **Tab** — upgrade tree (Esc closes it)
+- **Tab** (or a click on the points counter) — upgrade tree (Esc closes it)
 - **Space** — single player: pause (nothing moves, the camera still turns; "Paused" at the bottom), Space again carries on
 - **Esc** — single player: pause and open the start screen; Esc again (or **Single player**) carries on with the same game. Also closes the upgrade tree
+- **Settings** (start screen, waiting room, or the room panel during a match) — **Mouse** (what it does, camera turning and zoom speed), **Keyboard** (the keys) and **Graphics** (FPS counter, render resolution 50 / 75 / 100% / native, smooth edges, amount of effects Low / Medium / High). They apply at once and are remembered in your browser; **Reset settings** restores them. The game screen itself shows no description of the controls — they are listed here.
 - **Panel in the top-right corner** — adjust your swarm live:
   - **Units** — number of units in the swarm (10–100; upgrades can't take it past 100)
   - **Speed** — the shared flying speed
@@ -42,7 +43,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Orb** ships fire, from 10 voxels away, a voxel-sized plasma orb with a pulsing glow and a fiery tail — one at a time. It flies slowly to the bite and bursts there: everything within 2 voxels is gone (a point each).
   - **Support** ships don't eat: every 3 seconds each fires a white lightning bolt at your own ships — it jumps between them in a random order (up to 6 jumps) over 1.5 s and is gone after the last one; every voxel on its way is destroyed (a point each). The bolt is irregularly bent, with energy flowing along it and small branches.
   - **Cleaners** eat only drifting pieces of 1, 2 or 3 voxels, the nearest first — never the planet or bigger pieces. With no such piece about they fly with the swarm.
-  - **Drills** fly to the nearest voxel, turn their nose towards the planet's centre (a little off it, at random) and drill a straight tunnel in, with a turning orange spiral bit: everything within 1.5 voxels of the bit is gone (a point each). Once through (or after 60 units) they fly on to their next bite. Tunnels often cut pieces loose for the tugs and cleaners. On a drifting piece a drill eats like an eater.
+  - **Drills** fly to the nearest voxel, turn their nose towards the planet's centre (a little off it, at random) and drill a straight tunnel in, with a turning orange spiral bit: everything around the bit is gone — 0.75 × your Power (about 0.75 voxels at the default Power), a point each. Once through (or after 60 units) they fly on to their next bite. Tunnels often cut pieces loose for the tugs and cleaners. On a drifting piece a drill eats like an eater.
 
 ## Multiplayer
 

@@ -130,7 +130,9 @@ export class Orbs {
       // the tail: sparks along the way it just flew
       const from = p.clone();
       p.addScaledVector(v, c.speed / d);
-      for (let k = 0; k < c.tailPerFrame; k++) this.spark(v.copy(from).lerp(p, k / c.tailPerFrame));
+      // (fewer sparks with less effects, Settings → Graphics)
+      const sparks = Math.max(1, Math.round(c.tailPerFrame * (this.scale ?? 1)));
+      for (let k = 0; k < sparks; k++) this.spark(v.copy(from).lerp(p, k / sparks));
       // the glow pulses
       const s = this.size * c.glowSize * (1 + 0.35 * Math.sin(this.time * c.pulse + o.phase));
       o.glow.scale.set(s, s, 1);

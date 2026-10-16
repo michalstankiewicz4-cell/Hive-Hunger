@@ -1,4 +1,10 @@
+import { settings } from '../../settings.js';
+
 const THREE = window.THREE;
+const WORLD_Y = new THREE.Vector3(0, 1, 0);
+const LOCAL_UP = new THREE.Vector3(0, 1, 0);
+const LOCAL_RIGHT = new THREE.Vector3(1, 0, 0);
+const ORBIT_STEP = new THREE.Quaternion();
 
 /**
  * Mouse and touch: a tap steers the swarm (or, on its tunnel, calls it back), the right button or
@@ -38,8 +44,12 @@ export const Input = {
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (!rotating) return;
       const now = center();
-      this.orbit.theta -= (now.x - last.x) * c.rotateSpeed;
-      this.orbit.phi = Math.min(Math.PI - 0.05, Math.max(0.05, this.orbit.phi - (now.y - last.y) * c.rotateSpeed));
+      // turn around the camera's own axes: sideways around its up, up/down around its right —
+      // no limit either way, it can go right over the poles
+      const k = c.rotateSpeed * settings.get('rotateSpeed');
+      this.orbit.q.multiply(ORBIT_STEP.setFromAxisAngle(LOCAL_UP, -(now.x - last.x) * k));
+      this.orbit.q.multiply(ORBIT_STEP.setFromAxisAngle(LOCAL_RIGHT, -(now.y - last.y) * k));
+      this.orbit.q.normalize();
       last = now;
       rotated = true;
       this.updateCamera();
@@ -60,7 +70,7 @@ export const Input = {
 
     this.canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const f = Math.exp(Math.sign(e.deltaY) * c.zoomSpeed);
+      const f = Math.exp(Math.sign(e.deltaY) * c.zoomSpeed * settings.get('zoomSpeed'));
       this.orbit.distance = Math.min(c.maxDistance, Math.max(c.minDistance, this.orbit.distance * f));
       this.updateCamera();
     }, { passive: false });
@@ -98,11 +108,22 @@ export const Input = {
     return new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   },
 
+  /**
+   * The camera on its sphere around the planet: `orbit.q` is its orientation (turned by dragging,
+   * any way round), the planet's spin turns it about the world's Y axis on top of that; it looks at
+   * the centre from `orbit.distance`.
+   */
   updateCamera() {
-    const { theta, phi, distance } = this.orbit;
-    this.camera.position.setFromSphericalCoords(distance, phi, theta + this.spin);
-    this.camera.lookAt(0, 0, 0);
-    this.camera.updateMatrixWorld();
+    const cam = this.camera;
+    cam.quaternion.setFromAxisAngle(WORLD_Y, this.spin).multiply(this.orbit.q);
+    cam.position.set(0, 0, this.orbit.distance).applyQuaternion(cam.quaternion);
+    cam.updateMatrixWorld();
+  },
+
+  /** Turns the camera to look at the planet from `angle` around the Y axis (level with the equator). */
+  faceAngle(angle) {
+    this.orbit.q.setFromAxisAngle(WORLD_Y, angle);
+    this.updateCamera();
   },
 
   /** World point under the screen point: the first solid voxel, or beside the planet — the plane through its centre. */

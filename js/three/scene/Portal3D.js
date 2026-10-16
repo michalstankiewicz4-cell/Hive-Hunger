@@ -30,21 +30,22 @@ export class Portal3D {
     this.inner = new THREE.Group(); // faces the planet; +z = out of the tunnel
     this.group.add(this.inner);
 
-    const streakTex = streakTexture();
+    const streakTex = streakTexture(cfg.streaks);
+    this.narrow = 0;       // 0 … 1: how much of `narrowing` applies now (only while opening)
     const layer = (radiusTop, depth, opacity, color, repeat) => {
-      const geo = new THREE.CylinderGeometry(radiusTop, radiusTop * 0.08, depth, 48, 1, true);
-      geo.rotateX(-Math.PI / 2);          // along z
-      geo.translate(0, 0, -depth / 2);    // the mouth at z = 0, the tunnel going back into −z
+      const geo = trumpet(radiusTop, radiusTop * 0.08, depth, cfg.flare, cfg.fadeEnd);
+      geo.rotateX(-Math.PI / 2);          // along z: the narrow end at z = 0, the wide bell back at −depth
+      geo.translate(0, 0, -depth / 2);
       const tex = streakTex.clone();
       tex.needsUpdate = true;
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
       tex.repeat.set(repeat, 1);
       const mat = new THREE.MeshBasicMaterial({
-        map: tex, color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+        map: tex, color, vertexColors: true, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geo, mat);
       this.inner.add(mesh);
-      return { mesh, tex, mat, base: opacity };
+      return { mesh, tex, mat, base: opacity, radius: radiusTop, depth };
     };
     this.layers = [
       layer(1, 2.4, 0.9, cfg.color, 3),
@@ -117,6 +118,9 @@ export class Portal3D {
     // ease open / closed
     const speed = this.target > this.openness ? 1 / c.openFrames : 1 / c.closeFrames;
     this.openness += Math.max(-speed, Math.min(speed, this.target - this.openness));
+    // narrower while it opens; once open it widens back to its usual shape (`narrowFrames`)
+    if (this.target === 1 && this.openness < 1) this.narrow = 1;
+    else this.narrow = Math.max(0, this.narrow - 1 / c.narrowFrames);
     // face the planet (the origin)
     if (facing) {
       this.group.updateWorldMatrix(true, false);
@@ -134,7 +138,8 @@ export class Portal3D {
     const glowUp = this.active ? 1.6 : 1;
     // swirl: every layer turns and its streaks run inwards
     this.layers.forEach((L, n) => {
-      L.mesh.scale.set(r, r, 0.35 + 0.65 * o + 0.05);
+      const zs = 0.35 + 0.65 * o + 0.05;
+      L.mesh.scale.set(r, r, zs * narrowing(L, r, zs, (c.narrowing * this.narrow * Math.PI) / 180));
       L.mesh.rotation.z = this.t * (0.01 + n * 0.006) * (n % 2 ? -1 : 1);
       L.tex.offset.y = (this.t * (0.012 + n * 0.004)) % 1;
       L.mat.opacity = L.base * (0.35 + 0.65 * o) * (n === 2 ? glowUp : 1);
@@ -152,15 +157,59 @@ export class Portal3D {
   }
 }
 
-/** Light streaks running along the tunnel: bright thin lines and soft glows, random. */
-function streakTexture() {
+/**
+ * How much longer layer L must be to look `by` radians narrower at its current size (`r` across,
+ * `zs` along): the angle between the axis and the line from the narrow end to the rim gets smaller.
+ */
+function narrowing(L, r, zs, by) {
+  if (by <= 0) return 1;
+  const spread = 0.92 * L.radius * r, along = L.depth * zs;
+  const angle = Math.atan2(spread, along);
+  return spread / Math.tan(Math.max(0.05, angle - by)) / along;
+}
+
+/**
+ * An open tube along y like CylinderGeometry (`wide` radius at the top, `narrow` at the bottom),
+ * but its radius grows as t^flare along it (t = 0 at the narrow end, 1 at the top): narrow most of
+ * the way, opening out at the end like the bell of a trumpet.
+ */
+function trumpet(wide, narrow, depth, flare, fadeEnd) {
+  const geo = new THREE.CylinderGeometry(wide, narrow, depth, 48, 32, true);
+  const P = geo.attributes.position;
+  // the last `fadeEnd` of the streaks (at the bell) fade out: vertex colours from white to black
+  // (with additive blending, black adds nothing — transparent)
+  const col = new Float32Array(P.count * 3);
+  for (let i = 0; i < P.count; i++) {
+    const t = Math.min(1, Math.max(0, P.getY(i) / depth + 0.5)); // (a tiny negative would make pow NaN)
+    const straight = narrow + (wide - narrow) * t, bell = narrow + (wide - narrow) * Math.pow(t, flare);
+    const k = straight > 1e-6 ? bell / straight : 1;
+    P.setX(i, P.getX(i) * k);
+    P.setZ(i, P.getZ(i) * k);
+    const f = Math.min(1, (1 - t) / fadeEnd);
+    col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = f;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
+ * Light streaks running along the tunnel: `count` bright thin lines and soft glows, unevenly
+ * spread — bunched around a few random places with gaps between.
+ */
+function streakTexture(count) {
   const c = document.createElement('canvas');
   c.width = 256; c.height = 128;
   const g = c.getContext('2d');
   g.fillStyle = 'rgba(0,0,0,1)';
   g.fillRect(0, 0, 256, 128);
-  for (let k = 0; k < 70; k++) {
-    const x = Math.random() * 256, w = 1 + Math.random() * (k < 12 ? 10 : 3);
+  const bunches = Array.from({ length: 5 }, () => ({ x: Math.random() * 256, spread: 6 + Math.random() * 26 }));
+  for (let k = 0; k < count; k++) {
+    // most around a bunch (a rough bell curve around it), a few anywhere
+    const b = bunches[(Math.random() * bunches.length) | 0];
+    const off = (Math.random() + Math.random() + Math.random() - 1.5) * b.spread;
+    const x = (Math.random() < 0.15 ? Math.random() * 256 : b.x + off + 256) % 256;
+    const w = 1 + Math.random() * (k < count / 6 ? 10 : 3);
     const grad = g.createLinearGradient(0, 0, 0, 128);
     const a = 0.25 + Math.random() * 0.75;
     grad.addColorStop(0, 'rgba(255,255,255,0)');

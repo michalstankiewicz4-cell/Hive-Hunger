@@ -52,8 +52,37 @@ async def main():
         page = await h.open_page(browser, url, errors, 'solo')
 
         # start screen
-        choices = await page.locator('.menu-choice').all_inner_texts()
+        choices = await page.locator('.menu-choice:not(.menu-settings)').all_inner_texts()
         t.ok(len(choices) == 3 and 'Single player' in choices[0], 'start screen offers 3 modes', choices)
+
+        # Settings: Mouse, Keyboard, Graphics; they apply at once and Back / Esc returns
+        await page.click('.menu-settings')
+        st = await page.evaluate("""() => ({ title: document.getElementById('menu-title').textContent,
+          sections: [...document.querySelectorAll('.settings-title')].map((e) => e.textContent),
+          keys: [...document.querySelectorAll('.settings-keys dt')].map((e) => e.textContent) })""")
+        t.ok(st['title'] == 'Settings' and st['sections'] == ['Mouse', 'Keyboard', 'Graphics'] and 'Tab' in st['keys'] and 'Space' in st['keys'],
+             'Settings: Mouse, Keyboard (Tab, Space, Esc …) and Graphics', st)
+        gr = await page.evaluate("""async () => { const g = window.__dbg, q = (s) => document.querySelector(s);
+          const canvas0 = g.canvas;
+          q('input[data-setting=fps]').click();
+          q('button[data-setting=resolution][data-value="0.5"]').click();
+          q('button[data-setting=effects][data-value=low]').click();
+          q('input[data-setting=antialias]').click();
+          const r = q('input[data-setting=rotateSpeed]'); r.value = 2; r.dispatchEvent(new Event('input'));
+          await new Promise((res) => setTimeout(res, 700));
+          return { fps: !q('#fps').hidden && /FPS$/.test(q('#fps').textContent), ratio: g.renderer.getPixelRatio(),
+            effects: g.debris.scale, aa: g.renderer.getContextAttributes().antialias, newCanvas: g.canvas !== canvas0 && document.body.contains(g.canvas) && !document.body.contains(canvas0),
+            saved: JSON.parse(localStorage.getItem('hive-hunger-settings') || '{}') }; }""")
+        t.ok(gr['fps'] and gr['ratio'] == 0.5 and gr['effects'] == 0.2 and gr['aa'] is False and gr['newCanvas'],
+             'graphics: FPS counter, resolution, effects and smooth edges apply at once', gr)
+        t.ok(gr['saved'].get('rotateSpeed') == 2 and gr['saved'].get('resolution') == 0.5, 'settings are remembered in the browser', gr['saved'])
+        await page.keyboard.press('Escape')
+        t.ok(await page.locator('.menu-choice >> nth=0').inner_text() != '' and (await page.inner_text('#menu-title')).startswith('Hive Hunger'), 'Esc goes back from Settings')
+        await page.click('.menu-settings')
+        await page.click('.settings-buttons button >> nth=0')  # Reset settings
+        rs = await page.evaluate("() => ({ ratio: window.__dbg.renderer.getPixelRatio(), aa: window.__dbg.renderer.getContextAttributes().antialias, fps: document.getElementById('fps').hidden })")
+        await page.click('.settings-buttons button >> nth=1')  # Back
+        t.ok(rs['aa'] and rs['fps'] and rs['ratio'] == 1, 'Reset settings restores them (native resolution, smooth edges, no FPS counter)', rs)
         start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills'].map((k) => +document.getElementById('ships-' + k).value)""")
         title = await page.inner_text('#menu-title')
         version = await page.inner_text('#version')
@@ -84,6 +113,17 @@ async def main():
         t.ok((await page.evaluate(STATE))['started'], 'Single player on the start screen carries on too')
         t.ok(await page.evaluate("() => !document.querySelector('[id*=menu-button]') && !window.__dbg.planet.atmosphere"),
              'no Menu button and no atmosphere')
+        ui_text = await page.evaluate("() => ({ hint: document.querySelector('.hud-hint')?.textContent || '', points: document.getElementById('points').textContent })")
+        t.ok(ui_text['hint'] == '' and 'Tab' not in ui_text['points'], 'no description of the controls on the game screen, no "Tab: upgrades"', ui_text)
+        # the camera turns any way round: dragging down a long way takes it over the pole
+        await page.mouse.move(500, 150)
+        await page.mouse.down(button='right')
+        ys = []
+        for k in range(1, 13):
+            await page.mouse.move(500, 150 + k * 40)
+            ys.append(await page.evaluate("() => { const c = window.__dbg.camera; return Math.round(100 * c.position.y / c.position.length()) / 100; }"))
+        await page.mouse.up(button='right')
+        t.ok(max(ys) > 0.95 and ys[-1] < max(ys) - 0.3 and ys[-1] > -1, 'the camera turns up over the pole (no vertical limit)', ys)
 
         labels = await page.locator('#controls .control label').all_inner_texts()
         t.ok(labels == ['Units', 'Speed', 'Power', 'Turning'], 'settings panel: Units, Speed, Power, Turning (eating the nearest voxel is always on)', labels)

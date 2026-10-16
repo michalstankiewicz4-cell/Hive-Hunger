@@ -1,5 +1,6 @@
 import { VERSION } from '../version.js';
 import { el, button, linkRow, hex, pingText, MODE_NAME, roomLink, backToMenu } from './dom.js';
+import { fillSettings } from './SettingsView.js';
 
 /**
  * Start screen over the game: choose Single player, Multiplayer Co-op or Multiplayer PvP.
@@ -21,6 +22,8 @@ export class StartScreen {
   open(title) {
     this.root.hidden = false;
     this.card.replaceChildren();
+    this.card.classList.remove('is-wide');
+    this.onSettingsBack = null;
     const h = el('h2', 'menu-title', title);
     h.id = 'menu-title';
     this.card.appendChild(h);
@@ -37,8 +40,8 @@ export class StartScreen {
     this.card.querySelector('.menu-title').append(' ', el('span', 'menu-version', `v${VERSION}`));
     this.card.appendChild(el('p', 'menu-tagline', 'A swarm that eats planets.'));
     const { available, onSolo, onCreate } = this.opts;
-    const choice = (label, note, onClick, disabled = false) => {
-      const b = button('', onClick, 'menu-choice');
+    const choice = (label, note, onClick, disabled = false, cls = 'menu-choice') => {
+      const b = button('', onClick, cls);
       b.append(el('span', 'menu-choice-label', label), el('span', 'menu-choice-note', note));
       b.disabled = disabled;
       return b;
@@ -47,9 +50,29 @@ export class StartScreen {
       choice('Single player', 'Your swarm, one planet after another.', onSolo),
       choice('Multiplayer · Co-op', 'Eat the planet together (up to 4 players).', () => onCreate('coop'), !available),
       choice('Multiplayer · PvP', 'Whoever eats more of the planet wins it (up to 4 players).', () => onCreate('pvp'), !available),
+      choice('Settings', 'Mouse, keyboard and graphics.', () => this.showSettings(() => this.showStart()), false, 'menu-choice menu-settings'),
     );
     if (!available) this.card.appendChild(el('p', 'menu-note', 'Multiplayer is unavailable: the connection library could not be loaded.'));
     this.card.querySelector('.menu-choice')?.focus();
+  }
+
+  /** Settings (mouse, keyboard, graphics); Back calls `onBack`. */
+  showSettings(onBack) {
+    this.open('Settings');
+    this.onSettingsBack = onBack; // (the waiting room may update it meanwhile, see showRoom)
+    fillSettings(this.card, () => this.closeSettings());
+  }
+
+  /** Is the Settings screen open (Esc goes back from it)? */
+  get inSettings() {
+    return !this.root.hidden && Boolean(this.onSettingsBack);
+  }
+
+  /** Back from Settings to where it was opened. */
+  closeSettings() {
+    const back = this.onSettingsBack;
+    this.onSettingsBack = null;
+    back?.();
   }
 
   showBusy(title, text) {
@@ -62,6 +85,11 @@ export class StartScreen {
    * @param {{code:string, mode:string, players:Array<{index,name,color,ready,local,net}>}} room
    */
   showRoom(room) {
+    // Settings open from the waiting room: stay there, Back shows the room as it is now
+    if (this.inSettings) {
+      this.onSettingsBack = () => this.showRoom(room);
+      return;
+    }
     this.open(`Room ${room.code} · ${MODE_NAME[room.mode] || ''}`);
     const me = room.players.find((p) => p.local);
     this.card.append(el('p', 'menu-note', 'Send this link to the other players:'), linkRow(roomLink(room.code)));
@@ -89,6 +117,7 @@ export class StartScreen {
       el('p', 'menu-note', ready
         ? 'Waiting for the others… Press Not ready to take it back.'
         : 'The game starts when every player has pressed Start.'),
+      button('Settings', () => this.showSettings(() => this.showRoom(room))),
       button('Leave room', backToMenu),
     );
     if (!start.disabled) start.focus();

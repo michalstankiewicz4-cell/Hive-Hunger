@@ -1,6 +1,5 @@
 /* Points counter (top centre) */
 
-/* points counter (top centre) */
 .points {
   position: fixed;
   top: calc(12px + var(--safe-top));
@@ -37,16 +36,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-.points-label,
-.points-key {
+.points-label {
   color: #c9b27a;
   font-weight: 400;
   font-size: 12px;
-}
-
-.points-key {
-  padding-left: 8px;
-  border-left: 1px solid #5a4a2a;
 }
 
 .points:focus-visible {
@@ -58,8 +51,5 @@
   .points {
     top: auto;
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  }
-  .points-key {
-    display: none;
   }
 }

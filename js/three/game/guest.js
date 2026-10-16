@@ -47,9 +47,8 @@ export const GuestSide = {
       p.setSpawn(info.spawn);
       p.ready = Boolean(info.ready);
       if (info.index === this.localIndex && !this.cameraAimed) {
-        this.orbit.theta = this.slotAngle(slot, list.length);
+        this.faceAngle(this.slotAngle(slot, list.length));
         this.cameraAimed = true;
-        this.updateCamera();
       }
     });
     for (let i = 0; i < this.players.length; i++) if (this.players[i] && !seen.has(i)) this.removePlayer(i);

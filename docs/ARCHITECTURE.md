@@ -28,13 +28,15 @@ css/             one stylesheet per part of the page
 | `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the settings panel, the start screen, room panel, summary and upgrade tree; Tab / Esc keys; starts the loop |
 | `js/config.js` | All parameters: planet, flock, feeding, ship types, spawn tunnel, hyperspace jump, marker, network, slider ranges |
 | `js/version.js` | Game version (keep in sync with `CHANGELOG.md`) |
+| `js/settings.js` | The player's own settings (camera turning, zoom speed, FPS counter, resolution, smooth edges, effects), remembered in the browser; `onChange` listeners |
 | **`js/three/game/`** | |
 | `Game3D.js` | Scene, camera, renderer, roles (solo / host / guest), players and their spawns, planet lifecycle, the frame loop (`update`, `updateSim`, `start`) |
-| `input.js` | (Game3D) mouse and touch: tap to steer or to call the swarm back at its tunnel, camera turning and zoom, screen → world point |
+| `input.js` | (Game3D) mouse and touch: tap to steer or to call the swarm back at its tunnel, camera turning and zoom, screen → world point. The camera's orientation is a quaternion (`orbit.q`) turned around its own axes, so it can go over the poles; the planet's spin is added about the world's Y axis |
 | `destruction.js` | (Game3D) what ships do to voxels: bites, storm bolts, bomber blasts, orb bursts, support lightning, black holes swallowing pieces |
 | `host.js` | (Game3D) host side: summary after a planet, PvP winner, Next planet, guests' commands and purchases, buying upgrades |
 | `guest.js` | (Game3D) guest side: following the host — snapshots, planets, pieces, jumps, orbs, bolts, black holes, settings, tree |
-| `hud.js` | (Game3D) HUD text: progress, hint line, scores and pings, notices |
+| `hud.js` | (Game3D) HUD text: progress, status line (jumping, called back, connecting — no description of the controls), scores and pings, notices |
+| `graphics.js` | (Game3D) graphics settings: making the renderer (resolution, smooth edges — a new renderer and canvas when it changes, input bound again), amount of effects, frames per second |
 | `players.js` | Player names and colours in multiplayer |
 | `Player.js` | One player: swarm + leader + tunnel + settings + score; setting up, commands, recall, settings, a new planet, the per-player frame step |
 | `arrival.js` | (Player) the tunnel: ships coming out of it, the jump to hyperspace, the spawn point and where it is in the world |
@@ -85,6 +87,7 @@ css/             one stylesheet per part of the page
 | `Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
 | `Lobby.js` | Room panel during a multiplayer match: room, link, leave |
 | `TreeView.js` | The tree view (Tab): drawn on a small canvas and scaled up without smoothing (pixel art); hover tooltip, click to buy |
+| `SettingsView.js` | The Settings screen in the menu: Mouse (controls, camera turning, zoom speed), Keyboard (keys), Graphics (FPS counter, resolution, smooth edges, effects), Reset settings, Back |
 | `dom.js` | Small DOM helpers for the menus |
 | `js/utils/*` | Noise (fBm), terrain colours, nebula/star colours |
 | **`css/`** | Loaded in this order (later files may override earlier ones): `base.css` (colours, page, hidden helpers, version), `hud.css`, `panel.css` (settings, level switch, ship types; narrow screens), `lobby.css`, `menu.css` (start screen, waiting room), `summary.css`, `points.css`, `tree.css` |

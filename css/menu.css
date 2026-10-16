@@ -133,6 +133,135 @@
 
 
 
+/* Settings: Mouse, Keyboard, Graphics */
+.menu-card.is-wide {
+  width: min(460px, 100%);
+}
+
+.menu-settings .menu-choice-label {
+  color: var(--hud-text);
+}
+
+.settings-section {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.settings-keys {
+  display: grid;
+  grid-template-columns: minmax(0, 14ch) 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.settings-keys dt {
+  color: var(--hud-text);
+  font-weight: 700;
+}
+
+.settings-keys dd {
+  margin: 0;
+  color: var(--hud-dim);
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 14ch 1fr 6ch;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-row.is-check {
+  grid-template-columns: 14ch auto;
+  justify-content: start;
+}
+
+.settings-row output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.settings-row input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.settings-row input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.settings-choices {
+  grid-column: 2 / 4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.settings-choice {
+  padding: 4px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--hud-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings-choice:hover {
+  border-color: var(--accent);
+}
+
+.settings-choice[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+
+.settings-choice:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.settings-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+@media (max-width: 420px) {
+  .settings-row {
+    grid-template-columns: 1fr 5ch;
+  }
+  .settings-row > :first-child {
+    grid-column: 1 / -1;
+  }
+  .settings-choices {
+    grid-column: 1 / -1;
+  }
+  .settings-keys {
+    grid-template-columns: 1fr;
+  }
+  .settings-keys dd {
+    margin-bottom: 4px;
+  }
+}
+
 /* ping next to each player in the waiting room */
 .menu-ping {
   text-align: right;

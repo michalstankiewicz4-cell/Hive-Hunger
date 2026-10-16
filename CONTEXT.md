@@ -33,8 +33,12 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Orb ships (0.23.0, owner):** magenta; from 10 voxels fire a voxel-sized orb with a pulsing glow (+ a fiery tail, owner) that flies slowly to the target and destroys everything within 2 voxels. One orb at a time per ship (assistant's choice). Normal speed. Start: 4/4/3/3/3/3.
 - **Support ships (0.24.0, owner):** white; a lightning bolt jumping randomly between own ships, destroying the voxels on its way, gone after the last ship; white core with a 4 px glow, flowing energy, irregularly bent, small branches with a 2 px glow; 1.5 s. Assistant's choices: every 3 s, up to 6 jumps within 10 units, voxels destroyed as the bolt passes each jump.
 - **Tunnel and hyperspace (0.25.0, owner, from two reference pictures — a blue wormhole and blue hyperspace streaks):** the spawn point is a subspace tunnel that opens, lets the ships out and closes; after closing a small swirl stays (owner's choice), clickable for recall, and it opens briefly to take in a towed piece. When everything is eaten the ships escape into hyperspace one after another at random moments, several at once when there are many, each leaving a tail "like a tractor beam but not the same" (owner). Assistant's choices: jumps within 2.5 s, a blue band with lighter streak lines; ships come out over 1.5 s.
+- **Settings (0.28.0, owner):** in the menu — Mouse and Keyboard as separate sections (owner), the controls described there instead of on the game screen (owner: "remove the description from the game screen"), camera turning and zoom speed sliders; Graphics: FPS counter, resolution, smooth edges, amount of effects (owner picked all four from the assistant's list). "Tab: upgrades" removed from the points counter. Remembered in the browser (assistant's choice). Also from the room panel in multiplayer and from the waiting room.
+- **Free camera (0.28.0, owner):** no vertical limit — it turns over the poles.
+- **Drills weaker (0.28.0, owner: "half the drilling power, smaller power"):** what goes around the bit is 0.75 × Power (0.375 at default, half of the old 0.75) and follows the Power slider.
+- **Tunnel shape (0.28.0, owner):** 10° narrower only while opening (owner's correction; widens back once open), opening out like the bell of a trumpet, half the streaks (35) bunched unevenly, their last 20% fading to transparent (owner).
 - **Start (0.27.0, owner):** every player starts with 2 ships of every type (18 units).
-- **Drills (0.27.0, owner, from the assistant's list of proposals):** orange, "with a nice spiral orange drill bit". Assistant's choices: they drill straight towards the planet's centre (±`spread`), 1.5-voxel radius, until through or 60 units; on pieces they eat like eaters.
+- **Drills (0.27.0, owner, from the assistant's list of proposals):** orange, "with a nice spiral orange drill bit". Assistant's choices: they drill straight towards the planet's centre (±`spread`), until through or 60 units; on pieces they eat like eaters. (Width: see 0.28.0.)
 - **Space pause (0.27.0, owner):** single player only, "Press Space to pause" at the bottom; the camera still turns while paused (assistant's choice).
 - **Cleaners (0.26.0, owner):** grey; eat only drifting pieces of 1, 2 or 3 voxels (owner's limit; the assistant had proposed a ship for the last isolated voxels). Assistant's choices: nearest small piece first, otherwise they fly with the swarm; normal speed and bite. Same release: **at most 100 units** (owner; the Units slider and upgrades together), **arrows** next to the ship-type sliders (one ship per click, owner).
 - **Level switch (0.17.0):** single player only, buttons 1–5 in the settings panel; the swarm restarts from its beacon (owner: so it never gets stuck inside a shape). Hidden in multiplayer.
@@ -137,6 +141,7 @@ Lessons from writing them:
 | 0.25.2 | tag `v0.25.2` | `Player` and `VoxelPlanet` split into files too (no gameplay change) |
 | 0.26.0 | tag `v0.26.0` | cleaners (eat only pieces of 1–3 voxels); at most 100 units; arrows by the ship-type sliders |
 | 0.27.0 | tag `v0.27.0` | drills with an orange spiral bit; Space pauses single player |
+| 0.28.0 | tag `v0.28.0` | Settings (mouse, keyboard, graphics with FPS counter); free camera; no controls text on screen; weaker drills; trumpet-shaped tunnel |
 
 ## Known limitations
 

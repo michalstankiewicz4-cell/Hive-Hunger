@@ -2,6 +2,24 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.28.0] — 2026-10-16
+
+### Added
+- **Settings** in the menu (a button on the start screen, in the waiting room and on the room panel during a match):
+  - **Mouse** — what the mouse and touch do, **Camera turning** and **Zoom speed** sliders;
+  - **Keyboard** — the keys (Tab, Space, Esc);
+  - **Graphics** — **FPS counter** (bottom right), **Resolution** (50%, 75%, 100%, native), **Smooth edges** (antialiasing, applied at once with a new renderer), **Effects** (Low / Medium / High: how much debris and how many orb sparks).
+  - Everything applies at once and is remembered in the browser; **Reset settings** restores the defaults; Back or Esc returns.
+
+### Changed
+- **The camera turns any way round**: no vertical limit any more, it goes over the poles (it turns around its own axes).
+- The game screen no longer describes the controls (they are in Settings); the HUD line only says what is happening (jumping to hyperspace, called back, connecting). "Tab: upgrades" is gone from the points counter.
+- **Drills are half as strong**: what goes around the bit is 0.75 × your Power — 0.375 at the default Power (about 0.75 voxels, was 1.5) — and grows with the Power slider.
+- **The subspace tunnel** is 10° narrower while it opens (then widens back to its usual shape) and opens out at the end like the bell of a trumpet; it has half the light streaks (35), bunched unevenly, and their last 20% fade out to transparent.
+
+### Fixed
+- Support ships no longer fire lightning while they (or the ships it would jump to) are still in the tunnel or gone to hyperspace.
+
 ## [0.27.0] — 2026-10-16
 
 ### Added

@@ -1,5 +1,6 @@
 import { CONFIG, SHIP_KINDS, kindConfig } from './config.js';
 import { VERSION } from './version.js';
+import { settings } from './settings.js';
 import { Hud } from './ui/Hud.js';
 import { ControlPanel } from './ui/ControlPanel.js';
 import { LevelSwitch } from './ui/LevelSwitch.js';
@@ -61,7 +62,8 @@ if (!window.THREE) {
 
   // start screen → (multiplayer) waiting room → match; the room panel stays during the match
   let soloPlayed = false; // single player has been started (Esc can return to it)
-  const lobby = new Lobby(lobbyEl);
+  // the room panel's Settings button: Settings over the game (it keeps running), Back closes it
+  const lobby = new Lobby(lobbyEl, () => menu.showSettings(() => menu.hide()));
   const menu = new StartScreen(menuEl, {
     available: canNet,
     onSolo: () => {
@@ -119,6 +121,13 @@ if (!window.THREE) {
   };
   setInterval(showPauseHint, 300);
 
+  // FPS counter (Settings → Graphics), bottom right next to the version
+  const fpsEl = document.getElementById('fps');
+  setInterval(() => {
+    fpsEl.hidden = !settings.get('fps');
+    if (!fpsEl.hidden) fpsEl.textContent = `${game.fps} FPS`;
+  }, 250);
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Tab' && game.started && menuEl.hidden) {
       e.preventDefault();
@@ -131,6 +140,7 @@ if (!window.THREE) {
       showPauseHint();
     } else if (e.key === 'Escape') {
       if (tree.isOpen) tree.close();
+      else if (menu.inSettings) menu.closeSettings(); // back to where Settings was opened
       else if (game.role === 'solo' && game.started) {
         game.started = false;
         menu.showStart();
@@ -152,7 +162,7 @@ if (!window.THREE) {
   const showRoom = () => {
     if (!game.net || !game.localPlayer) return;
     if (game.started) {
-      menu.hide();
+      if (!menu.inSettings) menu.hide(); // (Settings opened from the room panel stays open)
       lobby.showRoom(roomState());
       showStats();
     } else menu.showRoom(roomState());

@@ -19,13 +19,13 @@ export const HudText = {
     const pl = this.planet;
     let eaten = 0;
     if (pl) eaten = !pl.alive ? 1 : 1 - pl.left / pl.total;
+    // only what is happening now; the controls are described in Settings (Mouse, Keyboard)
     const hint = !me ? 'connecting…'
       : me.homeMode === 'jump'
         ? 'planet eaten — jumping to hyperspace'
         : me.homeMode === 'recall'
-          ? 'called back · click the planet to send the swarm out again'
-          : 'click: steer the swarm · click the tunnel: call it back · right button / two fingers: rotate · wheel: zoom'
-            + (this.multiplayer ? '' : ' · Esc: menu');
+          ? 'called back to the tunnel'
+          : '';
 
     const scores = this.multiplayer
       ? this.activePlayers().map((p) => ({

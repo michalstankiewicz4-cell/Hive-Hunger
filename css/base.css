@@ -65,7 +65,20 @@ body {
   z-index: 1;
 }
 
+/* FPS counter (Settings → Graphics), left of the version */
+.fps {
+  position: fixed;
+  right: 80px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  color: var(--accent);
+  font: 11px monospace;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .lobby[hidden],
-.menu[hidden] {
+.menu[hidden],
+.fps[hidden] {
   display: none;
 }

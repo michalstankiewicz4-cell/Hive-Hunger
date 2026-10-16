@@ -5,8 +5,10 @@ import { el, button, linkRow, MODE_NAME, roomLink, backToMenu } from './dom.js';
  * still wants to join, and Leave.
  */
 export class Lobby {
-  constructor(root) {
+  /** @param {HTMLElement} root @param {()=>void} [onSettings] the Settings button */
+  constructor(root, onSettings = null) {
     this.root = root;
+    this.onSettings = onSettings;
     this.hide();
   }
 
@@ -29,7 +31,10 @@ export class Lobby {
       el('div', 'lobby-line', `${room.players.length} / 4 players${me ? ` · you are ${me.name}` : ''}`),
       (this.statsLine = el('div', 'lobby-note', '')),
       linkRow(roomLink(room.code)),
-      button('Leave room', backToMenu),
     );
+    const row = el('div', 'lobby-row');
+    if (this.onSettings) row.append(button('Settings', this.onSettings));
+    row.append(button('Leave room', backToMenu));
+    this.root.append(row);
   }
 }

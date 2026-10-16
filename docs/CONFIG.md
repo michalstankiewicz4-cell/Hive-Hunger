@@ -8,8 +8,8 @@ Almost every tunable value is in `js/config.js` (upgrade costs and the lightning
 | --- | --- | --- | --- |
 | `camera.distance` | 75 | starting distance from the planet centre | further / closer |
 | `camera.minDistance`, `maxDistance` | 35, 160 | zoom limits | |
-| `camera.rotateSpeed` | 0.006 | rotation per dragged pixel | faster / slower drag |
-| `camera.zoomSpeed` | 0.08 | zoom per wheel step | |
+| `camera.rotateSpeed` | 0.006 | rotation per dragged pixel (× the player's *Camera turning* setting) | faster / slower drag |
+| `camera.zoomSpeed` | 0.08 | zoom per wheel step (× the player's *Zoom speed* setting) | |
 | `fov` | 50 | field of view (degrees; widened on portrait screens) | |
 
 ## Planet
@@ -94,7 +94,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `support.flowWaves`, `support.flowSpeed` | 3, 0.05 | energy pulses per jump and how fast they run | |
 | `cleaner.count`, `cleaner.maxPiece`, `cleaner.color` | 2, 3, grey | cleaners at the start; the biggest drifting piece (in voxels) they eat; colour | bigger `maxPiece` = they take bigger pieces too |
 | `drill.count`, `drill.color` | 2, orange | drills at the start; ship colour | |
-| `drill.speed`, `drill.radius`, `drill.maxLength`, `drill.emptyFrames` | 0.08, 0.75, 60, 25 | drilling speed per frame; everything within this of the bit (1.5 voxels) is gone; longest tunnel; frames in empty space after the last voxel before it stops | bigger `radius` = wider tunnels |
+| `drill.speed`, `drill.power`, `drill.maxLength`, `drill.emptyFrames` | 0.08, 0.75, 60, 25 | drilling speed per frame; everything within `power` × the player's Power of the bit is gone (0.375 at the default Power 0.5, about 0.75 voxels); longest tunnel; frames in empty space after the last voxel before it stops | bigger `power` = wider tunnels |
 | `drill.spread`, `drill.debris` | 0.35, 4 | how far off the centre the direction may be (random); debris per frame | |
 | `drill.bitColor`, `drill.bitDark`, `drill.bitLength`, `drill.bitRadius`, `drill.bitSpin` | orange, dark brown, 0.6, 0.16, 0.6 | the spiral bit: colours of the spiral, size, turn per frame (radians) | |
 | `minCount` | 0 | fewest units (the Units slider starts at 10; bombers that blew up can take the swarm lower) | |
@@ -133,6 +133,10 @@ Slider ranges and steps (`min`, `max`, `step`, `decimals`): Units, Speed, Power,
 | `linger` | 40 | the tunnel closes this long after the last ship is out |
 | `pulseFrames` | 90 | how long it stays open to take in a towed piece |
 | `hitRadius` | 2.5 | how close to the tunnel a click must be (plus part of its radius) |
+| `narrowing`, `narrowFrames` | 10, 30 | while the tunnel opens it is this many degrees narrower (deeper); once open it widens back to its usual shape over `narrowFrames` |
+| `flare` | 2.2 | the bell at the wide end: the radius grows as (distance along)^`flare` — 1 = a straight cone, more = narrow longer, opening out at the end like a trumpet |
+| `streaks` | 35 | light streaks in the texture, bunched around 5 random places |
+| `fadeEnd` | 0.2 | the last 20% of the streaks (at the wide end) fade out to transparent |
 | `color`, `innerColor`, `rimColor`, `coreColor` | blues | the three streak layers and the bright core |
 
 ## Jump to hyperspace (`swarm.warp`)
@@ -218,3 +222,16 @@ Every node is bought once and needs its parent; effects add up on top of the sli
 - `js/three/planet/PlanetSurface.js`: `CHUNK = 16` (voxels per chunk edge of the smooth / wedge surfaces), `budgetMs = 3` (time per frame for rebuilding changed chunks; at least one is rebuilt).
 - `js/three/planet/Fragments.js`: `HASH = 8` (cell size of the spatial hash used to find drifting pieces near a unit).
 - `js/three/effects/Lightning3D.js`: `life = 20` (frames a bolt stays visible), `jag` (how jagged it is), `pieces` (kinks per jump).
+
+## Player settings (`js/settings.js`)
+
+Not game rules: each player's own, remembered in the browser (`localStorage`, key `hive-hunger-settings`), never sent over the network. Changed in the Settings menu.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `rotateSpeed` | 1 | camera turning, × `camera.rotateSpeed` (0.25–3) |
+| `zoomSpeed` | 1 | wheel zoom, × `camera.zoomSpeed` (0.25–3) |
+| `fps` | off | FPS counter at the bottom right |
+| `resolution` | native | render pixels per CSS pixel: 0.5, 0.75, 1 or the screen's (at most 2) |
+| `antialias` | on | smooth edges (a new renderer is made when it changes) |
+| `effects` | high | debris and orb sparks: high × 1, medium × 0.5, low × 0.2 (`EFFECTS_SCALE`) |

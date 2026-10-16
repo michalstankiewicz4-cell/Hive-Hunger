@@ -36,6 +36,7 @@ export const Upgrades = {
     this.splitKinds();
     s.speed = this.base.speed * (1 + e.speed);
     this.biteRadius = this.base.power + e.power;
+    this.drillRadius = this.biteRadius * CONFIG.swarm.drill.power;
     this.bolt = e.bolt;
   },
 

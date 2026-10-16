@@ -4,6 +4,7 @@ const THREE = window.THREE;
 export class Debris3D {
   constructor(scene, cfg) {
     this.cfg = cfg;
+    this.scale = 1; // how much of the debris is made (Settings → Graphics → Effects)
     const max = cfg.max;
     this.count = 0;
     this.pos = new Float32Array(max * 3);
@@ -27,6 +28,8 @@ export class Debris3D {
 
   emit(at, rgb, n) {
     const c = this.cfg;
+    // fewer with less effects (Settings → Graphics): n × scale, the fraction by chance
+    if (this.scale < 1) { const m = n * this.scale; n = Math.floor(m) + (Math.random() < m % 1 ? 1 : 0); }
     const len = at.length() || 1;
     for (let k = 0; k < n; k++) {
       let i = this.count;

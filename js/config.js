@@ -163,11 +163,12 @@ export const CONFIG = Object.freeze({
     // with none about they fly with the swarm
     cleaner: { count: START_EACH, maxPiece: 3, color: 0x9aa3ad },
     // orange drills: fly to the nearest voxel like eaters; there they drill straight towards the
-    // planet's centre (off it by up to `spread` at random) at `speed`, everything within `radius` (1.5 voxels) of the bit gone (a point
-    // each), until they have been in empty space for `emptyFrames` after the last voxel or drilled
-    // `maxLength`; then they fly on as usual. The bit: a spiral cone (`bitLength`, `bitRadius`)
+    // planet's centre (off it by up to `spread` at random) at `speed`, everything within `power` × the
+    // player's Power (crater radius) of the bit gone — at the default Power 0.5: 0.375, about 0.75 voxels
+    // (a point each) — until they have been in empty space for `emptyFrames` after the last voxel or
+    // drilled `maxLength`; then they fly on as usual. The bit: a spiral cone (`bitLength`, `bitRadius`)
     // turning `bitSpin` radians per frame, shown while drilling
-    drill: { count: START_EACH, speed: 0.08, radius: 0.75, emptyFrames: 25, maxLength: 60, spread: 0.35, debris: 4, color: 0xff8a1f,
+    drill: { count: START_EACH, speed: 0.08, power: 0.75, emptyFrames: 25, maxLength: 60, spread: 0.35, debris: 4, color: 0xff8a1f,
       bitColor: 0xff9a2e, bitDark: 0x7a2c00, bitLength: 0.6, bitRadius: 0.16, bitSpin: 0.6 },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
@@ -198,7 +199,11 @@ export const CONFIG = Object.freeze({
   // to `openRadius` when the ships arrive — they come out over `emergeWindow` frames — and closes
   // (`closeFrames`) `linger` frames after the last; a tug's delivery opens it for `pulseFrames`
   portal: { closedRadius: 0.7, openRadius: 4, openFrames: 50, closeFrames: 60, pulseFrames: 90, emergeWindow: 90, linger: 40,
-    hitRadius: 2.5, color: 0x2f7dff, innerColor: 0x8fe0ff, rimColor: 0x1d46ff, coreColor: 0xd6f2ff },
+    hitRadius: 2.5,
+    // while opening 10° narrower (widening back over `narrowFrames` once open); a trumpet's bell at the
+    // wide end (`flare`); 35 light streaks bunched unevenly, their last `fadeEnd` (20%) fading out
+    narrowing: 10, narrowFrames: 30, flare: 2.2, streaks: 35, fadeEnd: 0.2,
+    color: 0x2f7dff, innerColor: 0x8fe0ff, rimColor: 0x1d46ff, coreColor: 0xd6f2ff },
 
   // after a planet is eaten the swarms jump to hyperspace; the next planet appears once every
   // swarm is gone (or after this many frames)

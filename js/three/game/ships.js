@@ -134,14 +134,17 @@ export const ShipRoles = {
     if (!s.supports || !this.game.planet.alive) return;
     const start = s.lasers + s.storms + s.tugs + s.bombers + s.orbs, end = Math.min(start + s.supports, s.count);
     const P = s.pos, r2 = c.jumpRange * c.jumpRange;
+    // (ships still in the tunnel or gone to hyperspace, or jumping away, take no part)
+    const away = (k) => s.hidden[k] || s.warpT[k] > 0;
     for (let i = start; i < end; i++) {
+      if (away(i)) continue;
       if (s.zapWait[i] > 0) { s.zapWait[i]--; continue; }
       const chain = [i], used = new Set(chain);
       let cur = i;
       for (let j = 0; j < c.jumps; j++) {
         const near = [];
         for (let k = 0; k < s.count; k++) {
-          if (used.has(k)) continue;
+          if (used.has(k) || away(k)) continue;
           const dx = P[k * 3] - P[cur * 3], dy = P[k * 3 + 1] - P[cur * 3 + 1], dz = P[k * 3 + 2] - P[cur * 3 + 2];
           if (dx * dx + dy * dy + dz * dz <= r2) near.push(k);
         }

@@ -34,6 +34,7 @@ export class Player {
     this.spawnSpace = new THREE.Vector3(info.spawn.x, info.spawn.y, info.spawn.z);
 
     this.biteRadius = CONFIG.swarm.biteRadius; // power: crater radius (slider + upgrades)
+    this.drillRadius = this.biteRadius * CONFIG.swarm.drill.power; // drills: what goes around the bit
     // slider values; the upgrade tree adds its bonuses on top (see applyUpgrades)
     this.base = { count: CONFIG.swarm.count, speed: CONFIG.swarm.speed, power: CONFIG.swarm.biteRadius };
     // ship types: how many units are laser ships (this.lasers), storm ships, tugs, … (SHIP_KINDS);
@@ -120,7 +121,8 @@ export class Player {
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
       fireOrb: (i, idx, x, y, z) => game.fireOrb(this, i, idx, x, y, z),
       // drills: everything around the bit at (x, y, z) is gone; returns how many voxels
-      drill: (i, x, y, z) => game.destroySphere(x, y, z, CONFIG.swarm.drill.radius, this, CONFIG.swarm.drill.debris),
+      drill: (i, x, y, z) => game.destroySphere(x, y, z, this.drillRadius, this, CONFIG.swarm.drill.debris),
+      drillRadius: () => this.drillRadius,
       isFloating: (idx) => (game.planet.fragments?.fragOf[idx] ?? -1) >= 0,
     };
   }

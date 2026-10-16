@@ -304,7 +304,7 @@ export class Swarm3D {
         pos[i3] += D[i3] * dc.speed; pos[i3 + 1] += D[i3 + 1] * dc.speed; pos[i3 + 2] += D[i3 + 2] * dc.speed;
         dir[i3] = D[i3]; dir[i3 + 1] = D[i3 + 1]; dir[i3 + 2] = D[i3 + 2];
         // the bit is just ahead of the ship
-        const ahead = dc.radius * 0.6;
+        const ahead = world.drillRadius() * 0.6;
         const n = world.drill(i, pos[i3] + D[i3] * ahead, pos[i3 + 1] + D[i3 + 1] * ahead, pos[i3 + 2] + D[i3 + 2] * ahead);
         if (n > 0) { this.drillHit[i] = 1; this.drillIdle[i] = 0; } else this.drillIdle[i]++;
         this.drillLeft[i] -= dc.speed;

@@ -14,6 +14,8 @@ import { Destruction } from './destruction.js';
 import { HostSide } from './host.js';
 import { GuestSide } from './guest.js';
 import { HudText } from './hud.js';
+import { Graphics } from './graphics.js';
+import { settings } from '../../settings.js';
 
 export { PLAYERS };
 
@@ -61,11 +63,9 @@ export class Game3D {
     this.summary = null;     // multiplayer: results of the planet just eaten (see buildSummary)
     this.onSummaryChange = null; // (summary | null) => void — the UI shows / updates / hides it
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    this.canvas = this.renderer.domElement;
-    this.canvas.className = 'game-canvas';
-    container.appendChild(this.canvas);
+    this.renderer = null;
+    this.fps = 0;            // frames per second (the FPS counter), see countFrame
+    this.makeRenderer(container); // resolution and smooth edges from the Settings menu (graphics.js)
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(this.cfg.background);
@@ -80,7 +80,7 @@ export class Game3D {
     this.space = new Space3D(this.scene, this.cfg.space);
 
     // camera on a sphere around the planet centre
-    this.orbit = { theta: 0, phi: Math.PI / 2, distance: this.cfg.camera.distance };
+    this.orbit = { q: new THREE.Quaternion(), distance: this.cfg.camera.distance }; // see updateCamera
     this.updateCamera();
 
     this.raycaster = new THREE.Raycaster();
@@ -91,6 +91,8 @@ export class Game3D {
     this.holes = new BlackHoles(this.cfg.holes);
     this.orbs = new Orbs(this.scene, this.cfg.swarm.orb, this.cfg.planet.voxelSize);
     this.zaps = new Zaps(this.scene, this.cfg.swarm.support);
+    this.debris.scale = this.orbs.scale = this.effectsScale; // Settings → Graphics → Effects
+    settings.onChange((key) => this.applyGraphics(key));
     this.onTreeChange = null; // () => void — the upgrade tree view refreshes
 
     this.resize(); // camera aspect is needed to keep the spawn point on screen
@@ -360,8 +362,9 @@ export class Game3D {
     if (this.running) return;
     this.running = true;
     this.resize();
-    const loop = () => {
+    const loop = (now) => {
       if (!this.running) return;
+      this.countFrame(now);
       this.update();
       for (const p of this.activePlayers()) p.swarm.render(this.camera);
       this.holes.render(this.renderer, this.scene, this.camera);
@@ -376,6 +379,6 @@ export class Game3D {
   }
 }
 
-for (const part of [Input, Destruction, HostSide, GuestSide, HudText]) {
+for (const part of [Input, Destruction, HostSide, GuestSide, HudText, Graphics]) {
   Object.defineProperties(Game3D.prototype, Object.getOwnPropertyDescriptors(part));
 }

@@ -81,6 +81,12 @@ export class BlackHoles {
 
   // --- drawing ---
 
+  /** Forgets the render target (it belongs to a renderer that is being replaced). */
+  dropTarget() {
+    this.target?.dispose();
+    this.target = null;
+  }
+
   /** Draws the frame — through the lens pass when a hole is up. */
   render(renderer, scene, camera) {
     if (!this.any) {
