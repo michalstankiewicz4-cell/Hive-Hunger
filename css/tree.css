@@ -92,6 +92,11 @@
   color: #ffd65c;
 }
 
+.tree-tip-status.is-soon {
+  color: #b9a6e0;
+  font-style: italic;
+}
+
 .tree-tip-status.is-owned {
   color: #78ff8c;
 }

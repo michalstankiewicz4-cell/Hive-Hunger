@@ -21,6 +21,12 @@ const ICONS = {
   cap: ['..####..', '.#....#.', '#..#...#', '#..#...#', '#..###.#', '#......#', '.#....#.', '..####..'],
 };
 
+const DIGITS = [
+  ['###', '#.#', '#.#', '#.#', '###'], ['.#.', '##.', '.#.', '.#.', '###'], ['###', '..#', '###', '#..', '###'],
+  ['###', '..#', '.##', '..#', '###'], ['#.#', '#.#', '###', '..#', '..#'], ['###', '#..', '###', '..#', '###'],
+];
+const NODES_BY_ID = Object.fromEntries(NODES.map((n) => [n.id, n]));
+
 const BG = [13, 8, 24];
 const RING = [42, 29, 69];
 const LOCKED = [70, 60, 96];
@@ -112,19 +118,24 @@ export class TreeView {
     this.canvas.height = H;
     this.W = W; this.H = H;
     const cx = W >> 1, cy = H - 20;
+    // level d sits on a ring R0 + d·ring from the core (R0 keeps the first level off the core);
+    // angles are squeezed a little so the widest branches stay above the core's line
+    const SQ = 0.82, R0 = 0.45;
     const maxDepth = Math.max(...NODES.map((n) => n.depth));
-    const maxSin = Math.max(...NODES.map((n) => Math.abs(Math.sin((n.angle * Math.PI) / 180)) * n.depth));
-    this.ring = Math.max(14, Math.min((cy - 44) / maxDepth, (W / 2 - 18) / maxSin));
+    const maxSin = Math.max(...NODES.map((n) => Math.abs(Math.sin((n.angle * SQ * Math.PI) / 180)) * (n.depth + R0)));
+    this.ring = Math.max(12, Math.min((cy - 44) / (maxDepth + R0), (W / 2 - 22) / maxSin));
+    this.radius = (d) => (d <= 0 ? 0 : (d + R0) * this.ring);
     this.cx = cx; this.cy = cy;
     this.pos = {};
     for (const n of NODES) {
-      const a = (n.angle * Math.PI) / 180, r = n.depth * this.ring;
+      const a = (n.angle * SQ * Math.PI) / 180, r = this.radius(n.depth);
       this.pos[n.id] = { x: Math.round(cx + r * Math.sin(a)), y: Math.round(cy - r * Math.cos(a)) };
     }
   }
 
+  /** Size by kind: the core, ships (hexagons) bigger, the swarm's traits (diamonds), ships' properties (small circles). */
   size(n) {
-    return n.id === 'core' ? 11 : n.key ? 8 : 4;
+    return { core: 11, ship: 8, swarm: n.icon ? 7 : 5, prop: 3 }[n.kind] ?? 4;
   }
 
   // --- pixel helpers ---
@@ -163,6 +174,53 @@ export class TreeView {
     }
   }
 
+  /** Pointy-top hexagon of radius r (a ship). */
+  hexagon(x, y, r, fill, outline, glow) {
+    const ctx = this.ctx, k = Math.sqrt(3) / 2;
+    const inside = (dx, dy, rr) => Math.abs(dx) <= rr * k && Math.abs(dx) * 0.5 + Math.abs(dy) * k <= rr * k;
+    for (let dy = -r - 3; dy <= r + 3; dy++) {
+      for (let dx = -r - 3; dx <= r + 3; dx++) {
+        let c = null;
+        if (inside(dx, dy, r - 1.2)) c = fill;
+        else if (inside(dx, dy, r)) c = outline;
+        else if (glow && inside(dx, dy, r + 2)) c = glow;
+        if (c) { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, 1, 1); }
+      }
+    }
+  }
+
+  /** A small round node of radius r (a ship's property). */
+  circle(x, y, r, fill, outline, glow) {
+    const ctx = this.ctx;
+    for (let dy = -r - 2; dy <= r + 2; dy++) {
+      for (let dx = -r - 2; dx <= r + 2; dx++) {
+        const d = Math.hypot(dx, dy);
+        let c = null;
+        if (d <= r - 0.8) c = fill;
+        else if (d <= r + 0.4) c = outline;
+        else if (glow && d <= r + 2) c = glow;
+        if (c) { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, 1, 1); }
+      }
+    }
+  }
+
+  /** A digit 0–9 in a 3 × 5 pixel font (the level numbers). */
+  digit(d, x, y, c) {
+    const rows = DIGITS[d];
+    this.ctx.fillStyle = c;
+    for (let j = 0; j < 5; j++) for (let i = 0; i < 3; i++) if (rows[j][i] === '#') this.ctx.fillRect(x + i, y + j, 1, 1);
+  }
+
+  /** A dotted pixel line (a link across branches: either parent is enough). */
+  dotted(x0, y0, x1, y1, c) {
+    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+    this.ctx.fillStyle = c;
+    for (let i = 0; i <= n; i++) {
+      if (i % 4 > 1) continue;
+      this.ctx.fillRect(Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), 1, 1);
+    }
+  }
+
   icon(name, x, y, c) {
     const rows = ICONS[name];
     if (!rows) return;
@@ -185,29 +243,38 @@ export class TreeView {
     ctx.clearRect(0, 0, W, H);
     ctx.fillRect(0, 0, W, H);
 
-    // depth rings (pixel arcs) behind the tree
+    // the level rings (pixel arcs) behind the tree, numbered 0 … 5 on the left
     for (let d = 1; d <= 5; d++) {
-      const r = d * this.ring;
+      const r = this.radius(d);
       const c = rgb(RING, d % 2 ? 0.9 : 0.55);
       for (let a = -80; a <= 80; a += 0.6) {
         const t = (a * Math.PI) / 180;
         this.px(Math.round(cx + r * Math.sin(t)), Math.round(cy - r * Math.cos(t)), c);
       }
+      // (where the ring is still on screen on a narrow window)
+      const t = -Math.min((80 * Math.PI) / 180, Math.asin(Math.min(1, (cx - 10) / r)));
+      this.digit(d, Math.round(cx + r * Math.sin(t)) - 5, Math.round(cy - r * Math.cos(t)) - 2, rgb(BRANCHES.core.color, 0.8));
     }
+    this.digit(0, cx - 20, cy - 2, rgb(BRANCHES.core.color, 0.8));
     // twinkling dust
     for (let i = 0; i < 70; i++) {
       const x = (i * 97 + 13) % W, y = (i * 53 + 7) % H;
       if ((i + (this.t >> 4)) % 5 === 0) this.px(x, y, rgb([120, 100, 180], 0.6));
     }
 
-    // edges: bought = branch colour, buyable = dim, locked = grey
+    // edges: bought = branch colour, buyable = dim, locked / not built yet = grey. A link across
+    // branches is lighter: dotted when either parent is enough, solid when it needs both
     for (const n of NODES) {
-      if (!n.parent) continue;
-      const a = this.pos[n.parent], b = this.pos[n.id];
-      const col = BRANCHES[n.branch].color;
-      const st = tree.state(n.id);
-      const c = st === 'owned' ? rgb(col) : st === 'available' ? rgb(mix(col, BG, 0.55)) : rgb(LOCKED, 0.6);
-      this.line(a.x, a.y, b.x, b.y, c);
+      for (const pid of n.parents) {
+        const a = this.pos[pid], b = this.pos[n.id];
+        const col = BRANCHES[n.branch].color;
+        const st = tree.state(n.id);
+        const cross = NODES_BY_ID[pid].branch !== n.branch && NODES_BY_ID[pid].kind !== 'core' && n.kind !== 'prop';
+        const base = st === 'owned' ? col : st === 'available' ? mix(col, BG, 0.55) : st === 'soon' ? mix(col, BG, 0.72) : LOCKED;
+        const c = cross ? rgb(mix(base, [255, 255, 255], 0.35), 0.75) : rgb(base, st === 'locked' ? 0.6 : 1);
+        if (cross && !n.all) this.dotted(a.x, a.y, b.x, b.y, c);
+        else this.line(a.x, a.y, b.x, b.y, c);
+      }
     }
 
     // nodes
@@ -230,6 +297,12 @@ export class TreeView {
         outline = rgb(affordable && blink ? mix(col, [255, 255, 255], 0.4) : col);
         glow = affordable ? rgb(col, blink ? 0.45 : 0.2) : null;
         iconC = rgb(col);
+      } else if (st === 'soon') {
+        // not built yet: in its colour, dimmed
+        fill = rgb(mix(DARK, col, 0.12));
+        outline = rgb(mix(col, BG, 0.45));
+        glow = null;
+        iconC = rgb(mix(col, BG, 0.45));
       } else {
         fill = rgb(DARK);
         outline = rgb(LOCKED);
@@ -237,8 +310,12 @@ export class TreeView {
         iconC = rgb(LOCKED);
       }
       if (hovered) outline = rgb([255, 255, 255]);
-      this.diamond(x, y, r, fill, outline, glow);
-      if (n.key) this.icon(n.icon, x, y, iconC);
+      if (n.kind === 'ship') {
+        this.hexagon(x, y, r, fill, outline, glow);
+        this.hexagon(x, y, 3, outline, outline, null); // a small hexagon inside
+      } else if (n.kind === 'prop') this.circle(x, y, r, fill, outline, glow);
+      else this.diamond(x, y, r, fill, outline, glow);
+      if (n.icon) this.icon(n.icon, x, y, iconC);
     }
   }
 
@@ -250,7 +327,7 @@ export class TreeView {
     let best = null, bestD = Infinity;
     for (const n of NODES) {
       const p = this.pos[n.id];
-      const d = Math.abs(x - p.x) + Math.abs(y - p.y);
+      const d = n.kind === 'ship' || n.kind === 'prop' ? Math.hypot(x - p.x, y - p.y) : Math.abs(x - p.x) + Math.abs(y - p.y);
       if (d <= this.size(n) + 3 && d < bestD) { bestD = d; best = n.id; }
     }
     return best;
@@ -277,7 +354,8 @@ export class TreeView {
     let status;
     if (id === 'core') status = '';
     else if (st === 'owned') status = 'Owned';
-    else if (st === 'locked') status = `Locked — buy ${NODE[n.parent].name} first`;
+    else if (st === 'soon') status = 'Coming soon';
+    else if (st === 'locked') status = `Locked — buy ${n.parents.map((p) => NODE[p].name).join(n.all ? ' and ' : ' or ')} first`;
     else if (points >= n.cost) status = 'Click to buy';
     else status = `Need ${(n.cost - points).toLocaleString('en')} more points`;
     this.tip.replaceChildren();

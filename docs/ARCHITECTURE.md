@@ -77,7 +77,7 @@ css/             one stylesheet per part of the page
 | `js/three/textures.js` | Canvas textures: radial and linear gradients, the shared glow-band texture |
 | **`js/core/`** | |
 | `Leader.js` | The swarm's "brain": a point the flock heads for; stays at matter, finds new matter, follows clicks |
-| `SkillTree.js` | Upgrade tree data and rules: nodes (branch, parent, cost, effect, layout), buying, adding up the effects |
+| `SkillTree.js` | Upgrade tree data and rules: nodes (branch, kind — core / swarm / ship / prop — parents with `all`, level `depth` 0–5, angle, cost, effect, `soon` = shown but not built yet), buying, adding up the effects |
 | **`js/net/`** | |
 | `Net.js` | `NetHost` / `NetGuest` over PeerJS: rooms, joining, pings, timeouts, events |
 | `Protocol.js` | Binary snapshot, planet and fragment messages |
@@ -90,7 +90,7 @@ css/             one stylesheet per part of the page
 | `StartScreen.js` | `showPause` (Esc in single player: Resume, Save game, Save and exit, Exit to main menu, Settings), `showContinue` (Continue / New game when a save exists); start screen over the start picture (`img/start.jpg`, class `is-splash`; also the Ship guide and Settings opened from it): the title and Single player / Co-op / PvP / Ship guide / Settings and the multiplayer waiting room (link, players, Start) |
 | `Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
 | `Lobby.js` | Room panel during a multiplayer match: room, link, leave |
-| `TreeView.js` | The tree view (Tab): drawn on a small canvas and scaled up without smoothing (pixel art); hover tooltip, click to buy |
+| `TreeView.js` | The tree view (Tab): drawn on a small canvas and scaled up without smoothing (pixel art) — ships as hexagons, the swarm's traits as diamonds, ships' properties as small circles, numbered level rings, links across branches (dotted: either parent); hover tooltip, click to buy |
 | `ShipGuide.js` | The Ship guide in the menu (a window no taller than the screen: the title and Back stay, the ships scroll in `.guide-scroll`): per type a 120 × 64 canvas picture drawn in 2D (`PICTURES`), its name and what it does, attack and support apart (`SHIP_GROUPS`); pointing at one (or focusing it) loops its shot |
 | `SettingsView.js` | The Settings screen in the menu: Mouse (controls, camera turning, zoom speed), Keyboard (keys), Graphics (FPS counter, resolution, smooth edges, effects) side by side in three columns (`.settings-columns`; stacked under 820 px), Reset settings, Back |
 | `dom.js` | Small DOM helpers for the menus |

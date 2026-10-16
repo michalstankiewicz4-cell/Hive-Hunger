@@ -50,6 +50,15 @@ async def main():
         pix = await page.evaluate("() => { const c = document.querySelector('.tree-canvas'); return [c.width, c.height, getComputedStyle(c).imageRendering]; }")
         t.ok(pix[0] < 500 and pix[2] in ('pixelated', 'crisp-edges'), 'drawn small and scaled up without smoothing (pixel art)', pix)
 
+        # the tree: ships (hexagons), the swarm's traits, ships' properties, on levels 0 … 5; ships and their
+        # properties are shown but can't be bought yet; a link across branches may need either parent or both
+        tr = await page.evaluate("""async () => { const { NODES } = await import('./js/core/SkillTree.js'); const g = window.__dbg, t = g.localPlayer.tree;
+          const kinds = {}; for (const n of NODES) kinds[n.kind] = (kinds[n.kind] || 0) + 1;
+          return { kinds, ships: NODES.filter((n) => n.kind === 'ship').map((n) => n.id).sort(), levels: [...new Set(NODES.map((n) => Math.ceil(n.depth)))].sort(),
+            soon: t.state('lasers'), buy: t.canBuy('lasers', 1e9), either: NODES.find((n) => n.id === 'orbs').parents.length, both: NODES.find((n) => n.id === 'piercers').all }; }""")
+        t.ok(tr['kinds'].get('ship') == 13 and tr['kinds'].get('prop', 0) >= 26 and tr['kinds'].get('swarm', 0) >= 10 and tr['levels'] == [0, 1, 2, 3, 4, 5],
+             'the tree: 13 ships, their properties and the swarm\'s traits on levels 0–5', tr)
+        t.ok(tr['soon'] == 'soon' and not tr['buy'] and tr['either'] == 2 and tr['both'], 'ships are shown as coming soon (not bought yet); links across branches', tr)
         # buying: parents first, enough points
         r = await page.evaluate("() => { const g = window.__dbg, p = g.localPlayer; g.stop(); p.score = 100;"
                                 " return [g.buyUpgrade('units2'), g.buyUpgrade('units1'), g.buyUpgrade('units1')]; }")

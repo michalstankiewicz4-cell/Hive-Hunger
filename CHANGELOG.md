@@ -2,6 +2,15 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.42.0] — 2026-10-16
+
+### Added
+- **A new upgrade tree** (Tab), growing upwards over numbered levels 0–5, not symmetrical, with links across branches: every **ship type** as a big hexagon (Eaters, Lasers and Tugs on level 1 … Snipers on level 5), each with its **properties** as small circles (e.g. Lasers: Range, Burn, Light hull; Bombers: Blast radius, Long black hole, Survivor), and the **whole swarm's traits** as diamonds (Brood, Wings, Jaws, Agility, Swarm sense, Chain lightning with Arcs, Voltage, Capacitor). A dotted link: either parent is enough; a solid one across branches: both are needed.
+- For now only Brood, Wings, Jaws and the lightning can be bought (they work as before); the ships, their properties, Agility and Swarm sense are shown as *coming soon* — their logic comes later.
+
+### Changed
+- Brood and Jaws have 3 steps, Wings 2, Arcs / Voltage / Capacitor one each, in a chain (they had 5 and 3).
+
 ## [0.41.1] — 2026-10-16
 
 ### Changed

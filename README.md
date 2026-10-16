@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.41.1 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.42.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -16,7 +16,7 @@ When eating cuts a piece off — a part no longer connected to the rest — it c
 
 ## Points and upgrades
 
-Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the counter) opens the upgrade tree: Brood (+units), Wings (+speed), Jaws (+bite radius) and Chain lightning — a bolt that jumps between your drones every few seconds and weakens the voxels on its way — with upgrades for more jumps, stronger and more frequent bolts. Upgrades add to the settings panel. Voxels show damage as they are eaten: the surface sinks in and darkens before the voxel breaks apart.
+Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the counter) opens the upgrade tree, growing upwards over levels 0–5 with links across branches: traits of the whole swarm (diamonds) — Brood (+units), Wings (+speed), Jaws (+bite radius) and Chain lightning (a bolt that jumps between your drones every few seconds and weakens the voxels on its way, with Arcs, Voltage and Capacitor) — and every ship type (hexagons) with its own properties (small circles). For now the ships, their properties, Agility and Swarm sense are *coming soon*. Upgrades add to the settings panel. Voxels show damage as they are eaten: the surface sinks in and darkens before the voxel breaks apart.
 
 ## Controls
 
