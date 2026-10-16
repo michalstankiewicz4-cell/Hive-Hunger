@@ -1,6 +1,7 @@
 import { VERSION } from '../version.js';
 import { el, button, linkRow, hex, pingText, MODE_NAME, roomLink, backToMenu } from './dom.js';
 import { fillSettings } from './SettingsView.js';
+import { fillGuide } from './ShipGuide.js';
 
 /**
  * Start screen over the game: choose Single player, Multiplayer Co-op or Multiplayer PvP.
@@ -22,7 +23,7 @@ export class StartScreen {
   open(title) {
     this.root.hidden = false;
     this.card.replaceChildren();
-    this.card.classList.remove('is-wide');
+    this.card.classList.remove('is-wide', 'is-guide');
     this.onSettingsBack = null;
     const h = el('h2', 'menu-title', title);
     h.id = 'menu-title';
@@ -50,10 +51,18 @@ export class StartScreen {
       choice('Single player', 'Your swarm, one planet after another.', onSolo),
       choice('Multiplayer · Co-op', 'Eat the planet together (up to 4 players).', () => onCreate('coop'), !available),
       choice('Multiplayer · PvP', 'Whoever eats more of the planet wins it (up to 4 players).', () => onCreate('pvp'), !available),
-      choice('Settings', 'Mouse, keyboard and graphics.', () => this.showSettings(() => this.showStart()), false, 'menu-choice menu-settings'),
+      choice('Ship guide', 'Every ship type: what it does, and its shot.', () => this.showGuide(), false, 'menu-choice menu-extra menu-guide'),
+      choice('Settings', 'Mouse, keyboard and graphics.', () => this.showSettings(() => this.showStart()), false, 'menu-choice menu-extra menu-settings'),
     );
     if (!available) this.card.appendChild(el('p', 'menu-note', 'Multiplayer is unavailable: the connection library could not be loaded.'));
     this.card.querySelector('.menu-choice')?.focus();
+  }
+
+  /** The Ship guide (from the start screen); Back (or Esc) returns to it. */
+  showGuide() {
+    this.open('Ship guide');
+    this.onSettingsBack = () => this.showStart(); // (Esc goes back the same way as from Settings)
+    fillGuide(this.card, () => this.closeSettings());
   }
 
   /** Settings (mouse, keyboard, graphics); Back calls `onBack`. */

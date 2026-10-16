@@ -184,3 +184,10 @@
 .ships-title {
   color: var(--hud-dim);
 }
+
+/* the line between attack ships and support ships */
+.ships-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--panel-border);
+}

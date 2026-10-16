@@ -21,6 +21,7 @@ export const GuestSide = {
       }
       if (this.started) this.holes.update(this.debris); // (pieces move as the host sends them)
       this.orbs.update();
+      this.shots.update();
       this.planet.fragments?.step(this.started && this.planet.alive);
       this.planet.sync();
     }
@@ -87,7 +88,7 @@ export const GuestSide = {
       p.score = ps.score;
       p.planetScore = ps.planetScore;
       p.wins = ps.wins;
-      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts, ps.tugs, ps.tows, ps.bombers, ps.orbs, ps.supports, ps.cleaners, ps.drills, ps.drilling, ps.piercers);
+      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts, ps.tugs, ps.tows, ps.bombers, ps.orbs, ps.supports, ps.cleaners, ps.drills, ps.drilling, ps.piercers, ps.snipers);
     }
     const pl = this.planet;
     if (pl && pl.alive) {
@@ -110,6 +111,11 @@ export const GuestSide = {
   onZap({ index, chain, seed }) {
     const p = this.players[index];
     if (p) this.zap(p, chain, seed);
+  },
+
+  /** Guest: a sniper fired on the host — the same shot here (the voxel it destroys arrives in snapshots). */
+  onShot(a, b) {
+    this.shots.fire({ x: a[0], y: a[1], z: a[2] }, { x: b[0], y: b[1], z: b[2] });
   },
 
   /** Guest: an orb ship fired on the host — the same orb here (its burst arrives in snapshots). */

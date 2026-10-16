@@ -58,7 +58,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 
 | Value | Default | What it does | More / less |
 | --- | --- | --- | --- |
-| `count` | 20 | *slider Units* (`START_UNITS` = 2 × 10 types) | |
+| `count` | 22 | *slider Units* (`START_UNITS` = 2 × 11 types) | |
 | `maxCount` | 100 | most units a swarm can have (slider + Brood bonuses together); the slider's own range (10–100) is in `controls` | |
 | `speed` | 0.05 | *slider Speed* — identical constant speed of every unit | |
 | `perception` | 3 | how far a unit sees neighbours (at least 1.3 × `separationDistance`) | larger = smoother flock, slower |
@@ -81,7 +81,7 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count` | 20, 2 each | units at the start and how many of each type — `START_EACH` (2) of every type; `count` = `START_UNITS` = 2 × 9 (the rest, 2, are eaters) | |
+| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count` | 22, 2 each | units at the start and how many of each type — `START_EACH` (2) of every type; `count` = `START_UNITS` = 2 × 9 (the rest, 2, are eaters) | |
 | `bomber.radius` | 5 | a bomber destroys everything within this (10 voxels) | |
 | `bomber.color`, `bomber.debris` | purple, 300 | colour; most debris pieces thrown by a blast | |
 | `orb.range`, `orb.speed`, `orb.blast` | 5, 0.045, 1 | firing distance (10 voxels), orb speed per frame, burst radius (2 voxels) | |
@@ -98,11 +98,17 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `drill.spread`, `drill.debris` | 0.35, 4 | how far off the centre the direction may be (random); debris per frame | |
 | `drill.bitColor`, `drill.bitDark`, `drill.bitLength`, `drill.bitRadius`, `drill.bitSpin` | orange, dark brown, 0.6, 0.16, 0.6 | the spiral bit: colours of the spiral, size, turn per frame (radians) | |
 | `piercer.count`, `piercer.color` | 2, copper | piercers at the start; hull colour | |
-| `piercer.reach`, `piercer.pierce`, `piercer.damage` | 10, 3, 0.8 | firing distance (20 voxels); voxels in a row the beam goes through; each eaten at this × an eater's rate | more `pierce` = deeper shots |
+| `piercer.reach`, `piercer.pierce`, `piercer.damage` | 10, 3, 0.8 | firing distance (20 voxels); voxels in a row the beam goes through (claimed or not); each eaten at this × an eater's rate | more `pierce` = deeper shots |
 | `piercer.length`, `piercer.afterFrames` | 70, 120 | how far along its locked line a piercer fires; frames it keeps firing once through (2 s) | |
 | `piercer.width`, `piercer.hitSize`, `piercer.beamColors`, `piercer.hitColors` | 0.4, 1.2, orange | the beam (as for lasers) |
 | `piercer.spiralColor`, `spiralRadius`, `spiralTurns`, `spiralPoints` | yellow, 0.22, 0.64, 10 | the lightning round the beam: radius, turns per unit (0.64: about one turn per 1.5 units), points per turn |
 | `piercer.flashEvery`, `flashFrames`, `glowPx` | 3, 5, 4 | a new spiral every 3 frames, lasting 5; glow 4 px (like the support ships' bolt) |
+| `sniper.count`, `sniper.color` | 2, teal | snipers at the start; hull colour | |
+| `sniper.chargeFrames`, `sniper.moveFrames` | 300, 60 | it stops and charges 5 s before each shot; after a shot it flies on for 1 s | |
+| `sniper.speed`, `sniper.accel` | 0.05, 1.05 | the shot's speed at the start (units per frame); × this for every voxel flown | |
+| `sniper.shotSize`, `shotColor` | 0.07 × 0.07 × 0.5, white-cyan | the shot (a thin streak, a little smaller than an eater) | |
+| `sniper.shockRadius`, `shockLength`, `shockColor`, `shockCore`, `wake` | 0.14, 0.45, orange, near white, 0.6 | the rounded glowing bow round the front, swept back `shockLength` (both grow with the speed); the wake behind (× the speed-up) | |
+| `sniper.flashFrames`, `flashSize` | 10, 1.6 | the flash at the hit | |
 | `minCount` | 0 | fewest units (the Units slider starts at 10; bombers that blew up can take the swarm lower) | |
 | `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
 | `tug.pull` | 0.9 | a towed piece's speed × the swarm speed | |
@@ -241,3 +247,7 @@ Not game rules: each player's own, remembered in the browser (`localStorage`, ke
 | `resolution` | native | render pixels per CSS pixel: 0.5, 0.75, 1 or the screen's (at most 2) |
 | `antialias` | on | smooth edges (a new renderer is made when it changes) |
 | `effects` | high | debris and orb sparks: high × 1, medium × 0.5, low × 0.2 (`EFFECTS_SCALE`) |
+
+## Ship groups (`SHIP_GROUPS` in `config.js`)
+
+How the types are shown in the Ship types panel and the Ship guide: `Attack` (eaters, lasers, storms, orbs, bombers, drills, piercers, snipers), then below a line `Support` (tugs, support, cleaners). Only for showing — the order of the units in the swarm is `SHIP_KINDS`.

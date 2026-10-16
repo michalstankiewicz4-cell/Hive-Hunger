@@ -1,7 +1,8 @@
-import { SHIP_KINDS } from '../config.js';
+import { SHIP_KINDS, SHIP_GROUPS } from '../config.js';
 
 /**
- * Ship types panel (bottom-right): how many of your units are yellow eaters, red laser ships,
+ * Ship types panel (bottom-right), attack ships above a line and support ships below it (SHIP_GROUPS):
+ * how many of your units are yellow eaters, red laser ships,
  * blue storm ships, green tugs, purple bombers, magenta orb ships, white support ships and grey
  * cleaners — a slider each, linked: together they are always all your units (the Units slider plus
  * upgrades). The arrows on both sides of a slider move it by one ship. A checkbox in front of a
@@ -11,7 +12,7 @@ import { SHIP_KINDS } from '../config.js';
  *    them to the eaters (if the eaters are locked: to the other types, the last one first).
  *  - Eaters are the rest: moving Eaters up takes from the other types, the last one first.
  */
-const LABELS = { eaters: 'Eaters', lasers: 'Lasers', storms: 'Storms', tugs: 'Tugs', bombers: 'Bombers', orbs: 'Orbs', supports: 'Support', cleaners: 'Cleaners', drills: 'Drills', piercers: 'Piercers' };
+const LABELS = { eaters: 'Eaters', lasers: 'Lasers', storms: 'Storms', tugs: 'Tugs', bombers: 'Bombers', orbs: 'Orbs', supports: 'Support', cleaners: 'Cleaners', drills: 'Drills', piercers: 'Piercers', snipers: 'Snipers' };
 const OTHERS = SHIP_KINDS;
 const TYPES = ['eaters', ...OTHERS].map((k) => [k, LABELS[k] || k]);
 const LAST_FIRST = [...OTHERS].reverse();
@@ -30,7 +31,16 @@ export class ShipTypes {
     title.textContent = 'Ship types';
     root.appendChild(title);
     this.sliders = {};
-    for (const [key, label] of TYPES) this.sliders[key] = this.slider(key, label, (v) => this.change(key, v));
+    // in the Ship guide's order: attack ships, a line, support ships
+    SHIP_GROUPS.forEach((group, n) => {
+      if (n > 0) {
+        const line = document.createElement('div');
+        line.className = 'ships-sep';
+        line.setAttribute('role', 'separator');
+        root.appendChild(line);
+      }
+      for (const key of group.kinds) this.sliders[key] = this.slider(key, LABELS[key] || key, (v) => this.change(key, v));
+    });
     this.sync();
   }
 

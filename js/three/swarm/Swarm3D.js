@@ -71,6 +71,12 @@ export class Swarm3D {
     // their bite (one at a time) that bursts there; orbOut = the id of the orb a ship has in flight
     this.orbs = 0;
     this.orbOut = new Int32Array(this.max);
+    // the last `snipers` units are teal snipers: from any distance they fire an accelerating shot at
+    // their bite (Shots.js) that destroys the voxel it hits; snipePhase 1 = stopped and charging,
+    // snipeT counts the charge down (or, after a shot, the second it flies on)
+    this.snipers = 0;
+    this.snipePhase = new Uint8Array(this.max);
+    this.snipeT = new Uint16Array(this.max);
     // the next `supports` units are white support ships: they don't eat — every `support.every`
     // frames one fires a lightning bolt that jumps between ships of its swarm (Player.updateSupport)
     this.supports = 0;
@@ -190,6 +196,8 @@ export class Swarm3D {
         this.drillLeft[i] = 0;
         this.drillAim[i] = 0;
         this.pierceOn[i] = 0;
+        this.snipePhase[i] = 0;
+        this.snipeT[i] = 0;
       }
     }
     // removed units release their claims
@@ -340,6 +348,28 @@ export class Swarm3D {
         else if (++this.pierceAfter[i] >= c.piercer.afterFrames) { this.pierceOn[i] = 0; best[i] = Infinity; stuck[i] = 0; }
         continue;
       }
+      // a sniper: from anywhere at its bite — stop, charge `sniper.chargeFrames` (5 s) facing it, fire,
+      // then fly on for `sniper.moveFrames` (1 s), stop and charge again
+      if (this.isSniper(i) && !world.holding) {
+        landed[i] = 0; // (it never lands: it fires from where it is)
+        if (food[i] >= 0 && !world.isFood(food[i])) { world.release(food[i]); food[i] = -1; }
+        if (this.snipePhase[i] === 1) {
+          if (food[i] < 0) { this.snipePhase[i] = 0; this.snipeT[i] = 0; } // its bite went meanwhile: moves on
+          else {
+            const fc = world.cellCenter(food[i]); // (a voxel on a drifting piece moves)
+            foodPos[i3] = fc.x; foodPos[i3 + 1] = fc.y; foodPos[i3 + 2] = fc.z;
+            const aimed = this.aim(i);
+            this.hungry[i] = 0;
+            if (--this.snipeT[i] <= 0 && aimed) {
+              world.fireShot(i, food[i], pos[i3], pos[i3 + 1], pos[i3 + 2]);
+              this.snipePhase[i] = 0;
+              this.snipeT[i] = c.sniper.moveFrames;
+            }
+            continue;
+          }
+        } else if (this.snipeT[i] > 0) this.snipeT[i]--;
+        else if (food[i] >= 0) { this.snipePhase[i] = 1; this.snipeT[i] = c.sniper.chargeFrames; this.aimed[i] = 0; continue; }
+      }
       // giving up on a bite it couldn't reach: stays still for a moment, then picks another
       if (this.pause[i] > 0) {
         if (--this.pause[i] === 0) this.retarget(i, world);
@@ -422,9 +452,9 @@ export class Swarm3D {
 
       const px = pos[i3], py = pos[i3 + 1], pz = pos[i3 + 2];
       const laser = i < this.lasers;
-      const orb = this.isOrb(i);
+      const orb = this.isOrb(i), sniper = this.isSniper(i);
       const piercer = this.isPiercer(i);
-      const ranged = laser || orb || piercer || this.isStorm(i); // laser, storm, orb ships and piercers eat from a distance
+      const ranged = laser || orb || piercer || sniper || this.isStorm(i); // laser, storm, orb ships, piercers and snipers eat from a distance
       const speed = laser ? this.speed * c.laser.speedFactor : this.speed;
       let sx = 0, sy = 0, sz = 0;   // separation
       let ax = 0, ay = 0, az = 0;   // alignment
@@ -507,7 +537,8 @@ export class Swarm3D {
       if (food[i] >= 0) {
         const fx0 = foodPos[i3] - px, fy0 = foodPos[i3 + 1] - py, fz0 = foodPos[i3 + 2] - pz;
         // a laser ship stops at laser range and eats from there
-        const reach = (orb ? c.orb.range : piercer ? c.piercer.reach : ranged ? c.laser.reach : c.reachDistance) + speed;
+        // (a sniper doesn't land: it stops wherever its move ends — see above)
+        const reach = sniper ? -1 : (orb ? c.orb.range : piercer ? c.piercer.reach : ranged ? c.laser.reach : c.reachDistance) + speed;
         if (fx0 * fx0 + fy0 * fy0 + fz0 * fz0 < reach * reach) {
           landed[i] = 1;
           this.aimed[i] = 0; // a new bite: it must turn to it first

@@ -138,7 +138,7 @@
   width: min(460px, 100%);
 }
 
-.menu-settings .menu-choice-label {
+.menu-extra .menu-choice-label {
   color: var(--hud-text);
 }
 
@@ -272,4 +272,75 @@
 .menu-ready,
 .menu-waiting {
   text-align: right;
+}
+
+/* Ship guide: every ship type on one screen, attack and support apart */
+.menu-card.is-guide {
+  width: min(1040px, 100%);
+  gap: 8px;
+  padding: 16px 18px 14px;
+}
+
+.guide-section {
+  display: grid;
+  gap: 6px;
+}
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+}
+
+.guide-ship {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  grid-template-areas: 'pic head' 'text text';
+  gap: 4px 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  outline: none;
+}
+
+.guide-ship:hover,
+.guide-ship:focus-visible,
+.guide-ship.is-playing {
+  border-color: var(--accent);
+}
+
+.guide-pic {
+  grid-area: pic;
+  border-radius: 6px;
+}
+
+.guide-head {
+  grid-area: head;
+  align-self: center;
+}
+
+.guide-name {
+  font-weight: 700;
+}
+
+.guide-kind {
+  font-size: 11px;
+  color: var(--hud-dim);
+}
+
+.guide-text {
+  grid-area: text;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--hud-dim);
+}
+
+.guide-back {
+  justify-self: end;
+}
+
+@media (max-width: 520px) {
+  .guide-grid {
+    grid-template-columns: 1fr;
+  }
 }

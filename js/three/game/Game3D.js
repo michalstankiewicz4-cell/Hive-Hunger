@@ -6,6 +6,7 @@ import { ClickMarker } from '../scene/ClickMarker.js';
 import { Lightning3D } from '../effects/Lightning3D.js';
 import { BlackHoles } from '../effects/BlackHoles.js';
 import { Orbs } from '../effects/Orbs.js';
+import { Shots } from '../effects/Shots.js';
 import { Zaps } from '../effects/Zaps.js';
 import { Player } from './Player.js';
 import { PLAYERS } from './players.js';
@@ -90,6 +91,7 @@ export class Game3D {
     this.lightning = new Lightning3D(this.scene);
     this.holes = new BlackHoles(this.cfg.holes);
     this.orbs = new Orbs(this.scene, this.cfg.swarm.orb, this.cfg.planet.voxelSize);
+    this.shots = new Shots(this.scene, this.cfg.swarm.sniper, this.cfg.planet.voxelSize);
     this.zaps = new Zaps(this.scene, this.cfg.swarm.support);
     this.debris.scale = this.orbs.scale = this.effectsScale; // Settings → Graphics → Effects
     settings.onChange((key) => this.applyGraphics(key));
@@ -236,6 +238,7 @@ export class Game3D {
     this.level++;
     // orbs, bolts and black holes belonged to the old planet
     this.orbs?.clear();
+    this.shots?.clear();
     this.zaps?.clear();
     this.holes?.clear();
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level), this.cfg.fragments);
@@ -328,6 +331,8 @@ export class Game3D {
     }
     // orbs fly (following a target on a drifting piece) and burst
     if (this.started) this.orbs.update((o) => this.orbBurst(o), (o, out) => { if (this.planet.solid(o.target)) this.planet.cellCenter(o.target, out); });
+    // snipers' shots fly (speeding up, following a target on a drifting piece) and hit
+    if (this.started) this.shots.update((sh) => this.shotHit(sh), (sh, out) => { if (this.planet.solid(sh.target)) this.planet.cellCenter(sh.target, out); });
     // black holes pull in debris and pieces (and swallow them)
     if (this.started) this.holes.update(this.debris, this.planet.alive ? this.planet.fragments : null, (f, owner) => this.swallow(f, owner));
     // bitten-off pieces drift and turn; new splits are found

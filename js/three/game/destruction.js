@@ -55,7 +55,7 @@ export const Destruction = {
   /**
    * A piercer (unit i of `player`) at (x, y, z) firing along its locked line (direction D[i*3…]):
    * the first `piercer.pierce` (3) solid grid voxels on the line, out to `piercer.length`, are each
-   * bitten for `piercer.damage` × an eater's rate (claimed ones passed over), a point each when
+   * bitten for `piercer.damage` × an eater's rate (claimed by other ships or not), a point each when
    * gone. E[i*3…] is set to the nearest one hit (where the beam ends); none hit — it is through —
    * returns false and E stays where the last one was.
    */
@@ -66,7 +66,7 @@ export const Destruction = {
     for (let k = 0, steps = Math.ceil(c.length / step); k < steps && hit.length < c.pierce; k++) {
       p.x += D[i3] * step; p.y += D[i3 + 1] * step; p.z += D[i3 + 2] * step;
       const n = pl.cellAt(p);
-      if (n < 0 || pl.hp[n] <= 0 || hit.includes(n) || pl.claimedByOther(n, -1)) continue;
+      if (n < 0 || pl.hp[n] <= 0 || hit.includes(n)) continue; // (claimed or not: whatever is on the line)
       hit.push(n);
     }
     if (!hit.length) return false;
@@ -170,6 +170,28 @@ export const Destruction = {
     });
     if (player) { player.score += hit.length; player.planetScore += hit.length; }
     return hit.length;
+  },
+
+  /** A sniper of `player` (unit i) fires at voxel `idx` from (x, y, z); returns the shot's id. */
+  fireShot(player, i, idx, x, y, z) {
+    const to = this.planet.cellCenter(idx, this.tmp);
+    const shot = this.shots.fire({ x, y, z }, to, { target: idx, owner: player, unit: i });
+    if (this.role === 'host') this.net?.broadcastShot([x, y, z], [to.x, to.y, to.z]);
+    return shot.id;
+  },
+
+  /** A sniper's shot hit: the voxel it was fired at is gone (or, if that went meanwhile, the one at the spot). */
+  shotHit(s) {
+    if (!s.owner) return; // (a guest's copy: the host sends what is gone)
+    const pl = this.planet;
+    let idx = pl.solid(s.target) ? s.target : -1;
+    if (idx < 0) { const n = pl.cellAt(s.group.position); if (n >= 0 && pl.hp[n] > 0) idx = n; }
+    if (idx >= 0) {
+      this.debris.emit(pl.cellCenter(idx, this.tmp), pl.voxelColor(idx), this.cfg.debris.perCell * 2);
+      pl.remove(idx);
+      s.owner.score++;
+      s.owner.planetScore++;
+    }
   },
 
   /** An orb ship of `player` (unit i) fires at voxel `idx` from (x, y, z); returns the orb's id. */

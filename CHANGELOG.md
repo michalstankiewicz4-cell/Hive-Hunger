@@ -2,6 +2,17 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.31.0] — 2026-10-16
+
+### Added
+- **Snipers** (teal): an eleventh ship type. From any distance a sniper stops, charges for 5 seconds facing its bite and fires a thin shot (a little smaller than an eater) that speeds up 5% for every voxel it flies. In front of it a rounded glowing cap like a meteor entering an atmosphere, a short wake behind, a flash at the hit; the shot always destroys the voxel it hits (a point). Then the sniper flies on for a second, stops and charges again. Guests see the same shots.
+- **Ship guide** on the start screen: every ship type with a small picture and what it does — attack ships and support ships apart, all on one screen; pointing at a ship (or focusing it) plays its shot. Esc or Back returns.
+- Every player starts with 2 of each type: 22 units.
+
+### Changed
+- The Ship types panel lists the types in the Ship guide's order: attack ships, then — below a line — support ships (Tugs, Support, Cleaners).
+- Piercers hit everything on their line, voxels other ships have claimed too, so they keep firing until really through (3 at a time, then 2 s more).
+
 ## [0.30.0] — 2026-10-16
 
 ### Changed

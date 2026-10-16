@@ -1,15 +1,23 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
 // at the start every player has START_EACH ships of every type (eaters, laser ships, storm ships,
-// tugs, bombers, orb ships, support ships, cleaners, drills, piercers): 2 × 10 = 20 units
+// tugs, bombers, orb ships, support ships, cleaners, drills, piercers, snipers): 2 × 11 = 22 units
 const START_EACH = 2;
-const START_UNITS = START_EACH * 10;
+const START_UNITS = START_EACH * 11;
 
 /**
  * Ship types other than eaters, in the order their units come in the swarm: units 0 … lasers−1 are
  * laser ships, then storm ships, and so on; the rest are eaters. Each key is also the setting (and
  * the Ship types slider) with how many there are.
  */
-export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers'];
+export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers'];
+/**
+ * How the ship types are shown (Ship types panel, Ship guide): attack ships, then — below a line —
+ * support ships. (The order of the units in the swarm is SHIP_KINDS above; this is only for showing.)
+ */
+export const SHIP_GROUPS = Object.freeze([
+  { name: 'Attack', kinds: ['eaters', 'lasers', 'storms', 'orbs', 'bombers', 'drills', 'piercers', 'snipers'] },
+  { name: 'Support', kinds: ['tugs', 'supports', 'cleaners'] },
+]);
 /** The CONFIG.swarm entry of a ship type: 'lasers' → 'laser', 'supports' → 'support', … */
 export const kindConfig = (kind) => kind.slice(0, -1);
 
@@ -180,6 +188,15 @@ export const CONFIG = Object.freeze({
     piercer: { count: START_EACH, reach: 10, pierce: 3, damage: 0.8, length: 70, afterFrames: 120, color: 0xc0703a,
       width: 0.4, hitSize: 1.2, beamColors: ['rgba(110,40,0,1)', 'rgba(255,140,30,1)', 'rgba(255,240,200,1)'], hitColors: ['rgba(255,235,200,1)', 'rgba(255,140,40,0.9)', 'rgba(170,70,0,0.35)'],
       spiralColor: 0xffe03a, spiralRadius: 0.22, spiralTurns: 0.64, spiralPoints: 10, flashEvery: 3, flashFrames: 5, glowPx: 4 },
+    // teal snipers: from any distance, at their bite: stop, charge `chargeFrames` (5 s) facing it, fire,
+    // fly on for `moveFrames` (1 s), stop and charge again. The shot: a thin streak (`shotSize`, a
+    // little smaller than an eater) starting at `speed`, `accel` × faster for every voxel flown (5%),
+    // straight at the bite; it always destroys the voxel it hits (a point). In front of it a rounded
+    // glowing cap like a meteor's (`shockRadius`, `shockColor` → `shockCore` at the front), a wake
+    // `wake` × its speed-up long behind, a flash at the hit
+    sniper: { count: START_EACH, chargeFrames: 300, moveFrames: 60, speed: 0.05, accel: 1.05, color: 0x2fe0c0,
+      shotSize: [0.07, 0.07, 0.5], shotColor: 0xeaffff, shockRadius: 0.14, shockLength: 0.45, shockColor: 0xff9a3c, shockCore: 0xfff4d8, wake: 0.6,
+      flashFrames: 10, flashSize: 1.6 },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
     // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames

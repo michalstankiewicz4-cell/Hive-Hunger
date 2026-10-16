@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.30.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.31.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -27,6 +27,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 - **Tab** (or a click on the points counter) — upgrade tree (Esc closes it)
 - **Space** — single player: pause (nothing moves, the camera still turns; "Paused" at the bottom), Space again carries on
 - **Esc** — single player: pause and open the start screen; Esc again (or **Single player**) carries on with the same game. Also closes the upgrade tree
+- **Ship guide** (start screen) — every ship type with a small picture and what it does, attack and support ships apart, all on one screen; pointing at a ship plays its shot.
 - **Settings** (start screen, waiting room, or the room panel during a match) — **Mouse** (what it does, camera turning and zoom speed), **Keyboard** (the keys) and **Graphics** (FPS counter, render resolution 50 / 75 / 100% / native, smooth edges, amount of effects Low / Medium / High). They apply at once and are remembered in your browser; **Reset settings** restores them. The game screen itself shows no description of the controls — they are listed here.
 - **Panel in the top-right corner** — adjust your swarm live:
   - **Units** — number of units in the swarm (10–100; upgrades can't take it past 100)
@@ -35,7 +36,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Turning** — how fast ships turn their nose; a ship eats only once it faces its bite
   - **Reset to default** — restore all settings to their starting values
   - **Level 1–5** (single player) — jump straight to that level; the swarm comes out of its tunnel again
-- **Ship types panel in the bottom-right corner** — how many of your units are yellow **Eaters**, red **Lasers**, blue **Storms**, green **Tugs**, purple **Bombers**, magenta **Orbs**, white **Support** ships, grey **Cleaners**, orange **Drills** and copper **Piercers** — a slider each (linked: together they are all your units; at the start 2 of each type — 20 units). The arrows on both sides of a slider move it by one ship. The checkbox in front of a slider locks it: it can't be moved, and moving the others never changes it. Every ship eats only once it faces its bite.
+- **Ship types panel in the bottom-right corner** — how many of your units are yellow **Eaters**, red **Lasers**, blue **Storms**, green **Tugs**, purple **Bombers**, magenta **Orbs**, white **Support** ships, grey **Cleaners**, orange **Drills**, copper **Piercers** and teal **Snipers** — a slider each (linked: together they are all your units; at the start 2 of each type — 22 units). Attack ships are listed first, support ships (Tugs, Support, Cleaners) below a line, in the same order as the Ship guide. The arrows on both sides of a slider move it by one ship. The checkbox in front of a slider locks it: it can't be moved, and moving the others never changes it. Every ship eats only once it faces its bite.
   - **Laser** ships eat their bite from 5 voxels away with a glowing red beam, but fly 10% slower.
   - **Storm** ships fire lightning from the same distance: it forks at 70% of the way into three — the bite gets 40% of a laser's damage, the two nearest voxels 30% each. When the bite is gone, the ship picks its next one like any other.
   - **Tugs** don't eat: they fly only to drifting pieces. From 10 voxels away a green tractor beam takes in the whole piece and the tug tows it home to your tunnel. There the piece is gone and you get **5 ×** the points of what is left of it — other ships (yours or other players') may eat it on the way.
@@ -44,7 +45,8 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
   - **Support** ships don't eat: every 3 seconds each fires a white lightning bolt at your own ships — it jumps between them in a random order (up to 6 jumps) over 1.5 s and is gone after the last one; every voxel on its way is destroyed (a point each). The bolt is irregularly bent, with energy flowing along it and small branches.
   - **Cleaners** eat only drifting pieces of 1, 2 or 3 voxels, the nearest first — never the planet or bigger pieces. With no such piece about they fly with the swarm.
   - **Drills** fly to the nearest voxel, turn their nose towards the planet's centre (a little off it, at random) and drill a straight tunnel in, with a turning orange spiral bit: everything around the bit is gone — 0.75 × your Power (about 0.75 voxels at the default Power), a point each. Once through (or after 60 units) they fly on to their next bite. Tunnels often cut pieces loose for the tugs and cleaners. On a drifting piece a drill eats like an eater.
-  - **Piercers** fire from up to 20 voxels away: an orange laser with a yellow lightning winding round it in a spiral. Once aimed at a bite, a piercer locks the line through it and fires along it until it is right through — the beam always eats the 3 nearest voxels on the line at once, each a little slower than an eater (0.8 ×) — then keeps firing for 2 more seconds, switches off and goes on to its next bite.
+  - **Piercers** fire from up to 20 voxels away: an orange laser with a yellow lightning winding round it in a spiral. Once aimed at a bite, a piercer locks the line through it and fires along it until it is right through — the beam always eats the 3 nearest voxels on the line at once, each a little slower than an eater (0.8 ×) — everything on the line, whoever claimed it — then keeps firing for 2 more seconds, switches off and goes on to its next bite.
+  - **Snipers** fire from any distance: a sniper stops, charges for 5 seconds facing its bite and fires a thin shot that speeds up 5% for every voxel it flies, with a rounded glowing cap in front like a meteor's; it always destroys the voxel it hits. Then it flies on for a second, stops and charges again.
 
 ## Multiplayer
 
