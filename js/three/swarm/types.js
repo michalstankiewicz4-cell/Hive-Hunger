@@ -32,6 +32,7 @@ export const ShipTypes = {
   isSupport(i) { return this.isKind(i, 'supports'); },
   isCleaner(i) { return this.isKind(i, 'cleaners'); },
   isDrill(i) { return this.isKind(i, 'drills'); },
+  isPiercer(i) { return this.isKind(i, 'piercers'); },
 
   /** Every unit in its type's colour (set again only when the split or the count changed). */
   updateColors() {

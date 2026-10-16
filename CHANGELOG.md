@@ -2,6 +2,15 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.29.0] — 2026-10-16
+
+### Added
+- **Piercers** (copper): a tenth ship type. From up to 20 voxels away a piercer fires an orange laser with a yellow lightning winding loosely round it in a spiral (about one turn per 1.5 units; drawn like the support ships' bolt, 4-px glow). The beam goes through 3 voxels in a row — the bite and the two behind it along the beam — and eats them all at once, each at 0.8 × an eater's rate (a point each). Guests see the same beams and spirals.
+- The Ship types panel has a tenth slider, **Piercers**. Every player starts with 2 of each type: 20 units.
+
+### Changed
+- A drilling drill also clears the voxel it is in, so its now narrower tunnel never leaves it inside the rock.
+
 ## [0.28.0] — 2026-10-16
 
 ### Added

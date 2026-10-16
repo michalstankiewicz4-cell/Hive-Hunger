@@ -7,7 +7,8 @@ export const RemoteSwarm = {
    * Multiplayer guest: show positions and headings received from the host instead of
    * simulating. Units move smoothly towards the received positions between updates.
    */
-  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null, bombers = 0, orbs = 0, supports = 0, cleaners = 0, drills = 0, drilling = null) {
+  setRemote(count, pos, dir, lasers = 0, beams = null, storms = 0, bolts = null, tugs = 0, tows = null, bombers = 0, orbs = 0, supports = 0, cleaners = 0, drills = 0, drilling = null, piercers = 0) {
+    this.piercers = piercers;
     this.bombers = bombers;
     this.orbs = orbs;
     this.supports = supports;
@@ -75,7 +76,8 @@ export const RemoteSwarm = {
   /** Units currently firing their laser, with the point they hit: [[unit, x, y, z], …] */
   beamList() {
     const out = [];
-    for (let i = 0; i < Math.min(this.lasers, this.count); i++) {
+    // (laser ships and piercers; the unit says which)
+    for (let i = 0; i < this.count; i++) {
       if (this.firing[i]) out.push([i, this.beamTo[i * 3], this.beamTo[i * 3 + 1], this.beamTo[i * 3 + 2]]);
     }
     return out;

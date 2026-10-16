@@ -82,6 +82,9 @@ export class Swarm3D {
     // planet's centre (drillDir) for at most `drill.maxLength` (drillLeft), destroying everything
     // around the bit (world.drill); drillIdle counts frames without a voxel since the last one, drillHit
     // says one was hit at all. The bit is drawn in drills.js
+    // the last `piercers` units are copper piercers: from `piercer.reach` an orange beam through
+    // `piercer.pierce` voxels in a row (world.pierce), a yellow lightning winding round it (beams.js)
+    this.piercers = 0;
     this.drills = 0;
     this.drillLeft = new Float32Array(this.max);
     this.drillDir = new Float32Array(this.max * 3);
@@ -140,6 +143,11 @@ export class Swarm3D {
     // white-hot core fading to red at the edges) and a glow where it hits
     this.beams = makeBeams(this.max, cfg.laser);
     scene.add(this.beams.band, this.beams.hits);
+    // piercers: orange beams, and the yellow spiral lightning round them (a glow like the support ships' bolt)
+    this.piercerBeams = makeBeams(this.max, cfg.piercer);
+    scene.add(this.piercerBeams.band, this.piercerBeams.hits);
+    this.piercerBolts = new Lightning3D(scene, { life: cfg.piercer.flashFrames, jag: 0.02, pieces: 1, glowPx: cfg.piercer.glowPx });
+    this.piercerClock = 0;
 
     this.dummy = new THREE.Object3D();
     this.v = new THREE.Vector3();
@@ -305,7 +313,9 @@ export class Swarm3D {
         dir[i3] = D[i3]; dir[i3 + 1] = D[i3 + 1]; dir[i3 + 2] = D[i3 + 2];
         // the bit is just ahead of the ship
         const ahead = world.drillRadius() * 0.6;
-        const n = world.drill(i, pos[i3] + D[i3] * ahead, pos[i3 + 1] + D[i3 + 1] * ahead, pos[i3 + 2] + D[i3 + 2] * ahead);
+        // (and the voxel the ship itself is in, so a narrow tunnel never leaves it inside the rock)
+        const n = world.drill(i, pos[i3] + D[i3] * ahead, pos[i3 + 1] + D[i3 + 1] * ahead, pos[i3 + 2] + D[i3 + 2] * ahead)
+          + world.drillAt(pos[i3], pos[i3 + 1], pos[i3 + 2]);
         if (n > 0) { this.drillHit[i] = 1; this.drillIdle[i] = 0; } else this.drillIdle[i]++;
         this.drillLeft[i] -= dc.speed;
         // through: empty space for a while after the last voxel (or nothing at all from the start)
@@ -368,7 +378,8 @@ export class Swarm3D {
             const at = world.storm(food[i], food[i]);
             this.stormSideN[i] = at.length / 3;
             for (let k = 0; k < at.length; k++) this.stormSides[i * 6 + k] = at[k];
-          } else world.bite(food[i], food[i]);
+          } else if (this.isPiercer(i)) world.pierce(food[i], i);
+          else world.bite(food[i], food[i]);
           this.hungry[i] = 0;
           continue;
         }
@@ -379,7 +390,8 @@ export class Swarm3D {
       const px = pos[i3], py = pos[i3 + 1], pz = pos[i3 + 2];
       const laser = i < this.lasers;
       const orb = this.isOrb(i);
-      const ranged = laser || orb || this.isStorm(i); // laser, storm and orb ships eat from a distance
+      const piercer = this.isPiercer(i);
+      const ranged = laser || orb || piercer || this.isStorm(i); // laser, storm, orb ships and piercers eat from a distance
       const speed = laser ? this.speed * c.laser.speedFactor : this.speed;
       let sx = 0, sy = 0, sz = 0;   // separation
       let ax = 0, ay = 0, az = 0;   // alignment
@@ -462,7 +474,7 @@ export class Swarm3D {
       if (food[i] >= 0) {
         const fx0 = foodPos[i3] - px, fy0 = foodPos[i3 + 1] - py, fz0 = foodPos[i3 + 2] - pz;
         // a laser ship stops at laser range and eats from there
-        const reach = (orb ? c.orb.range : ranged ? c.laser.reach : c.reachDistance) + speed;
+        const reach = (orb ? c.orb.range : piercer ? c.piercer.reach : ranged ? c.laser.reach : c.reachDistance) + speed;
         if (fx0 * fx0 + fy0 * fy0 + fz0 * fz0 < reach * reach) {
           landed[i] = 1;
           this.aimed[i] = 0; // a new bite: it must turn to it first
@@ -602,6 +614,7 @@ export class Swarm3D {
   render(camera) {
     this.updateColors();
     this.renderBeams(camera);
+    this.renderPiercers(camera);
     this.renderStorms(camera);
     this.renderTows();
     this.renderTrails(camera);

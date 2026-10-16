@@ -118,11 +118,13 @@ export class Player {
       floatingAt: (p) => game.planet.fragments?.at(p) ?? -1,
       bite: (idx, ownFood) => game.biteCell(idx, ownFood, this),
       storm: (idx, ownFood) => game.stormCell(idx, ownFood, this),
+      pierce: (idx, i) => game.pierceCell(idx, this, i),
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
       fireOrb: (i, idx, x, y, z) => game.fireOrb(this, i, idx, x, y, z),
       // drills: everything around the bit at (x, y, z) is gone; returns how many voxels
       drill: (i, x, y, z) => game.destroySphere(x, y, z, this.drillRadius, this, CONFIG.swarm.drill.debris),
       drillRadius: () => this.drillRadius,
+      drillAt: (x, y, z) => game.clearCell(x, y, z, this),
       isFloating: (idx) => (game.planet.fragments?.fragOf[idx] ?? -1) >= 0,
     };
   }
@@ -257,7 +259,8 @@ export class Player {
     this.swarm.disposeTows();
     this.dropAllBites(0);
     this.game.scene.remove(this.swarm.mesh);
-    this.game.scene.remove(this.swarm.beams.band, this.swarm.beams.hits);
+    this.game.scene.remove(this.swarm.beams.band, this.swarm.beams.hits, this.swarm.piercerBeams.band, this.swarm.piercerBeams.hits);
+    this.swarm.piercerBolts.clear();
     this.swarm.stormBolts.clear();
     this.beacon.group.parent?.remove(this.beacon.group);
   }

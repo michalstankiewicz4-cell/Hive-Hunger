@@ -1,15 +1,15 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
 // at the start every player has START_EACH ships of every type (eaters, laser ships, storm ships,
-// tugs, bombers, orb ships, support ships, cleaners, drills): 2 × 9 = 18 units
+// tugs, bombers, orb ships, support ships, cleaners, drills, piercers): 2 × 10 = 20 units
 const START_EACH = 2;
-const START_UNITS = START_EACH * 9;
+const START_UNITS = START_EACH * 10;
 
 /**
  * Ship types other than eaters, in the order their units come in the swarm: units 0 … lasers−1 are
  * laser ships, then storm ships, and so on; the rest are eaters. Each key is also the setting (and
  * the Ship types slider) with how many there are.
  */
-export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills'];
+export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers'];
 /** The CONFIG.swarm entry of a ship type: 'lasers' → 'laser', 'supports' → 'support', … */
 export const kindConfig = (kind) => kind.slice(0, -1);
 
@@ -170,6 +170,14 @@ export const CONFIG = Object.freeze({
     // turning `bitSpin` radians per frame, shown while drilling
     drill: { count: START_EACH, speed: 0.08, power: 0.75, emptyFrames: 25, maxLength: 60, spread: 0.35, debris: 4, color: 0xff8a1f,
       bitColor: 0xff9a2e, bitDark: 0x7a2c00, bitLength: 0.6, bitRadius: 0.16, bitSpin: 0.6 },
+    // copper piercers: from `reach` (20 voxels) an orange laser with a yellow lightning winding round it
+    // in a spiral; it goes through `pierce` (3) voxels in a row — the bite and the next ones behind it
+    // along the beam — and eats them all at once, each at `damage` (0.8) × an eater's rate per voxel.
+    // The spiral: `spiralRadius` around the beam, `spiralTurns` turns per unit, a fresh flash every
+    // `flashEvery` frames lasting `flashFrames`, with a `glowPx` glow (like the support ships' bolt)
+    piercer: { count: START_EACH, reach: 10, pierce: 3, damage: 0.8, color: 0xc0703a,
+      width: 0.4, hitSize: 1.2, beamColors: ['rgba(110,40,0,1)', 'rgba(255,140,30,1)', 'rgba(255,240,200,1)'], hitColors: ['rgba(255,235,200,1)', 'rgba(255,140,40,0.9)', 'rgba(170,70,0,0.35)'],
+      spiralColor: 0xffe03a, spiralRadius: 0.22, spiralTurns: 0.64, spiralPoints: 10, flashEvery: 3, flashFrames: 5, glowPx: 4 },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
     // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames

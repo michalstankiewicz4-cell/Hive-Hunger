@@ -83,7 +83,7 @@ async def main():
         rs = await page.evaluate("() => ({ ratio: window.__dbg.renderer.getPixelRatio(), aa: window.__dbg.renderer.getContextAttributes().antialias, fps: document.getElementById('fps').hidden })")
         await page.click('.settings-buttons button >> nth=1')  # Back
         t.ok(rs['aa'] and rs['fps'] and rs['ratio'] == 1, 'Reset settings restores them (native resolution, smooth edges, no FPS counter)', rs)
-        start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills'].map((k) => +document.getElementById('ships-' + k).value)""")
+        start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers'].map((k) => +document.getElementById('ships-' + k).value)""")
         title = await page.inner_text('#menu-title')
         version = await page.inner_text('#version')
         t.ok(title.startswith('Hive Hunger') and title.endswith(version) and version.startswith('v0.'), 'start screen shows the version next to the title', title)
@@ -149,32 +149,32 @@ async def main():
         t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'boxes'], 'back to level 1')
 
         # ship types (bottom-right): 1 red laser ship by default; lasers eat from 5 voxels away, 10% slower
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills'].map((k) => +document.getElementById('ships-' + k).value)""")
-        t.ok(start_ships == [2] * 9, 'ship types at the start: 2 of each', start_ships)
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers'].map((k) => +document.getElementById('ships-' + k).value)""")
+        t.ok(start_ships == [2] * 10, 'ship types at the start: 2 of each', start_ships)
         # (no bombers for the next checks: they would blow up meanwhile)
-        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('bombers', 0); p.setSetting('orbs', 0); p.setSetting('supports', 0); p.setSetting('cleaners', 0); p.setSetting('drills', 0); p.setSetting('storms', 3); p.setSetting('tugs', 3); }")
+        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('bombers', 0); p.setSetting('orbs', 0); p.setSetting('supports', 0); p.setSetting('cleaners', 0); p.setSetting('drills', 0); p.setSetting('piercers', 0); p.setSetting('storms', 3); p.setSetting('tugs', 3); }")
         await page.wait_for_timeout(400)
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills'].map((k) => +document.getElementById('ships-' + k).value)""")
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers'].map((k) => +document.getElementById('ships-' + k).value)""")
         await page.click('.control-levels button >> nth=1')
         await page.evaluate("""() => { const e = document.getElementById('ships-lasers'); e.value = 8; e.dispatchEvent(new Event('input'));
           window.__dbg.localPlayer.setSetting('speed', 0.3); }""")
         await page.wait_for_timeout(400)
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills'].map((k) => +document.getElementById('ships-' + k).value)""")
-        t.ok(ui == [6, 8, 3, 3, 0, 0, 0, 0, 0], 'the sliders are linked: 8 lasers take 5 eaters', ui)
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers'].map((k) => +document.getElementById('ships-' + k).value)""")
+        t.ok(ui == [6, 8, 3, 3, 0, 0, 0, 0, 0, 0], 'the sliders are linked: 8 lasers take 5 eaters', ui)
         ui2 = await page.evaluate("""() => { const e = document.getElementById('ships-eaters'); e.value = 15; e.dispatchEvent(new Event('input')); return 0; }""")
-        ui2 = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills'].map((k) => +document.getElementById('ships-' + k).value)""")
-        t.ok(ui2 == [15, 5, 0, 0, 0, 0, 0, 0, 0], '15 eaters take the last types first (orbs, bombers, tugs, storm ships), then lasers', ui2)
+        ui2 = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers'].map((k) => +document.getElementById('ships-' + k).value)""")
+        t.ok(ui2 == [15, 5, 0, 0, 0, 0, 0, 0, 0, 0], '15 eaters take the last types first (orbs, bombers, tugs, storm ships), then lasers', ui2)
         # a locked slider stays put: lock Eaters and Lasers, move Storms up — it takes only from the unlocked ones
         lk = await page.evaluate("""() => { const set = (k, v) => { const e = document.getElementById('ships-' + k); e.value = v; e.dispatchEvent(new Event('input')); };
           set('lasers', 5); set('storms', 3); set('tugs', 3); set('bombers', 2); // 7 eaters
           for (const k of ['eaters', 'lasers']) { const b = document.getElementById('ships-lock-' + k); b.checked = true; b.dispatchEvent(new Event('change')); }
           set('storms', 6); // +3: from bombers (2), then tugs (1) — not the locked eaters or lasers
-          const r = ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills'].map((k) => +document.getElementById('ships-' + k).value);
+          const r = ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers'].map((k) => +document.getElementById('ships-' + k).value);
           const disabled = document.getElementById('ships-eaters').disabled;
           for (const k of ['eaters', 'lasers']) { const b = document.getElementById('ships-lock-' + k); b.checked = false; b.dispatchEvent(new Event('change')); }
           set('tugs', 0); set('bombers', 0); set('storms', 0); set('lasers', 5);
           return { r, disabled }; }""")
-        t.ok(lk['r'] == [7, 5, 6, 2, 0, 0, 0, 0, 0] and lk['disabled'], 'a locked slider stays put (moving another takes from the unlocked ones)', lk)
+        t.ok(lk['r'] == [7, 5, 6, 2, 0, 0, 0, 0, 0, 0] and lk['disabled'], 'a locked slider stays put (moving another takes from the unlocked ones)', lk)
         # the arrows next to a slider: one ship more / fewer (from / to the eaters)
         ar = await page.evaluate("""() => { const v = () => ['eaters', 'lasers'].map((k) => +document.getElementById('ships-' + k).value);
           const row = document.querySelector('.ships-lasers'), before = v();
@@ -319,15 +319,43 @@ async def main():
           if (!(s.drillLeft[i] > 0)) return { drilled: false, orange };
           const r0 = Math.hypot(s.pos[i * 3], s.pos[i * 3 + 1], s.pos[i * 3 + 2]), left0 = pl.left;
           s.render(g.camera); const bit = (s.drillBits || []).find((b) => b.visible), spin0 = bit ? bit.children[0].rotation.z : 0;
-          for (let k = 0; k < 60 && s.drillLeft[i] > 0; k++) g.update();
+          let r1 = r0; // the deepest it got
+          for (let k = 0; k < 60 && s.drillLeft[i] > 0; k++) { g.update(); r1 = Math.min(r1, Math.hypot(s.pos[i * 3], s.pos[i * 3 + 1], s.pos[i * 3 + 2])); }
           s.render(g.camera);
-          const r1 = Math.hypot(s.pos[i * 3], s.pos[i * 3 + 1], s.pos[i * 3 + 2]);
           let through = false; for (let k = 0; k < 1500 && !through; k++) { g.update(); through = s.drillLeft[i] === 0; }
           return { drilled: true, orange, deeper: r0 - r1, eaten: left0 - pl.left, bit: Boolean(bit), spun: bit ? bit.children[0].rotation.z !== spin0 : false, through }; }""")
-        t.ok(dr.get('drilled') and dr['orange'] and dr['deeper'] > 3 and dr['eaten'] > 20, 'an orange drill drills straight into the planet, eating everything around it', dr)
+        t.ok(dr.get('drilled') and dr['orange'] and dr['deeper'] > 1.5 and dr['eaten'] > 10, 'an orange drill drills straight into the planet, eating everything around it', dr)
         t.ok(dr.get('bit') and dr.get('spun'), 'with a turning spiral bit at its nose', dr)
         t.ok(dr.get('through'), 'and stops once through', dr)
-        await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('drills', 0); g.start(); }")
+        await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('drills', 0); }")
+        # piercer: from 20 voxels an orange beam with a yellow spiral lightning round it, through 3
+        # voxels in a row at once, each a little slower than an eater eats
+        pc = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet;
+          p.setSetting('piercers', 2);
+          const a = s.kindStart('piercers'); s.render(g.camera);
+          // both piercers 8 units above the surface, without a bite: they fire from where they are
+          for (const k of [a, a + 1]) { const l = Math.hypot(s.pos[k*3], s.pos[k*3+1], s.pos[k*3+2]) || 1, R = pl.R + 8;
+            for (let m = 0; m < 3; m++) s.pos[k*3+m] *= R / l;
+            if (s.food[k] >= 0) pl.release(s.food[k]); s.food[k] = -1; s.landed[k] = 0; }
+          const ic = s.mesh.instanceColor, copper = ic.getX(a) > 0.6 && ic.getY(a) > 0.3 && ic.getY(a) < 0.55 && ic.getZ(a) < 0.35;
+          const ready = (i) => s.landed[i] && s.aimed[i] && s.food[i] >= 0 && !pl.fragments?.has(s.food[i]) && pl.strengthOf(s.food[i]) > 0.5;
+          let f = 0, i = -1; while (i < 0 && f < 2000) { g.update(); f++; for (const k of [a, a + 1]) if (ready(k)) { i = k; break; } }
+          if (i < 0) return { fired: false, copper };
+          const c = g.cfg.swarm.piercer;
+          // the voxels in a row behind the bite, along the beam
+          const b = pl.cellCenter(s.food[i], new window.THREE.Vector3()), d = b.clone().sub(new window.THREE.Vector3(s.pos[i*3], s.pos[i*3+1], s.pos[i*3+2]));
+          const dist = d.length(); d.normalize();
+          const row = [s.food[i]], q = b.clone();
+          for (let k = 0; k < 12 && row.length < c.pierce; k++) { q.addScaledVector(d, pl.s * 0.5); const n = pl.cellAt(q); if (n >= 0 && pl.hp[n] > 0 && !row.includes(n) && !pl.claimedByOther(n, s.food[i])) row.push(n); }
+          const before = row.map((n) => pl.strengthOf(n)), shown = s.piercerBolts.shown;
+          g.update(); for (let k = 0; k < 4; k++) s.render(g.camera);
+          const lost = row.map((n, k) => before[k] - pl.strengthOf(n));
+          const eater = g.cfg.planet.strength / g.cfg.swarm.eatFrames;
+          return { fired: true, copper, dist, row: row.length, lost, want: eater * c.damage, orange: s.piercerBeamCount > 0, spirals: s.piercerBolts.shown - shown }; }""")
+        t.ok(pc.get('fired') and pc['copper'] and pc['dist'] > 4, 'a copper piercer fires from a distance (up to 20 voxels)', pc)
+        t.ok(pc.get('row') == 3 and all(abs(x - pc['want']) < 1e-4 for x in pc['lost']), 'its beam goes through 3 voxels in a row and eats them at once (0.8 × an eater)', pc)
+        t.ok(pc.get('orange') and pc.get('spirals', 0) > 0, 'an orange beam with a yellow spiral lightning round it', pc)
+        await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('piercers', 0); g.start(); }")
         # Space pauses single player (nothing moves, "Paused" at the bottom) and carries on
         await page.mouse.move(500, 300)
         await page.keyboard.press('Space')

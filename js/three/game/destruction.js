@@ -1,6 +1,7 @@
 import { BITE } from '../planet/VoxelPlanet.js';
 
 const THREE = window.THREE;
+const PIERCE_B = new THREE.Vector3(), PIERCE_D = new THREE.Vector3(), PIERCE_P = new THREE.Vector3();
 
 /** How many voxels a crater of radius `r` voxels covers (what a bite of that power hits). */
 const craterCache = new Map();
@@ -20,6 +21,48 @@ function craterSize(r) {
  * (Part of Game3D: these become its methods.)
  */
 export const Destruction = {
+  /**
+   * A piercer (unit i of `player`) fires at voxel `idx`: its beam goes on through the voxels behind
+   * the bite — `piercer.pierce` (3) in a row, the bite first — and eats them all at once, each at
+   * `piercer.damage` × an eater's rate per voxel (a point each when one is gone). Voxels another
+   * unit has claimed are passed over; on a drifting piece only the bite is hit. Returns how many were hit.
+   */
+  pierceCell(idx, player, i) {
+    const pl = this.planet, c = this.cfg.swarm.piercer, s = player.swarm;
+    const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage;
+    const hit = [idx];
+    if (!(pl.fragments && pl.fragments.has(idx))) {
+      // along the beam from the bite on, half a voxel at a time
+      const b = pl.cellCenter(idx, PIERCE_B), i3 = i * 3;
+      const d = PIERCE_D.set(b.x - s.pos[i3], b.y - s.pos[i3 + 1], b.z - s.pos[i3 + 2]).normalize();
+      const p = PIERCE_P.copy(b);
+      for (let k = 0; k < c.pierce * 4 && hit.length < c.pierce; k++) {
+        p.addScaledVector(d, pl.s * 0.5);
+        const n = pl.cellAt(p);
+        if (n < 0 || hit.includes(n) || pl.hp[n] <= 0 || pl.claimedByOther(n, idx)) continue;
+        hit.push(n);
+      }
+    }
+    for (const n of hit) {
+      if (pl.bite(n, amount) !== BITE.REMOVED) continue;
+      player.score++;
+      player.planetScore++;
+      this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
+    }
+    return hit.length;
+  },
+
+  /** The planet voxel at (x, y, z), if there is one, is gone (a point to `player`); returns 1 or 0. */
+  clearCell(x, y, z, player) {
+    const pl = this.planet, idx = pl.cellAt(PIERCE_P.set(x, y, z));
+    if (idx < 0 || pl.hp[idx] <= 0) return 0;
+    this.debris.emit(pl.cellCenter(idx, this.tmp), pl.voxelColor(idx), 1);
+    pl.remove(idx);
+    player.score++;
+    player.planetScore++;
+    return 1;
+  },
+
   /** A feeding unit of `player` eats a small crater around the voxel it sits on. */
   biteCell(idx, ownFood, player) {
     const pl = this.planet;

@@ -87,7 +87,7 @@ export const GuestSide = {
       p.score = ps.score;
       p.planetScore = ps.planetScore;
       p.wins = ps.wins;
-      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts, ps.tugs, ps.tows, ps.bombers, ps.orbs, ps.supports, ps.cleaners, ps.drills, ps.drilling);
+      p.swarm.setRemote(ps.count, ps.pos, ps.dir, ps.lasers, ps.beams, ps.storms, ps.bolts, ps.tugs, ps.tows, ps.bombers, ps.orbs, ps.supports, ps.cleaners, ps.drills, ps.drilling, ps.piercers);
     }
     const pl = this.planet;
     if (pl && pl.alive) {
