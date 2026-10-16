@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.18.0] — 2026-10-16
+
+### Added
+- **Ship types.** A new panel in the bottom-right corner splits your units into **Eaters** and red **Lasers** with two linked sliders (together they are always all your units, upgrades included). By default 1 ship is a laser. A laser ship stops 5 voxels (2.5 units) from its bite and eats it from there with a red beam; it flies 10% slower. Points are the same. In multiplayer every player has their own split; guests see the red ships and their beams (the snapshot now carries the number of laser ships and the beams being fired).
+
 ## [0.17.0] — 2026-10-16
 
 ### Added

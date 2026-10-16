@@ -28,6 +28,7 @@ export class Player {
     this.biteRadius = CONFIG.swarm.biteRadius; // power: crater radius (slider + upgrades)
     // slider values; the upgrade tree adds its bonuses on top (see applyUpgrades)
     this.base = { count: CONFIG.swarm.count, speed: CONFIG.swarm.speed, power: CONFIG.swarm.biteRadius };
+    this.lasers = CONFIG.swarm.laser.count; // ship types: how many units are red laser ships
     this.tree = new SkillTree();
     this.bolt = null;       // chain lightning settings once bought
     this.boltClock = 0;     // seconds since the last bolt
@@ -42,6 +43,7 @@ export class Player {
     const start = this.spawnWorld();
     this.leader = new Leader(CONFIG.leader, start, ['x', 'y', 'z']);
     this.swarm = new Swarm3D(game.scene, { ...CONFIG.swarm, color: info.color }, new THREE.Vector3(start.x, start.y, start.z));
+    this.swarm.lasers = Math.min(this.lasers, this.swarm.count);
 
     // exposed voxels near the swarm target — computed once per frame
     this.candidates = [];
@@ -182,12 +184,16 @@ export class Player {
     } else if (key === 'spacing') s.separationDistance = value;
     else if (key === 'cohesion') s.cohesion = value;
     else if (key === 'nearest') this.setNearestMode(value);
+    else if (key === 'lasers') {
+      this.lasers = Math.max(0, Math.round(value));
+      this.applyUpgrades();
+    }
   }
 
   getSetting(key) {
     const s = this.swarm;
     return { count: this.base.count, speed: this.base.speed, power: this.base.power, spacing: s.separationDistance,
-      cohesion: s.cohesion, nearest: this.swarmWorld.nearestMode }[key];
+      cohesion: s.cohesion, nearest: this.swarmWorld.nearestMode, lasers: this.lasers }[key];
   }
 
   /** Points to spend in the upgrade tree: 1 eaten voxel = 1 point. */
@@ -208,6 +214,7 @@ export class Player {
     const s = this.swarm;
     const count = Math.min(CONFIG.swarm.maxCount + 100, Math.round(this.base.count + e.count));
     if (count !== s.count) s.setCount(count);
+    s.lasers = Math.min(this.lasers, s.count);
     s.speed = this.base.speed * (1 + e.speed);
     this.biteRadius = this.base.power + e.power;
     this.bolt = e.bolt;
@@ -316,6 +323,7 @@ export class Player {
   dispose() {
     this.dropAllBites(0);
     this.game.scene.remove(this.swarm.mesh);
+    this.game.scene.remove(this.swarm.beams);
     this.beacon.group.parent?.remove(this.beacon.group);
   }
 }

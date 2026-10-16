@@ -86,6 +86,32 @@ async def main():
         await page.wait_for_timeout(300)
         t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'boxes'], 'back to level 1')
 
+        # ship types (bottom-right): 1 red laser ship by default; lasers eat from 5 voxels away, 10% slower
+        ui = await page.evaluate("() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, window.__dbg.localPlayer.swarm.lasers]")
+        t.ok(ui == [19, 1, 1], 'ship types: 19 eaters and 1 red laser ship by default', ui)
+        await page.click('.control-levels button >> nth=1')
+        await page.evaluate("""() => { const e = document.getElementById('ships-eaters'); e.value = 12; e.dispatchEvent(new Event('input'));
+          window.__dbg.localPlayer.setSetting('speed', 0.3); }""")
+        await page.wait_for_timeout(400)
+        ui = await page.evaluate("() => [+document.getElementById('ships-eaters').value, +document.getElementById('ships-lasers').value, window.__dbg.localPlayer.swarm.lasers]")
+        t.ok(ui == [12, 8, 8], 'the sliders are linked: 12 eaters → 8 lasers', ui)
+        sp = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm; g.update();
+          const before = Array.from(s.pos); g.update();
+          const step = (i) => Math.hypot(s.pos[i * 3] - before[i * 3], s.pos[i * 3 + 1] - before[i * 3 + 1], s.pos[i * 3 + 2] - before[i * 3 + 2]);
+          const L = [], E = []; for (let i = 0; i < s.count; i++) (i < s.lasers ? L : E).push(step(i));
+          return { laser: Math.max(...L), eater: Math.max(...E) }; }""")
+        t.ok(abs(sp['laser'] - 0.27) < 0.005 and abs(sp['eater'] - 0.3) < 0.005, 'laser ships fly 10% slower', sp)
+        await h.fast_forward(page, 500)
+        lz = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm; s.render();
+          const d = (i) => { const i3 = i * 3; return Math.hypot(s.pos[i3] - s.foodPos[i3], s.pos[i3 + 1] - s.foodPos[i3 + 1], s.pos[i3 + 2] - s.foodPos[i3 + 2]); };
+          const L = [], E = []; for (let i = 0; i < s.count; i++) if (s.landed[i] && s.food[i] >= 0) (i < s.lasers ? L : E).push(d(i));
+          const red = s.mesh.instanceColor.getX(0) > 0.9 && s.mesh.instanceColor.getY(0) < 0.5, blue = s.mesh.instanceColor.getZ(s.count - 1) > 0.9;
+          return { laser: L.length ? Math.min(...L) : 0, eater: E.length ? Math.max(...E) : 9, beams: s.beams.geometry.drawRange.count / 2, red, blue }; }""")
+        t.ok(lz['laser'] > 1.5 and lz['eater'] < 1.5 and lz['beams'] > 0, 'laser ships eat from a distance (with a beam), eaters up close', lz)
+        t.ok(lz['red'] and lz['blue'], 'laser ships are red', lz)
+        await page.click('.control-levels button >> nth=0')
+        await page.evaluate("() => window.__dbg.localPlayer.setSetting('lasers', 1)")
+
         # eat the whole planet with a big, fast swarm
         await page.evaluate("""() => { const p = window.__dbg.localPlayer;
           p.setSetting('count', 300); p.setSetting('speed', 0.5); p.setSetting('power', 2.5); }""")

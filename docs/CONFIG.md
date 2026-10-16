@@ -82,6 +82,10 @@ Default (all `smooth`): boxes up to 4×4×4 with gap 5, sphere 1, cube 0.7, text
 | `nearestMode` | true | *toggle Eat nearest block* | |
 | `feedFlocking` | 0.35 | how much alignment/cohesion remains while feeding (with Eat nearest block it is 0) | higher = units pull each other off their bites |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
+| `laser.count` | 1 | laser ships at the start (Ship types panel) | |
+| `laser.reach` | 2.5 | how far from its bite a laser ship eats (5 voxels of 0.5) | |
+| `laser.speedFactor` | 0.9 | laser ships' speed × the swarm speed | |
+| `laser.color`, `laser.beamColor` | red | ship and beam colour | |
 | `retarget.frames`, `retarget.pauseFrames` | 600, 30 | a unit with a bite that has not eaten for 10 s stops for 0.5 s, then takes another bite (the same one if there is no other) | lower = gives up sooner |
 | `biteRadius` | 0.5 | *slider Power* — crater radius per bite | |
 | `spawnSpread` | 4 | size of the cloud new units appear in | |

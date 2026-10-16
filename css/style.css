@@ -213,6 +213,16 @@ body {
   outline-offset: 2px;
 }
 
+/* Ship types panel in the bottom-right corner (above the version) */
+.ships {
+  top: auto;
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+}
+
+.ships-title {
+  color: var(--hud-dim);
+}
+
 /* HUD: multiplayer banner and scoreboard */
 .hud-banner {
   color: var(--accent);

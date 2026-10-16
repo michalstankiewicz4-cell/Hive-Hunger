@@ -3,6 +3,7 @@ import { VERSION } from './version.js';
 import { Hud } from './ui/Hud.js';
 import { ControlPanel } from './ui/ControlPanel.js';
 import { LevelSwitch } from './ui/LevelSwitch.js';
+import { ShipTypes } from './ui/ShipTypes.js';
 import { Lobby } from './ui/Lobby.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { Summary } from './ui/Summary.js';
@@ -29,7 +30,7 @@ if (!window.THREE) {
 
   // the panel controls your own swarm; a guest's settings are sent to the host
   const S = CONFIG.swarm;
-  const guestSettings = { count: S.count, speed: S.speed, power: S.biteRadius, spacing: S.separationDistance, cohesion: S.weights.cohesion, nearest: S.nearestMode };
+  const guestSettings = { count: S.count, speed: S.speed, power: S.biteRadius, spacing: S.separationDistance, cohesion: S.weights.cohesion, nearest: S.nearestMode, lasers: S.laser.count };
   const bind = (key) => ({
     get: () => (game.role === 'guest' ? guestSettings[key] : game.localPlayer.getSetting(key)),
     set: (v) => {
@@ -46,6 +47,14 @@ if (!window.THREE) {
     onPick: (n) => game.jumpToLevel(n),
   });
   setInterval(() => levels.sync(), 500); // hides it once a room is created; follows the planet number
+
+  // ship types (bottom-right): eaters / red laser ships, together all your units
+  const ships = new ShipTypes(document.getElementById('ships'), {
+    total: () => game.localPlayer?.swarm.count ?? guestSettings.count,
+    get: () => bind('lasers').get(),
+    set: (v) => bind('lasers').set(v),
+  });
+  setInterval(() => ships.sync(), 300); // follows the Units slider and upgrades
 
   // start screen → (multiplayer) waiting room → match; the room panel stays during the match
   let soloPlayed = false; // single player has been started (Esc can return to it)

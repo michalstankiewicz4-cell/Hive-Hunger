@@ -78,6 +78,15 @@ export class Swarm3D {
     this.hungry = new Uint16Array(this.max);
     this.pause = new Uint8Array(this.max);
 
+    // ship types: units 0 … lasers−1 are red laser ships — they eat their bite from a distance
+    // (`laser.reach`) and fly `laser.speedFactor` slower; the rest eat it up close
+    this.lasers = 0;
+    // laser beams being fired: per unit 1/0 and the point it hits (set by the simulation, or on a
+    // guest from the host's snapshot)
+    this.firing = new Uint8Array(this.max);
+    this.beamTo = new Float32Array(this.max * 3);
+    this.remote = false; // a guest's copy (positions from the host)
+
     // parameters changed by sliders
     this.separationDistance = cfg.separationDistance;
     this.cohesion = cfg.weights.cohesion;
@@ -88,12 +97,26 @@ export class Swarm3D {
     const [w, h, l] = cfg.size;
     this.mesh = new THREE.InstancedMesh(
       new THREE.BoxGeometry(w, h, l),
-      new THREE.MeshBasicMaterial({ color: cfg.color }),
+      new THREE.MeshBasicMaterial({ color: 0xffffff }),
       this.max,
     );
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(this.max * 3), 3);
     this.mesh.frustumCulled = false;
     scene.add(this.mesh);
+    this.baseColor = new THREE.Color(cfg.color);
+    this.laserColor = new THREE.Color(cfg.laser.color);
+    this.coloredLasers = -1; // lasers shown in red last time (colours are set again when it changes)
+
+    // laser beams: a line per firing laser ship
+    const beamGeo = new THREE.BufferGeometry();
+    beamGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.max * 6), 3).setUsage(THREE.DynamicDrawUsage));
+    beamGeo.setDrawRange(0, 0);
+    this.beams = new THREE.LineSegments(beamGeo, new THREE.LineBasicMaterial({
+      color: cfg.laser.beamColor, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    this.beams.frustumCulled = false;
+    scene.add(this.beams);
 
     this.dummy = new THREE.Object3D();
     this.v = new THREE.Vector3();
@@ -137,11 +160,34 @@ export class Swarm3D {
     this.mesh.count = n;
   }
 
+  /** Laser ships among the units (the first `lasers` of them). */
+  isLaser(i) {
+    return i < this.lasers;
+  }
+
+  /** Units in red (lasers) and in the swarm's colour (eaters). */
+  updateColors() {
+    const n = Math.min(this.lasers, this.count);
+    if (n === this.coloredLasers && this.colorsFor === this.count) return;
+    this.coloredLasers = n;
+    this.colorsFor = this.count;
+    for (let i = 0; i < this.count; i++) this.mesh.setColorAt(i, i < n ? this.laserColor : this.baseColor);
+    this.mesh.instanceColor.needsUpdate = true;
+  }
+
   /**
    * Multiplayer guest: show positions and headings received from the host instead of
    * simulating. Units move smoothly towards the received positions between updates.
    */
-  setRemote(count, pos, dir) {
+  setRemote(count, pos, dir, lasers = 0, beams = null) {
+    this.remote = true;
+    this.lasers = lasers;
+    this.firing.fill(0);
+    if (beams) for (const [i, x, y, z] of beams) {
+      if (i >= this.max) continue;
+      this.firing[i] = 1;
+      this.beamTo[i * 3] = x; this.beamTo[i * 3 + 1] = y; this.beamTo[i * 3 + 2] = z;
+    }
     count = Math.min(count, this.max);
     if (count !== this.count) {
       for (let i = this.count; i < count; i++) {
@@ -248,6 +294,8 @@ export class Swarm3D {
       }
 
       const px = pos[i3], py = pos[i3 + 1], pz = pos[i3 + 2];
+      const laser = i < this.lasers;
+      const speed = laser ? this.speed * c.laser.speedFactor : this.speed;
       let sx = 0, sy = 0, sz = 0;   // separation
       let ax = 0, ay = 0, az = 0;   // alignment
       let cx = 0, cy = 0, cz = 0;   // cohesion
@@ -314,7 +362,8 @@ export class Swarm3D {
       // circle a small, isolated scrap forever without ever touching it.
       if (food[i] >= 0) {
         const fx0 = foodPos[i3] - px, fy0 = foodPos[i3 + 1] - py, fz0 = foodPos[i3 + 2] - pz;
-        const reach = c.reachDistance + this.speed;
+        // a laser ship stops at laser range and eats from there
+        const reach = (laser ? c.laser.reach : c.reachDistance) + speed;
         if (fx0 * fx0 + fy0 * fy0 + fz0 * fz0 < reach * reach) {
           landed[i] = 1;
           this.redirect[i] = 0;
@@ -382,8 +431,8 @@ export class Swarm3D {
       // a fragment that drifted onto the unit doesn't trap it: it may fly out
       const inFragment = world.floatingAt(p) >= 0;
       const d = [dx, dy, dz];
-      const substeps = Math.max(1, Math.ceil(this.speed / MAX_STEP));
-      const stepLen = this.speed / substeps;
+      const substeps = Math.max(1, Math.ceil(speed / MAX_STEP));
+      const stepLen = speed / substeps;
       move: for (let s = 0; s < substeps; s++) {
         for (let a = 0; a < 3; a++) {
           const ax2 = AXES[a];
@@ -443,12 +492,49 @@ export class Swarm3D {
     this.stuck[i] = 0;
   }
 
+  /** Laser beams: from every laser ship eating its bite to the bite. */
+  renderBeams() {
+    const firing = this.firing, to = this.beamTo;
+    if (!this.remote) {
+      // here the simulation runs: a laser ship that has landed (at range) is firing
+      for (let i = 0; i < this.count; i++) {
+        const on = i < this.lasers && this.landed[i] && this.food[i] >= 0 ? 1 : 0;
+        firing[i] = on;
+        if (on) { to[i * 3] = this.foodPos[i * 3]; to[i * 3 + 1] = this.foodPos[i * 3 + 1]; to[i * 3 + 2] = this.foodPos[i * 3 + 2]; }
+      }
+    }
+    const attr = this.beams.geometry.attributes.position, a = attr.array;
+    let n = 0;
+    const flicker = 0.75 + Math.random() * 0.25;
+    for (let i = 0; i < this.count; i++) {
+      if (!firing[i]) continue;
+      const i3 = i * 3;
+      a[n] = this.pos[i3]; a[n + 1] = this.pos[i3 + 1]; a[n + 2] = this.pos[i3 + 2];
+      a[n + 3] = to[i3]; a[n + 4] = to[i3 + 1]; a[n + 5] = to[i3 + 2];
+      n += 6;
+    }
+    this.beams.material.opacity = 0.85 * flicker;
+    this.beams.geometry.setDrawRange(0, n / 3);
+    attr.needsUpdate = true;
+  }
+
+  /** Units currently firing their laser, with the point they hit: [[unit, x, y, z], …] */
+  beamList() {
+    const out = [];
+    for (let i = 0; i < Math.min(this.lasers, this.count); i++) {
+      if (this.firing[i]) out.push([i, this.beamTo[i * 3], this.beamTo[i * 3 + 1], this.beamTo[i * 3 + 2]]);
+    }
+    return out;
+  }
+
   /**
    * Draws the units. The drawn heading follows the flying direction smoothly (turnSmoothing),
    * so sharp changes — sliding along a wall, landing on a bite — don't look like snapping.
    * Only the look is smoothed; movement and collisions use the real direction.
    */
   render() {
+    this.updateColors();
+    this.renderBeams();
     const dm = this.dummy;
     const k = this.cfg.turnSmoothing;
     const look = this.look;

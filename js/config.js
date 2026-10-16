@@ -115,6 +115,9 @@ export const CONFIG = Object.freeze({
     nearestMode: true,       // test mechanic: after eating, fly to the nearest uneaten voxel (checkbox)
     feedFlocking: 0.35,      // while feeding: how much alignment and cohesion remain
     eatFrames: 25,           // frames a unit sits on its bite before it is eaten
+    // ship types: red laser ships eat their bite from `reach` away (5 voxels of 0.5) and fly
+    // `speedFactor` × the speed; `count` = how many of the units are lasers at the start
+    laser: { count: 1, reach: 2.5, speedFactor: 0.9, color: 0xff4a4a, beamColor: 0xff2a2a },
     // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
     // (0.5 s), then takes another bite — or the same one if there is no other
     retarget: { frames: 600, pauseFrames: 30 },

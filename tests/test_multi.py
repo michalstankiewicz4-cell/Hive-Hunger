@@ -120,6 +120,9 @@ async def main():
             t.ok(hs['left'] < 463400 and abs(hs['left'] - gs['left']) < 2000, 'guest follows the eaten voxels',
                  f"host {hs['left']} guest {gs['left']}")
             t.ok(sum(hs['scores']) > 0, 'swarms eat', hs['scores'])
+            await host.wait_for_timeout(500)
+            ls = await guests[1].evaluate('() => window.__dbg.activePlayers().map(p => [p.swarm.lasers, p.swarm.mesh.instanceColor.getX(0) > 0.9])')
+            t.ok(len(ls) == 3 and all(x == [1, True] for x in ls), 'guests see every player\'s red laser ship', ls)
 
             # finish the planet: summary for everyone, the next planet only after everyone pressed Next planet
             # slower for the last scraps: at high speed a unit turns in a wide arc and can circle an

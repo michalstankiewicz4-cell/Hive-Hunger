@@ -26,6 +26,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Clicks** send the whole swarm to the spot (marker ring shown); the swarm flies around the planet, not through it. Stuck units bite through the blocking voxel.
 - **Beacon** at the spawn point (about one planet radius above the surface, on screen, away from the panel): clicking it calls the swarm home.
 - **Pieces bitten off drift (0.16.0):** when eating splits a body, every part smaller than the rest comes loose, drifts gently away from the centre and turns; parts of equal size all stay (the owner's choices: "every part smaller than the rest", including big halves; equal parts both stay). Drones can chase and eat them for normal points; the planet counts as eaten only when the pieces are gone too. 0.16.1 (owner's request): a drone that hasn't eaten for 10 s stops for 0.5 s and takes another bite (back to the old one if there is none); pieces stop 4 units from where they came off; big pieces turn slower (edge ≤ half the default drone speed — proposed by the assistant, accepted). 0.17.0: pieces bitten through break up again the same way, down to the last voxel.
+- **Ship types (0.18.0):** bottom-right panel, linked sliders Eaters / Lasers (all units together; 1 laser by default). Red laser ships eat from 5 voxels away (beam) and fly 10% slower. Lasers can hit a bite through a thin wall (no line-of-sight check).
 - **Level switch (0.17.0):** single player only, buttons 1–5 in the settings panel; the swarm restarts from its beacon (owner: so it never gets stuck inside a shape). Hidden in multiplayer.
 - **100% means every voxel is gone.** Then the swarm returns home and only then does the next planet appear.
 - **Defaults:** units 20, speed 0.05, power 0.5, spacing 1.5, cohesion 1.0, "Eat nearest block" on. "Reset to default" restores them.
@@ -109,6 +110,7 @@ Lessons from writing them:
 | 0.16.1 | tag `v0.16.1` | drones give up on a bite they can't catch (10 s → 0.5 s pause → another bite); pieces stop 4 units away; big pieces turn slower |
 | 0.16.2 | tag `v0.16.2` | version shown next to the title on the start screen |
 | 0.17.0 | tag `v0.17.0` | drifting pieces break up again when bitten through; level switch in single player |
+| 0.18.0 | tag `v0.18.0` | ship types: eaters and red laser ships (bottom-right panel) |
 
 ## Known limitations
 

@@ -28,6 +28,7 @@ Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnj
 | `js/net/Protocol.js` | Binary snapshot, planet and fragment messages |
 | `js/ui/Hud.js` | Planet counter, points counter, hints, notices, multiplayer scoreboard and banner |
 | `js/ui/ControlPanel.js` | Sliders, the "Eat nearest block" toggle, "Reset to default" |
+| `js/ui/ShipTypes.js` | Ship types panel (bottom-right): linked Eaters / Lasers sliders, together all your units |
 | `js/ui/LevelSwitch.js` | Level buttons 1–5 under the panel (single player only): `Game3D.jumpToLevel` builds that planet and puts the swarm back at its beacon |
 | `js/ui/StartScreen.js` | Start screen (Single player / Co-op / PvP) and the multiplayer waiting room (link, players, Start) |
 | `js/ui/Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
@@ -106,6 +107,7 @@ Until the match has started (`game.started`: Single player chosen, or every play
 - **Feeding:** a unit without a bite picks one — near the swarm target, or (with "Eat nearest block") the nearest free voxel to itself. The voxel is **claimed** (`VoxelPlanet.claims`), so nobody else takes or bites it; bites are shared only when the planet has fewer exposed voxels than there are units. A unit lands when it touches its bite (or a free voxel right next to it) or comes within `reachDistance`, then eats a crater of radius `power` over `eatFrames` frames, skipping voxels claimed by others.
 - **Collisions:** movement goes axis by axis in substeps; a solid voxel stops movement on that axis — no bounce and no passing through; the unit slides along the surface. Units in passing never eat.
 - **Long trips:** `aroundPlanet()` gives a waypoint over the surface when the straight path would go through the planet, or straight up when the unit is down in a pit.
+- **Laser ships:** units `0 … lasers−1` (`Swarm3D.lasers`, from the player's `lasers` setting, at most all units) are red laser ships: they land at `laser.reach` (2.5) from their bite instead of `reachDistance`, eat it from there, and fly at `laser.speedFactor` (0.9) × the speed. `render()` colours the units (instance colours) and draws a beam (additive line) from every landed laser ship to its bite; on a guest the beams come from the snapshot.
 - **Giving up on a bite:** a unit with a bite that hasn't eaten for `retarget.frames` (600 = 10 s) stops for `retarget.pauseFrames` (30 = 0.5 s), then `retarget()` picks another free bite while still holding the old one (so the old one isn't picked again); with no other, it keeps the old one.
 - **Getting unstuck:** no progress for `stuck.frames` while touching a wall → bite through the blocking voxel (if unclaimed) or turn in a random direction.
 

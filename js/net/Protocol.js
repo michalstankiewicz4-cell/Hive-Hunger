@@ -6,6 +6,7 @@
  *   u8 type | f32 spin | u32 left | u8 bannerLen | banner (utf-8) | u8 players
  *   per player: u8 index | u8 home (0 none, 1 recall, 2 return) | u32 score | u32 planetScore
  *               | u16 wins | u16 count | count × (3 × i16 position) | count × (3 × i8 heading)
+ *               | u16 lasers (units 0 … lasers−1 are laser ships) | u16 beams | beams × (u16 unit | 3 × i16 point hit)
  *   u32 removed | removed × u32 voxel index
  *
  * PLANET (type 2), host → guest(s): a new planet, or the current one for a guest who joins
@@ -68,7 +69,8 @@ export function encodeSnapshot(game, removed) {
   const players = game.activePlayers();
   const banner = enc.encode(game.banner || '').subarray(0, 255);
   let size = 1 + 4 + 4 + 1 + banner.length + 1 + 4 + removed.length * 4;
-  for (const p of players) size += 1 + 1 + 4 + 4 + 2 + 2 + p.swarm.count * 9;
+  const beams = players.map((p) => p.swarm.beamList());
+  players.forEach((p, n) => { size += 1 + 1 + 4 + 4 + 2 + 2 + p.swarm.count * 9 + 2 + 2 + beams[n].length * 8; });
 
   const buf = new ArrayBuffer(size);
   const v = new DataView(buf);
@@ -79,7 +81,7 @@ export function encodeSnapshot(game, removed) {
   v.setUint8(o, banner.length); o += 1;
   new Uint8Array(buf, o, banner.length).set(banner); o += banner.length;
   v.setUint8(o, players.length); o += 1;
-  for (const p of players) {
+  players.forEach((p, n) => {
     const s = p.swarm;
     v.setUint8(o, p.index); o += 1;
     v.setUint8(o, p.homeMode === 'recall' ? 1 : p.homeMode === 'return' ? 2 : 0); o += 1;
@@ -93,7 +95,13 @@ export function encodeSnapshot(game, removed) {
     for (let i = 0; i < s.count * 3; i++) {
       v.setInt8(o, Math.round(s.dir[i] * DIR_SCALE)); o += 1;
     }
-  }
+    v.setUint16(o, Math.min(s.lasers, s.count), true); o += 2;
+    v.setUint16(o, beams[n].length, true); o += 2;
+    for (const [i, x, y, z] of beams[n]) {
+      v.setUint16(o, i, true); o += 2;
+      for (const c of [x, y, z]) { v.setInt16(o, Math.max(-32767, Math.min(32767, Math.round(c * POS_SCALE))), true); o += 2; }
+    }
+  });
   v.setUint32(o, removed.length, true); o += 4;
   for (const idx of removed) { v.setUint32(o, idx, true); o += 4; }
   return buf;
@@ -119,7 +127,17 @@ export function decodeSnapshot(buf) {
     const dir = new Float32Array(count * 3);
     for (let i = 0; i < count * 3; i++) { pos[i] = v.getInt16(o, true) / POS_SCALE; o += 2; }
     for (let i = 0; i < count * 3; i++) { dir[i] = v.getInt8(o) / DIR_SCALE; o += 1; }
-    players.push({ index, home, score, planetScore, wins, count, pos, dir });
+    const lasers = v.getUint16(o, true); o += 2;
+    const nb = v.getUint16(o, true); o += 2;
+    const beams = [];
+    for (let b = 0; b < nb; b++) {
+      const i = v.getUint16(o, true); o += 2;
+      const x = v.getInt16(o, true) / POS_SCALE; o += 2;
+      const y = v.getInt16(o, true) / POS_SCALE; o += 2;
+      const z = v.getInt16(o, true) / POS_SCALE; o += 2;
+      beams.push([i, x, y, z]);
+    }
+    players.push({ index, home, score, planetScore, wins, count, pos, dir, lasers, beams });
   }
   const nr = v.getUint32(o, true); o += 4;
   const removed = new Uint32Array(nr);
