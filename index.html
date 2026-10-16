@@ -129,8 +129,9 @@
   <div id="version" class="version"></div>
   <div id="fps" class="fps" hidden></div>
   <div id="pause-hint" class="pause-hint" hidden></div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onload="HH_LOAD.done('three')" onerror="HH_LOAD.done('three')"></script>
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" onload="HH_LOAD.done('peer')" onerror="HH_LOAD.done('peer')"></script>
+  <!-- the libraries are in the repository (js/vendor/): nothing is loaded from the internet -->
+  <script src="js/vendor/three.min.js" onload="HH_LOAD.done('three')" onerror="HH_LOAD.done('three')"></script>
+  <script src="js/vendor/peerjs.min.js" onload="HH_LOAD.done('peer')" onerror="HH_LOAD.done('peer')"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

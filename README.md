@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats a planet made of voxels — alone, or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.37.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.38.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -78,7 +78,7 @@ npx serve .
 python -m http.server
 ```
 
-Three.js r128 (cdnjs) and PeerJS 1.5.4 (unpkg) are loaded from CDNs.
+Three.js r128 and PeerJS 1.5.4 are in the repository (`js/vendor/`), so the game loads nothing from the internet: single player works offline (from a local server). Multiplayer still needs the internet to find the other players.
 
 Browser tests (single player and multiplayer with a local PeerJS server) are in `tests/` — see [tests/README.md](tests/README.md).
 
@@ -120,6 +120,7 @@ js/
                         the solar system map
   solar.js, progress.js the map's bodies (outside in); single player's finished missions
   utils/                noise, terrain colours, sky colours
+  vendor/               Three.js r128 and PeerJS 1.5.4 (kept here: no CDN), their licences
 img/start.jpg         the start screen picture
 docs/                 architecture, multiplayer and configuration docs
 tests/                browser tests (Playwright): solo, multiplayer, levels, upgrade tree and a local PeerJS server

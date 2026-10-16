@@ -60,6 +60,8 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Multiplayer:** host-authoritative WebRTC via PeerJS, room link `?room=CODE`, mode chosen when creating the room, up to 4 players, each with own swarm, colour, beacon, settings. Waiting room: the match begins only when every player has pressed Start; Not ready takes it back. Ping shown next to every player; notices when someone joins, leaves or loses the connection. After each planet a summary (voxels eaten of the planet per player, share, total, PvP winner) closes with **Next planet** — the next planet waits until everyone pressed it. Spawns spread evenly around the planet (2 opposite, 3 at 120°, 4 at 90°), re-spread on join/leave.
 - **SEO:** title, description, keywords (including "incremental free"), Open Graph/Twitter thumbnail (`og-image.png`, rendered from the game — not the owner's early screenshot), `VideoGame` JSON-LD, sitemap.
 
+- **Offline (0.38.0, owner):** the libraries are kept in the repo (`js/vendor/`) so nothing is loaded from the internet; multiplayer still needs it for PeerJS signalling.
+
 ## Working with the owner
 
 - He prefers that new ideas are **proposed, not added on their own** — implement what he asks, list further ideas as suggestions.
@@ -87,7 +89,7 @@ Older way (0.6.0–0.11.1), only as a fallback: fast-forwarding through the Linu
 
 ## Testing
 
-Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` instead of the CDNs, a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the level cycle and the smooth / wedge surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). `test_fragments.py` checks pieces coming loose, drifting and being eaten. Run all five after every change to the game. A refactor that should not change anything can also be checked by comparing with the previous version in a `git worktree`: geometry checksums of the smooth surface, screenshots of the panels with the canvas hidden.
+Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` (the same files as `js/vendor/`), a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the level cycle and the smooth / wedge surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). `test_fragments.py` checks pieces coming loose, drifting and being eaten. Run all five after every change to the game. A refactor that should not change anything can also be checked by comparing with the previous version in a `git worktree`: geometry checksums of the smooth surface, screenshots of the panels with the canvas hidden.
 
 Lessons from writing them:
 
@@ -164,6 +166,7 @@ Lessons from writing them:
 | 0.36.0 | tag `v0.36.0` | the Kuiper Belt as a long band; grids that aren't cubes; Settings in three columns |
 | 0.36.1 | tag `v0.36.1` | Ship guide fits the screen: only the ships scroll |
 | 0.37.0 | tag `v0.37.0` | no automatic camera turning (planet spin off) |
+| 0.38.0 | tag `v0.38.0` | Three.js and PeerJS in the repository (`js/vendor/`), no CDNs |
 
 ## Known limitations
 

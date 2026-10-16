@@ -16,7 +16,7 @@ python -m playwright install chromium
 cd tests && npm install && cd ..
 ```
 
-`npm install` brings local copies of Three.js r128 and PeerJS 1.5.4 (the tests don't depend on the CDNs) and the `peer` and `express` packages for the local signalling server.
+`npm install` brings local copies of Three.js r128 and PeerJS 1.5.4 (the same files as `js/vendor/`; the tests serve these to the page) and the `peer` and `express` packages for the local signalling server.
 
 ## Running
 

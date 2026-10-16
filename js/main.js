@@ -23,7 +23,7 @@ document.getElementById('version').textContent = `v${VERSION}`;
 const roomCode = (new URLSearchParams(location.search).get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 if (!window.THREE) {
-  hudEl.textContent = 'Could not load the 3D library. Check your connection and reload the page.';
+  hudEl.textContent = 'Could not load the 3D library (js/vendor/three.min.js). Reload the page.';
   window.HH_LOAD?.done('game');
 } else {
   const { Game3D } = await import('./three/game/Game3D.js');

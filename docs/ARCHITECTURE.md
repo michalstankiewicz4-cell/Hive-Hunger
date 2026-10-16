@@ -1,6 +1,6 @@
 # Architecture
 
-Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build from cdnjs) and PeerJS 1.5.4 (from unpkg) — no build step, no server code. Almost every tunable value lives in `js/config.js` (upgrade costs and the lightning's base values in `js/core/SkillTree.js`).
+Hive Hunger is a static web page: ES modules, Three.js r128 (UMD build) and PeerJS 1.5.4, both kept in `js/vendor/` (nothing comes from a CDN) — no build step, no server code. Almost every tunable value lives in `js/config.js` (upgrade costs and the lightning's base values in `js/core/SkillTree.js`).
 
 ## Modules
 
