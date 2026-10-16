@@ -89,6 +89,7 @@ export class Swarm3D {
     this.cutSide = new Float32Array(this.max * 3);
     this.cutL = new Float32Array(this.max * 3);
     this.cutR = new Float32Array(this.max * 3);
+    this.cutPiece = new Int32Array(this.max).fill(-1); // a drifting piece's id, when cutting one
     // the last `snipers` units are teal snipers: from any distance they fire an accelerating shot at
     // their bite (Shots.js) that destroys the voxel it hits; snipePhase 1 = stopped and charging,
     // snipeT counts the charge down (or, after a shot, the second it flies on)
@@ -376,7 +377,9 @@ export class Swarm3D {
       // until through — then it flies on
       if (this.cutOn[i]) {
         if (!this.isCutter(i) || world.holding) { this.cutOn[i] = 0; continue; } // another type now / called back
-        const hit = world.cutLine(i, pos[i3], pos[i3 + 1], pos[i3 + 2], this.cutDir, this.cutSide, this.cutL, this.cutR);
+        const hit = this.cutPiece[i] >= 0
+          ? world.cutPiece(i, pos[i3], pos[i3 + 1], pos[i3 + 2], this.cutDir, this.cutSide, this.cutL, this.cutR, this.cutPiece[i])
+          : world.cutLine(i, pos[i3], pos[i3 + 1], pos[i3 + 2], this.cutDir, this.cutSide, this.cutL, this.cutR);
         this.hungry[i] = 0;
         dir[i3] = this.cutDir[i3]; dir[i3 + 1] = this.cutDir[i3 + 1]; dir[i3 + 2] = this.cutDir[i3 + 2];
         if (!hit) { this.cutOn[i] = 0; best[i] = Infinity; stuck[i] = 0; }
@@ -482,7 +485,7 @@ export class Swarm3D {
               food[i] = -1;
               landed[i] = 0;
             }
-          } else if (this.isCutter(i) && !world.isFloating(food[i])) {
+          } else if (this.isCutter(i)) {
             // aimed: the line from here through the bite is locked; the sheet spreads across it, along
             // the surface (sideways to both the line and the way out from the centre)
             const l = Math.hypot(foodPos[i3] - pos[i3], foodPos[i3 + 1] - pos[i3 + 1], foodPos[i3 + 2] - pos[i3 + 2]) || 1;
@@ -495,11 +498,11 @@ export class Swarm3D {
             this.cutDir[i3] = dx; this.cutDir[i3 + 1] = dy; this.cutDir[i3 + 2] = dz;
             this.cutSide[i3] = sx / sl; this.cutSide[i3 + 1] = sy / sl; this.cutSide[i3 + 2] = sz / sl;
             this.cutOn[i] = 1;
+            this.cutPiece[i] = world.isFloating(food[i]) ? world.pieceOf(food[i]) : -1; // (a drifting piece: its whole width too)
             world.release(food[i]);
             food[i] = -1;
             landed[i] = 0;
-          } else if (this.isCutter(i)) world.pierce(food[i], i); // on a drifting piece: just its bite
-          else world.bite(food[i], food[i], i);
+          } else world.bite(food[i], food[i], i);
           this.hungry[i] = 0;
           continue;
         }

@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.43.1] — 2026-10-16
+
+### Changed
+- **Cutters:** the haze in the sheet drifts 3 × slower; both edge rays always glow (drawn as their own lines too); the sheet covers the whole width of what it hits — the same rock of the belt across gaps in it, and drifting pieces too (cut row by row as they drift through the sheet; before, a cutter only ate its bite on a piece).
+
 ## [0.43.0] — 2026-10-16
 
 ### Added

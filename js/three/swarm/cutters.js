@@ -30,12 +30,12 @@ const FRAG = `
   }
   void main() {
     float s = vS.x, a = vS.y;
-    float edge = exp(-pow(s / 0.012, 2.0)) + exp(-pow((1.0 - s) / 0.012, 2.0));
+    float edge = exp(-pow(s / 0.025, 2.0)) + exp(-pow((1.0 - s) / 0.025, 2.0));
     // the haze: soft streaks drifting from the ship to the cut
     float n = noise(vec2(s * 5.0, a * 9.0 - time * 2.2)) * noise(vec2(s * 13.0 + 7.0, a * 21.0 - time * 3.7));
     float haze = 0.18 + 0.75 * n;
     float fade = smoothstep(0.0, 0.12, a);
-    vec3 col = colSheet * haze * 0.38 * fade + colEdge * edge * (0.75 + 0.25 * fade);
+    vec3 col = colSheet * haze * 0.38 * fade + colEdge * edge * (0.5 + 0.2 * fade);
     gl_FragColor = vec4(col * opacity, 1.0);
   }
 `;
@@ -63,11 +63,14 @@ export const CutterSheets = {
       sh.mesh.geometry.computeBoundingSphere();
       sh.line.geometry.attributes.position.array.set([lx, ly, lz, rx, ry, rz]);
       sh.line.geometry.attributes.position.needsUpdate = true;
+      // the two edge rays as lines too, so both always show (the glow in the sheet alone can thin out to nothing)
+      sh.edges.geometry.attributes.position.array.set([P[i3] - ax, P[i3 + 1] - ay, P[i3 + 2] - az, lx, ly, lz, P[i3] + ax, P[i3 + 1] + ay, P[i3 + 2] + az, rx, ry, rz]);
+      sh.edges.geometry.attributes.position.needsUpdate = true;
       sh.mesh.material.uniforms.time.value = this.cutClock;
-      sh.mesh.visible = sh.line.visible = true;
+      sh.mesh.visible = sh.line.visible = sh.edges.visible = true;
       m++;
     }
-    for (let k = m; k < this.cutSheets.length; k++) this.cutSheets[k].mesh.visible = this.cutSheets[k].line.visible = false;
+    for (let k = m; k < this.cutSheets.length; k++) this.cutSheets[k].mesh.visible = this.cutSheets[k].line.visible = this.cutSheets[k].edges.visible = false;
     this.cutsShown = m; // (tests)
   },
 
@@ -86,13 +89,17 @@ export const CutterSheets = {
     lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
     const line = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: c.edgeColor, transparent: true, blending: THREE.AdditiveBlending }));
     line.frustumCulled = false;
-    this.scene.add(mesh, line);
-    return { mesh, line };
+    const eg = new THREE.BufferGeometry();
+    eg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12), 3));
+    const edges = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: c.edgeColor, transparent: true, blending: THREE.AdditiveBlending }));
+    edges.frustumCulled = false;
+    this.scene.add(mesh, line, edges);
+    return { mesh, line, edges };
   },
 
   /** The player left: its boosters' fields and cutters' sheets go too. */
   disposeExtras() {
-    for (const sh of this.cutSheets || []) { this.scene.remove(sh.mesh, sh.line); sh.mesh.geometry.dispose(); sh.line.geometry.dispose(); }
+    for (const sh of this.cutSheets || []) { this.scene.remove(sh.mesh, sh.line, sh.edges); sh.mesh.geometry.dispose(); sh.line.geometry.dispose(); sh.edges.geometry.dispose(); }
     for (const f of this.fieldMeshes || []) this.scene.remove(f);
     this.cutSheets = [];
     this.fieldMeshes = [];

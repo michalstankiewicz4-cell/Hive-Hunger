@@ -87,8 +87,8 @@ export const Destruction = {
   /**
    * A cutter (unit i of `player`) at (x, y, z) cutting along its locked line (direction D[i*3…]) with its
    * sheet spread along S[i*3…]: the first solid grid voxel on the line (however far, through the whole
-   * planet) and the row of solid voxels across the sheet through it — as far as the solid voxels go,
-   * at most `cutter.maxHalf` each side — are each bitten for `cutter.damage` × an eater's rate (claimed
+   * planet) and the row across the sheet through it — every solid voxel of the same body on that row
+   * (a belt: the same rock; gaps in it don't stop the row), at most `cutter.maxHalf` each side — are each bitten for `cutter.damage` × an eater's rate (claimed
    * or not; a point each when gone). L / R[i*3…] are set to the row's two ends (for drawing). Nothing
    * left on the line — it is through — returns false.
    */
@@ -104,16 +104,18 @@ export const Destruction = {
       if (n >= 0 && pl.hp[n] > 0) { first = n; break; }
     }
     if (first < 0) return false;
-    // across the sheet, both ways from the line, half a voxel at a time, while the voxels are solid
+    // across the sheet, both ways from the line, half a voxel at a time: every solid voxel of the same
+    // body (the same rock of a belt), over gaps too — the sheet covers the whole width of what it hits
     const row = new Set([first]);
     const ends = [];
+    const tag = pl.tags ? pl.tags[first] : 0;
     for (const sign of [-1, 1]) {
       const q = PIERCE_B.copy(p);
       let last = 0;
       for (let k = 1; k <= c.maxHalf * 2; k++) {
         q.x += S[i3] * step * sign; q.y += S[i3 + 1] * step * sign; q.z += S[i3 + 2] * step * sign;
         const n = pl.cellAt(q);
-        if (n < 0 || pl.hp[n] <= 0) break;
+        if (n < 0 || pl.hp[n] <= 0 || (tag && pl.tags[n] !== tag)) continue;
         row.add(n);
         last = k;
       }
@@ -126,6 +128,47 @@ export const Destruction = {
       player.score++;
       player.planetScore++;
       this.debris.emit(pl.cellCenter(n, this.tmp), pl.colorOf(n), this.cfg.debris.perCell);
+    }
+    return true;
+  },
+
+  /**
+   * A cutter on a drifting piece (`id`): its sheet is the slab half a voxel each side of the plane through
+   * the locked line (D) and the sheet's side (S); the piece's voxels in it nearest the ship along the line
+   * (one voxel deep) are cut — the whole width of the piece — and L / R are their two ends. The piece
+   * drifts and turns, so the sheet cuts whatever of it passes through. False when nothing of it is in the
+   * sheet any more (through, or the piece is gone).
+   */
+  cutPiece(player, i, x, y, z, D, S, L, R, id) {
+    const pl = this.planet, fr = pl.fragments, c = this.cfg.swarm.cutter, i3 = i * 3, s = pl.s;
+    const f = fr?.byId.get(id);
+    if (!f || f.dead) return false;
+    const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage * player.boostOf(i);
+    const nx = D[i3 + 1] * S[i3 + 2] - D[i3 + 2] * S[i3 + 1], ny = D[i3 + 2] * S[i3] - D[i3] * S[i3 + 2], nz = D[i3] * S[i3 + 1] - D[i3 + 1] * S[i3];
+    const v = PIERCE_B, inSheet = [];
+    let minA = Infinity;
+    for (const cell of fr.cellsOf(f)) {
+      fr.worldCenter(cell, v);
+      const rx = v.x - x, ry = v.y - y, rz = v.z - z;
+      if (Math.abs(rx * nx + ry * ny + rz * nz) > s * 0.6) continue;
+      const a = rx * D[i3] + ry * D[i3 + 1] + rz * D[i3 + 2], b = rx * S[i3] + ry * S[i3 + 1] + rz * S[i3 + 2];
+      if (a <= 0 || Math.abs(b) > c.maxHalf * s) continue;
+      inSheet.push([cell, a, b]);
+      minA = Math.min(minA, a);
+    }
+    if (!inSheet.length) return false;
+    const row = inSheet.filter(([, a]) => a <= minA + s * 0.75);
+    let b0 = Infinity, b1 = -Infinity;
+    for (const [, , b] of row) { b0 = Math.min(b0, b); b1 = Math.max(b1, b); }
+    b0 -= s * 0.5; b1 += s * 0.5;
+    for (const [k, b] of [[L, b0], [R, b1]]) {
+      k[i3] = x + D[i3] * minA + S[i3] * b; k[i3 + 1] = y + D[i3 + 1] * minA + S[i3 + 1] * b; k[i3 + 2] = z + D[i3 + 2] * minA + S[i3 + 2] * b;
+    }
+    for (const [cell] of row) {
+      if (pl.bite(cell, amount) !== BITE.REMOVED) continue;
+      player.score++;
+      player.planetScore++;
+      this.debris.emit(pl.cellCenter(cell, this.tmp), pl.colorOf(cell), this.cfg.debris.perCell);
     }
     return true;
   },

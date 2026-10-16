@@ -125,7 +125,7 @@ Default (both `smooth`): the Kuiper Belt (a band of 335 rocks), Earth (sphere 1)
 | `booster.opacity`, `booster.fill`, `booster.rim`, `booster.spin`, `booster.segments` | 0.7, 0.07, 0.5, 0.004, 32 | how bright the field is, the cells' faint fill, the glowing rim; turning per frame; sphere detail | |
 | `cutter.count`, `cutter.color` | 2, crimson | cutters at the start; hull colour | |
 | `cutter.reach`, `cutter.damage`, `cutter.maxHalf` | 10, 0.8, 12 | cutting distance (20 voxels); each voxel of the row bitten at this × an eater's rate (as a piercer); the row at most this many voxels each side of the line | |
-| `cutter.sheetColor`, `edgeColor`, `apex`, `hazeSpeed`, `opacity` | red, light red, 0.12, 3, 0.85 | the sheet's haze and its edge rays; half its width at the ship; how fast the haze drifts; brightness | |
+| `cutter.sheetColor`, `edgeColor`, `apex`, `hazeSpeed`, `opacity` | red, light red, 0.12, 1, 0.85 | the sheet's haze and its edge rays; half its width at the ship; how fast the haze drifts; brightness | |
 | `minCount` | 0 | fewest units (the Units slider starts at 10; bombers that blew up can take the swarm lower) | |
 | `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
 | `tug.pull` | 0.9 | a towed piece's speed × the swarm speed | |

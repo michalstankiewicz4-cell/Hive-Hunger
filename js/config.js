@@ -215,7 +215,7 @@ export const CONFIG = Object.freeze({
     // smoke. The whole row is cut at once (each voxel `damage` × an eater's rate, like a piercer); when it
     // is gone the sheet goes deeper along the line, until through, then it flies on
     cutter: { count: START_EACH, reach: 10, damage: 0.8, maxHalf: 12, color: 0xc8102e, sheetColor: 0xff2020, edgeColor: 0xff5a4a,
-      apex: 0.12, hazeSpeed: 3, opacity: 0.85 },
+      apex: 0.12, hazeSpeed: 1, opacity: 0.85 },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
     // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames

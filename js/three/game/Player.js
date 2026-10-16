@@ -122,6 +122,8 @@ export class Player {
       pierce: (idx, i) => game.pierceCell(idx, this, i),
       pierceLine: (i, x, y, z, D, E) => game.pierceLine(this, i, x, y, z, D, E),
       cutLine: (i, x, y, z, D, S, L, R) => game.cutLine(this, i, x, y, z, D, S, L, R),
+      cutPiece: (i, x, y, z, D, S, L, R, id) => game.cutPiece(this, i, x, y, z, D, S, L, R, id),
+      pieceOf: (idx) => game.planet.fragments?.fragOf[idx] ?? -1,
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
       fireOrb: (i, idx, x, y, z) => game.fireOrb(this, i, idx, x, y, z),
       fireShot: (i, idx, x, y, z) => game.fireShot(this, i, idx, x, y, z),
