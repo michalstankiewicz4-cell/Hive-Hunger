@@ -47,6 +47,17 @@ export const Arrival = {
     }
   },
 
+  /**
+   * Ships just bought (hidden, in the tunnel): it opens and they fly out as soon as it is open
+   * (no random wait), then it closes. If ships are arriving anyway, they come out with them.
+   */
+  arriveBought() {
+    const a = this.arrival;
+    if (a.phase !== 'done') return; // (arriving already: the hidden ones come out with the others)
+    this.beacon.open();
+    this.arrival = { phase: 'opening', t: 0, delays: [] };
+  },
+
   /** The planet is eaten: every ship jumps to hyperspace, one after another. */
   jumpOut() {
     this.homeMode = 'jump';

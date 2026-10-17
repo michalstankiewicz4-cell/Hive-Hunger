@@ -259,6 +259,24 @@ async def main():
         same = all(types1.get(k) == v for k, v in types0.items())
         t.ok(ui == [12, 2, 4, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] and len(types1) == len(types0) + 1 and same,
              '+ buys one ship of that type (free); every other ship keeps its type', ui)
+        # a ship bought comes out of the tunnel like ships arriving: it opens, the ship flies out, it closes
+        tun = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm;
+          g.stop();
+          let f = 0; while (p.arrival.phase !== 'done' && f < 600) { g.update(); f++; }
+          const n0 = s.count, base0 = p.base.count; p.buyShips('drills', 1);
+          const i = s.kindStart('drills') + s.drills - 1;
+          const r = { hidden: s.hidden[i], phase: p.arrival.phase, others: Array.from(s.hidden.slice(0, s.count)).filter((h) => h).length };
+          let opened = 0, out = -1;
+          for (let k = 0; k < 400 && (out < 0 || p.arrival.phase !== 'done'); k++) {
+            g.update(); opened = Math.max(opened, p.beacon.openness);
+            if (out < 0 && !s.hidden[i]) { const w = p.spawnWorld(); out = Math.hypot(s.pos[i * 3] - w.x, s.pos[i * 3 + 1] - w.y, s.pos[i * 3 + 2] - w.z); }
+          }
+          for (let k = 0; k < 80; k++) g.update();
+          r.opened = opened; r.out = out; r.closed = p.beacon.openness < 0.05; r.count = s.count - n0;
+          p.setSetting('drills', 0); p.setSetting('count', base0); g.start();
+          return r; }""")
+        t.ok(tun['hidden'] == 1 and tun['others'] == 1 and tun['phase'] == 'opening' and tun['opened'] > 0.85 and 0 <= tun['out'] < 6 and tun['closed'] and tun['count'] == 1,
+             'a ship bought waits in the tunnel, the tunnel opens, the ship flies out of it and the tunnel closes', tun)
         await page.click('.shipbar-eaters .shipbar-buy', modifiers=['Shift'])
         ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
         t.ok(ui[0] == 22 and sum(ui) == 31, 'Shift + buys 10', ui)

@@ -217,7 +217,8 @@ export class Player {
   /**
    * Buys `n` ships of type `kind` (free for now), at most up to `swarm.maxCount` ships in all.
    * Each new one comes as the last of its type, so no other ship changes its type: a new unit at
-   * the end, then moved in front of every later type's first ship. Returns how many were bought.
+   * the end, then moved in front of every later type's first ship. They come out of the tunnel like
+   * ships arriving on a planet (it opens, they fly out, it closes). Returns how many were bought.
    */
   buyShips(kind, n = 1) {
     const s = this.swarm;
@@ -226,8 +227,9 @@ export class Player {
     for (; bought < n && s.count < CONFIG.swarm.maxCount; bought++) {
       this.base.count++;
       this.applyUpgrades(); // a new unit at the end (an eater)
-      if (kind === 'eaters') continue;
       let at = s.count - 1;
+      if (this.homeMode !== 'jump') { s.hidden[at] = 1; s.food[at] = -1; } // (in the tunnel: see arriveBought)
+      if (kind === 'eaters') continue;
       const later = SHIP_KINDS.slice(SHIP_KINDS.indexOf(kind) + 1).reverse();
       const eaters = s.kindStart('eaters');
       if (eaters < at) { s.swapUnits(at, eaters); at = eaters; }
@@ -240,6 +242,7 @@ export class Player {
       this[kind]++;
       this.applyUpgrades();
     }
+    if (bought && this.homeMode !== 'jump') this.arriveBought();
     return bought;
   }
 
