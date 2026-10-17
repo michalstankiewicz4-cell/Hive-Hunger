@@ -31,7 +31,9 @@ export class Player {
     this.index = info.index;
     this.name = info.name;
     this.color = info.color;
-    this.spawnSpace = new THREE.Vector3(info.spawn.x, info.spawn.y, info.spawn.z);
+    this.spawnBase = { x: info.spawn.x, y: info.spawn.y, z: info.spawn.z }; // (Earth-sized; see setSpawn)
+    const k = game.sizeScale || 1;
+    this.spawnSpace = new THREE.Vector3(info.spawn.x * k, info.spawn.y * k, info.spawn.z * k);
 
     this.biteRadius = CONFIG.swarm.biteRadius; // power: crater radius (slider + upgrades)
     this.drillRadius = this.biteRadius * CONFIG.swarm.drill.power; // drills: what goes around the bit

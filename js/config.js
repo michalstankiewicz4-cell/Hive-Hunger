@@ -123,6 +123,13 @@ export const CONFIG = Object.freeze({
       surface: { seaLevel: 0.47, iceLatitude: 2, clouds: { threshold: 2 },
         palette: { deepOcean: [150, 158, 170], shallowOcean: [178, 186, 198], beach: [150, 152, 158], lowland: [118, 118, 124],
           highland: [102, 102, 108], mountain: [84, 84, 90], snow: [196, 202, 212], ice: [210, 218, 228] } } },
+    // Neptune: the ice giant, light blue. Really 3.9 × Earth's radius — too many voxels for a browser, so 2 ×
+    // (3.7 million voxels, 8 × Earth's); the tunnels and the camera go out with it (Game3D.fitToPlanet).
+    // Smooth blues in soft patches (no rock showing, no polar caps, no clouds)
+    { body: 'neptune', radiusScale: 2, style: 'smooth', rock: [70, 120, 170], rockCore: [40, 80, 130],
+      surface: { seaLevel: 0.2, iceLatitude: 2, noiseScale: 1.4, clouds: { threshold: 2 },
+        palette: { deepOcean: [78, 150, 222], shallowOcean: [96, 166, 232], beach: [104, 172, 236], lowland: [110, 178, 238],
+          highland: [122, 186, 240], mountain: [134, 194, 242], snow: [150, 204, 246], ice: [150, 204, 246] } } },
     // Triton: like Pluto, a little bigger (really 1353 km to Pluto's 1188: × 1.14 → 0.85 × Earth's radius);
     // grey rock with a slightly cooler tint, polar caps, no clouds
     { body: 'triton', radiusScale: 0.85, style: 'smooth', rock: [136, 138, 142], rockCore: [96, 98, 102],

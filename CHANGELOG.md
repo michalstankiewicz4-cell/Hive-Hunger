@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.50.0] — 2026-10-17
+
+### Added
+- **Neptune** can be played: light blue, 2 × Earth's radius (really 3.9 × — too many voxels for a browser; 2 × is 3.7 million voxels, 8 × Earth's). Missions go Kuiper Belt → Pluto → Charon → Neptune → Triton → Earth.
+- On a planet bigger than Earth the tunnels and the camera (its distance and zoom limits) move out with its size.
+
 ## [0.49.0] — 2026-10-17
 
 ### Added

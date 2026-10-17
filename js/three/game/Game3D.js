@@ -316,6 +316,7 @@ export class Game3D {
     this.holes?.clear();
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level), this.cfg.fragments);
     if (this.role === 'host') this.planet.log = [];
+    this.fitToPlanet();
     const fr = this.planet.fragments;
     if (fr) {
       // pieces come off on the host (and in single player); guests get them from the host
@@ -324,6 +325,23 @@ export class Game3D {
     }
     for (const p of this.activePlayers()) p.onNewPlanet();
     this.banner = '';
+  }
+
+  /**
+   * A planet bigger than Earth (`planet.radius`): the tunnels and the camera go out with it — every
+   * spawn point and the camera's distance (and its zoom limits) × `sizeScale` (R / planet.radius,
+   * at least 1; smaller bodies keep Earth's distances).
+   */
+  fitToPlanet() {
+    const pl = this.planet;
+    const scale = pl.shape === 'sphere' ? Math.max(1, pl.R / this.cfg.planet.radius) : 1;
+    const was = this.sizeScale || 1;
+    this.sizeScale = scale;
+    if (scale !== was) {
+      this.orbit.distance *= scale / was;
+      this.updateCamera();
+    }
+    for (const p of this.activePlayers()) if (p.spawnBase) p.setSpawn(p.spawnBase);
   }
 
   /**

@@ -125,6 +125,14 @@ async def main():
         # Earth — the full planet
         full = await page.evaluate(BUILD, bodies.index('earth') + 1)
         t.ok(full['shape'] == 'sphere' and abs(full['R'] - R) < 0.01, 'Earth, the full-size planet', full)
+        # a planet bigger than Earth (Neptune): the tunnel and the camera go out with it; back on Earth, back in
+        fit = []
+        for body in ('earth', 'neptune', 'earth'):
+            await page.evaluate(BUILD, bodies.index(body) + 1)
+            fit.append(await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer, w = p.spawnWorld(), R = g.planet.R;
+              return { R, tunnel: Math.round(100 * Math.hypot(w.x, w.y, w.z) / R) / 100, camera: Math.round(100 * g.orbit.distance / R) / 100 }; }'''))
+        t.ok(fit[1]['R'] > fit[0]['R'] and fit[0]['tunnel'] == fit[1]['tunnel'] and fit[0]['camera'] == fit[1]['camera'] and fit[2] == fit[0],
+             'Neptune: bigger than Earth, its tunnel and the camera as far out for its size', fit)
         await page.evaluate(BUILD, 1)
         await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
           p.onNewPlanet(); p.setSetting('count', 100); p.setSetting('speed', 0.3); p.setSetting('power', 1.5); g.started = true; g.stop(); }''')

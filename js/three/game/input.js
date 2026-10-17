@@ -71,7 +71,8 @@ export const Input = {
     this.canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       const f = Math.exp(Math.sign(e.deltaY) * c.zoomSpeed * settings.get('zoomSpeed'));
-      this.orbit.distance = Math.min(c.maxDistance, Math.max(c.minDistance, this.orbit.distance * f));
+      const k = this.sizeScale || 1; // (a big planet: the limits go out with it)
+      this.orbit.distance = Math.min(c.maxDistance * k, Math.max(c.minDistance * k, this.orbit.distance * f));
       this.updateCamera();
     }, { passive: false });
   },

@@ -62,7 +62,10 @@ export const Arrival = {
 
   /** Move this player's spawn (and tunnel) to a new point in the space frame. */
   setSpawn(spawn) {
-    this.spawnSpace.set(spawn.x, spawn.y, spawn.z);
+    // (`spawn` is for an Earth-sized planet; a bigger one moves it out: Game3D.fitToPlanet)
+    this.spawnBase = { x: spawn.x, y: spawn.y, z: spawn.z };
+    const k = this.game.sizeScale || 1;
+    this.spawnSpace.set(spawn.x * k, spawn.y * k, spawn.z * k);
     this.beacon.group.position.copy(this.spawnSpace);
     this.beacon.group.updateWorldMatrix(true, false);
     // before the match starts the swarm waits at its tunnel, so it moves along with it
