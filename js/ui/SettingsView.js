@@ -13,6 +13,7 @@ const MOUSE = [
 const KEYS = [
   ['Tab', 'upgrade tree'],
   ['Space', 'pause / carry on (single player)'],
+  ['M', 'the solar system map during a mission (single player; M or Esc: back)'],
   ['Esc', 'menu (single player); closes the upgrade tree'],
 ];
 

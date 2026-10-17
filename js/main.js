@@ -46,15 +46,35 @@ if (!window.THREE) {
   // The room panel stays during the match
   let soloPlayed = false; // a single-player mission is under way (Esc can return to it)
   const playable = (id) => CONFIG.levels.some((l) => l.body === id);
+  // M during a mission: the map over the paused game (no saving — the game saves itself only when a
+  // mission is done); M, Esc, Back or "Back to it" carry on, Start on another body leaves this one
+  let mapFromGame = false;
+  const openGameMap = () => {
+    mapFromGame = true;
+    game.started = false; // paused (like Esc): nothing moves while the map is open
+    game.paused = true;
+    map.show({ mode: 'solo', playing: game.bodyId, next: null, current: null, done: progress.done });
+  };
+  const closeGameMap = () => {
+    mapFromGame = false;
+    map.hide();
+    map.state.playing = null;
+    game.paused = false;
+    game.started = true;
+  };
   const map = new SolarMap(document.getElementById('map'), {
     playable,
     onStart: (id) => {
       if (!game.startMission(id)) return;
+      mapFromGame = false;
+      map.state.playing = null;
+      game.paused = false;
       soloPlayed = true;
       map.hide();
       menu.hide();
     },
     onBack: () => {
+      if (mapFromGame) { closeGameMap(); return; }
       map.hide();
       menu.showStart();
     },
@@ -63,7 +83,7 @@ if (!window.THREE) {
   const firstUndone = () => CONFIG.levels.map((l) => l.body).find((id) => !progress.done.has(id)) || CONFIG.levels[0].body;
   const showSoloMap = (next = firstUndone()) => {
     menu.hide();
-    map.show({ mode: 'solo', next, current: null, done: progress.done });
+    map.show({ mode: 'solo', next, current: null, playing: null, done: progress.done });
   };
   // a mission's planet is eaten and the ships are gone: back to the map, the next one marked
   // the game is saved there (autosave: the tick, points and upgrades stay together)
@@ -218,8 +238,14 @@ if (!window.THREE) {
       e.preventDefault();
       game.paused = !game.paused;
       showPauseHint();
+    } else if (e.code === 'KeyM' && game.role === 'solo' && menuEl.hidden && !tree.isOpen && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // single player: M opens the map during a mission (and M closes it again)
+      if (e.target instanceof HTMLInputElement && e.target.type === 'text') return;
+      if (mapFromGame) closeGameMap();
+      else if (game.started && map.root.hidden) openGameMap();
     } else if (e.key === 'Escape') {
       if (tree.isOpen) tree.close();
+      else if (mapFromGame) closeGameMap();
       else if (game.role === 'solo' && !map.root.hidden) {
         map.hide(); // the map → the start screen
         menu.showStart();

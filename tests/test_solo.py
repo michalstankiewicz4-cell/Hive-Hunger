@@ -646,6 +646,30 @@ async def main():
         ps3 = await page.evaluate("() => { const g = window.__dbg; return { paused: g.paused, frame: g.frameNo, hint: document.getElementById('pause-hint').hidden }; }")
         t.ok(ps['paused'] and ps2['frame'] == ps['frame'] and ps2['pos'] == ps['pos'] and 'Paused' in ps['hint'], 'Space pauses single player ("Paused" at the bottom)', {**ps, 'later': ps2})
         t.ok(not ps3['paused'] and ps3['frame'] > ps['frame'] and ps3['hint'], 'Space again carries on (and no hint about Space on the game screen)', ps3)
+        # M: the solar system map during a mission — the game stands still, nothing is saved; M, Esc or "Back to it" carry on
+        save0 = await page.evaluate("() => localStorage.getItem('hive-hunger-save')")
+        await page.keyboard.press('m')
+        await page.wait_for_timeout(400)
+        mp = await page.evaluate("""() => { const g = window.__dbg; return { map: !document.getElementById('map').hidden, started: g.started, frame: g.frameNo,
+          card: document.querySelector('.map-card-name')?.textContent, status: document.querySelector('.map-card-status')?.textContent,
+          button: document.querySelector('.map-card .map-start')?.textContent, body: g.bodyId, save: localStorage.getItem('hive-hunger-save') }; }""")
+        await page.wait_for_timeout(400)
+        still = await page.evaluate('() => window.__dbg.frameNo')
+        await page.keyboard.press('m')
+        await page.wait_for_timeout(400)
+        back1 = await page.evaluate("() => [document.getElementById('map').hidden, window.__dbg.started, window.__dbg.frameNo]")
+        await page.keyboard.press('m')
+        await page.keyboard.press('Escape')
+        await page.wait_for_timeout(200)
+        back2 = await page.evaluate("() => [document.getElementById('map').hidden, window.__dbg.started]")
+        await page.keyboard.press('m')
+        await page.click('.map-card .map-start')
+        await page.wait_for_timeout(200)
+        back3 = await page.evaluate("() => [document.getElementById('map').hidden, window.__dbg.started, window.__dbg.bodyId]")
+        t.ok(mp['map'] and not mp['started'] and still == mp['frame'] and mp['status'] == 'Now playing' and mp['button'] == 'Back to it' and mp['save'] == save0,
+             'M opens the map during a mission: the game stands still, the planet "Now playing", nothing saved', mp)
+        t.ok(back1[0] and back1[1] and back1[2] > still and back2 == [True, True] and back3 == [True, True, mp['body']],
+             'M, Esc and "Back to it" go back to the same mission', [back1, back2, back3])
         frames = {}
         for kind in ("laser", "eater"):
             aim = await page.evaluate(AIM, kind == "laser")

@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.51.0] — 2026-10-17
+
+### Added
+- **M** opens the solar system map during a mission in single player: the game pauses, the planet you are on says "Now playing" with **Back to it**. M, Esc, Back or Back to it carry on; Start on another body leaves this mission for it. Nothing is saved — the game saves itself only when a mission is done. Settings → Keyboard lists M.
+
 ## [0.50.1] — 2026-10-17
 
 ### Changed

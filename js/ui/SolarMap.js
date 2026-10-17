@@ -136,7 +136,9 @@ export class SolarMap {
     this.state = { ...this.state, ...state, done: new Set(state.done || this.state.done) };
     this.root.hidden = false;
     this.back.hidden = this.state.mode !== 'solo';
-    this.hint.textContent = this.state.mode === 'solo'
+    this.hint.textContent = this.state.playing
+      ? 'Drag to turn · wheel to zoom · click a body · M / Esc: back to the game'
+      : this.state.mode === 'solo'
       ? 'Drag to turn · wheel to zoom · click a body'
       : 'Missions go in order, from the outside in';
     if (!this.renderer) {
@@ -144,7 +146,7 @@ export class SolarMap {
       this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     }
     this.resize();
-    this.select(this.state.next || this.state.current, false);
+    this.select(this.state.playing || this.state.next || this.state.current, false);
     if (!this.visible) {
       this.visible = true;
       let last = performance.now();
@@ -316,7 +318,8 @@ export class SolarMap {
     const close = button('×', () => this.select(null), 'map-close');
     close.setAttribute('aria-label', 'Close');
     const done = this.state.done.has(b.id), playable = this.opts.playable(b.id), next = b.id === this.state.next;
-    const status = done ? 'Completed ✓' : next ? 'Next mission' : b.id === this.state.current ? 'Now' : '';
+    const playing = b.id === this.state.playing; // (opened with M during this mission)
+    const status = playing ? 'Now playing' : done ? 'Completed ✓' : next ? 'Next mission' : b.id === this.state.current ? 'Now' : '';
     const head = el('div', 'map-card-head');
     head.append(pic, el('div', 'map-card-names'));
     head.lastChild.append(el('h3', 'map-card-name', b.name), el('p', 'map-card-kind', b.kind));
@@ -327,7 +330,9 @@ export class SolarMap {
       soon.disabled = true;
       this.card.append(soon);
     } else if (this.state.mode === 'solo') {
-      const start = button('Start', () => this.opts.onStart(b.id), 'menu-start map-start');
+      const start = playing
+        ? button('Back to it', () => this.opts.onBack(), 'menu-start map-start')
+        : button('Start', () => this.opts.onStart(b.id), 'menu-start map-start');
       this.card.append(start);
       if (focus) start.focus();
     } else this.card.append(el('p', 'menu-note', 'In multiplayer the missions go in order; this one starts with the room.'));
