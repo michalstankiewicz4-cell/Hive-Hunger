@@ -218,6 +218,7 @@ Lessons from writing them:
 | 0.46.0 | tag `v0.46.0` | the tree editor (`tools/tree-editor.html`) with Export / Import, EN / PL |
 | 0.46.1 | tag `v0.46.1` | autosave when a mission is done (note on the map); New game asks before deleting the save |
 | 0.47.0 | tag `v0.47.0` | Charon (0.375 × Earth, icy, darker grey rock); a level's own surface look |
+| 0.48.0 | tag `v0.48.0` | Pluto (0.75 × Earth, light grey rock, polar caps) |
 
 ## Known limitations
 
