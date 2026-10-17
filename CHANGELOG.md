@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.44.0] — 2026-10-17
+
+### Added
+- **Ship editor** (`tools/ship-editor.html`, also on the game's site under `/tools/ship-editor.html`): a separate page for planning changes to the ships. It reads the game's current values and shows, for the whole swarm and every ship type: the values that change how it plays and how it looks (with the game's value and what each does, changes marked, a reset per value and per ship); what it goes for, in order of priority; its tasks in order (drag or ↑ ↓, on / off, when each applies, a value or note), standard tasks (what the ships in the game do today) and your own, non-standard ones; notes. Kept in the browser; **Export** saves a JSON file with every change (the setting's path, the game's value and the new one; the tasks and priorities next to the game's), **Import** loads it back. Nothing in the game changes until the file is applied to the code.
+- `tests/test_editor.py`: the editor's values, tasks, priorities, notes, reload, export, import and reset.
+
 ## [0.43.2] — 2026-10-17
 
 ### Changed

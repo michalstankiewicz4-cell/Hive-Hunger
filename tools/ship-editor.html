@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hive Hunger — Ship editor</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #0b0c14; --panel: #141726; --panel2: #1b1f33; --line: #2a3050; --text: #e6e9f5; --muted: #8a92b2;
+    --accent: #ffd84a; --changed: #ffb13b; --bad: #ff5a6a; --ok: #6dff7a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 18px; margin: 0 12px 0 0; letter-spacing: .5px; }
+  header .ver { color: var(--muted); margin-right: auto; }
+  button, .btn { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; }
+  button:hover, .btn:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #1a1500; border-color: var(--accent); font-weight: 600; }
+  button.small { padding: 2px 8px; font-size: 12px; }
+  button:disabled { opacity: .35; cursor: default; }
+  .layout { flex: 1; display: flex; min-height: 0; }
+  nav { width: 220px; flex: none; overflow-y: auto; border-right: 1px solid var(--line); background: var(--panel); padding: 8px; }
+  nav h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 14px 6px 6px; }
+  nav button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; margin: 2px 0; border-color: transparent; background: transparent; }
+  nav button.active { background: var(--panel2); border-color: var(--line); }
+  nav .dot { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+  nav .count { margin-left: auto; color: var(--changed); font-size: 12px; }
+  main { flex: 1; overflow-y: auto; padding: 16px 20px 60px; min-width: 0; }
+  main h2 { margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+  .desc { color: var(--muted); margin: 0 0 16px; max-width: 900px; }
+  section.box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; max-width: 1100px; }
+  section.box > h3 { margin: 0 0 4px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  section.box > p.hint { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+  details > summary { cursor: pointer; color: var(--muted); margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: middle; text-align: left; }
+  th { color: var(--muted); font-weight: normal; font-size: 12px; border-top: none; }
+  td.key { font-family: ui-monospace, Consolas, monospace; font-size: 12px; white-space: nowrap; }
+  td.def { color: var(--muted); font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  td.note { color: var(--muted); font-size: 12px; }
+  tr.changed td.key { color: var(--changed); }
+  tr.changed { background: rgba(255,177,59,.06); }
+  input[type=number], input[type=text], select, textarea { background: #0e1120; color: var(--text); border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; font: inherit; }
+  input[type=number] { width: 110px; }
+  input.arr { width: 160px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  input.bad { border-color: var(--bad); }
+  input[type=color] { width: 44px; height: 26px; padding: 0 2px; background: #0e1120; border: 1px solid var(--line); border-radius: 5px; vertical-align: middle; }
+  textarea { width: 100%; min-height: 70px; resize: vertical; }
+  ol.steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+  ol.steps li { counter-increment: step; display: grid; grid-template-columns: 24px 20px 22px minmax(180px, 1.3fr) minmax(150px, 1fr) minmax(140px, 1.2fr) auto; gap: 6px; align-items: center; padding: 5px 4px; border-top: 1px solid var(--line); }
+  ol.steps li::before { content: counter(step) "."; color: var(--muted); text-align: right; }
+  ol.steps li.off { opacity: .45; }
+  ol.steps li.custom .label { color: #8fd0ff; }
+  ol.steps li.dragging { opacity: .3; }
+  ol.steps li.over { box-shadow: inset 0 2px 0 var(--accent); }
+  ol.steps .grip { cursor: grab; color: var(--muted); user-select: none; text-align: center; }
+  ol.steps .label { font-weight: 500; }
+  ol.steps .label small { display: block; color: var(--muted); font-weight: normal; }
+  ol.steps .tools { display: flex; gap: 3px; }
+  ol.steps input[type=text], ol.steps select { width: 100%; }
+  .addrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+  .addrow select { max-width: 320px; }
+  .addrow input[type=text] { flex: 1; min-width: 200px; }
+  .tag { font-size: 11px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); }
+  .tag.changed { color: var(--changed); border-color: var(--changed); }
+  .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--accent); padding: 8px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .legend { color: var(--muted); font-size: 12px; }
+  @media (max-width: 760px) {
+    .layout { flex-direction: column; }
+    nav { width: auto; max-height: 34vh; border-right: none; border-bottom: 1px solid var(--line); }
+    ol.steps li { grid-template-columns: 22px 18px 22px 1fr auto !important; }
+    ol.steps li .when, ol.steps li .value { grid-column: 2 / -1; }
+    main { padding: 12px 16px 60px; }
+    td.def, th:nth-child(3) { display: none; }
+    input[type=number] { width: 76px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hive Hunger — Ship editor</h1>
+  <span class="ver" id="ver"></span>
+  <span class="legend" id="summary"></span>
+  <button id="import">Import…</button>
+  <button id="reset-all">Reset all</button>
+  <button id="export" class="primary">Export</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+</header>
+<div class="layout">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/*
+ * A stand-alone page for planning changes to the ships. It reads the game's current settings
+ * (js/config.js) and lets you change any value, the order of a ship's tasks (with standard tasks
+ * from the game and your own, non-standard ones), what it goes for first, and notes. Nothing here
+ * changes the game: Export saves a JSON file with every change, to be applied to the code.
+ * Your work is kept in this browser (localStorage) until you reset it.
+ */
+import { CONFIG, SHIP_GROUPS, kindConfig } from '../js/config.js';
+import { VERSION } from '../js/version.js';
+import { SHIP_INFO } from '../js/ui/ShipGuide.js';
+
+const STORE = 'hive-hunger-ship-editor';
+const S = CONFIG.swarm;
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
+const clone = (v) => JSON.parse(JSON.stringify(v));
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// ---------------------------------------------------------------- the sections and their values
+// every section is a flat list of settings: path (a.b for nested ones) → default value
+function flatten(obj, skip = [], prefix = '') {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (!prefix && skip.includes(k)) continue;
+    const p = prefix ? `${prefix}.${k}` : k;
+    if (v && typeof v === 'object' && !Array.isArray(v)) Object.assign(out, flatten(v, [], p));
+    else out[p] = v;
+  }
+  return out;
+}
+const KIND_KEYS = ['laser', 'storm', 'tug', 'bomber', 'orb', 'support', 'cleaner', 'drill', 'piercer', 'sniper', 'splasher', 'booster', 'cutter', 'warp'];
+const EATER_KEYS = ['reachDistance', 'landSwapDistance', 'eatFrames', 'biteRadius', 'eaterColor', 'size'];
+
+const SECTIONS = {};   // id → { title, color, desc, values: {path: default}, group }
+SECTIONS.swarm = {
+  title: 'Whole swarm', color: S.color, group: 'Swarm',
+  desc: 'Settings shared by every ship: flying together, steering, getting unstuck, the start and the jump to hyperspace when a planet is eaten.',
+  values: { ...flatten(S, [...KIND_KEYS, ...EATER_KEYS]), ...flatten({ warp: S.warp }) },
+};
+for (const g of SHIP_GROUPS) {
+  for (const kind of g.kinds) {
+    const id = kind === 'eaters' ? 'eater' : kindConfig(kind);
+    const values = kind === 'eaters' ? Object.fromEntries(EATER_KEYS.map((k) => [k, S[k]])) : flatten(S[id]);
+    SECTIONS[id] = {
+      title: SHIP_INFO[kind][0], color: kind === 'eaters' ? S.eaterColor : S[id].color, group: g.name, kind,
+      desc: SHIP_INFO[kind][1], values,
+    };
+  }
+}
+
+// settings that change how a ship plays (the rest only change how it looks)
+const PLAY = new Set(['count', 'minCount', 'maxCount', 'speed', 'perception', 'separationDistance', 'turnRate', 'turnSmoothing',
+  'weights.separation', 'weights.alignment', 'weights.cohesion', 'weights.target', 'weights.feed', 'avoid.minDistance', 'avoid.dipMargin',
+  'avoid.altitude', 'avoid.pitDepth', 'stuck.frames', 'stuck.progress', 'stuck.recentContact', 'aimAngle', 'retarget.frames',
+  'retarget.pauseFrames', 'spawnSpread', 'spawnGap', 'warp.window', 'warp.frames', 'warp.accel', 'warp.maxSpeed', 'warp.outward',
+  'reachDistance', 'landSwapDistance', 'eatFrames', 'biteRadius',
+  'reach', 'speedFactor', 'centre', 'side', 'fork', 'range', 'pull', 'deliver', 'reward', 'radius', 'blast', 'every', 'jumps',
+  'jumpRange', 'life', 'maxPiece', 'power', 'emptyFrames', 'maxLength', 'spread', 'pierce', 'damage', 'afterFrames', 'farLength',
+  'chargeFrames', 'moveFrames', 'accel', 'soakFrames', 'area', 'boost', 'maxHalf', 'size']);
+// sizes that are look-only for some ships but play for others
+const LOOK_IN = { size: ['swarm', 'eater'] };
+const isPlay = (sec, key) => PLAY.has(key) && !(LOOK_IN[key] || []).includes(sec);
+
+// what a setting means (by key; a section-specific text wins: 'section:key')
+const NOTES = {
+  count: 'How many of these ships at the start',
+  minCount: 'Fewest ships a swarm can have', maxCount: 'Most ships a swarm can have',
+  speed: 'Units per frame (60 frames = 1 s)', perception: 'How far a ship sees its neighbours',
+  separationDistance: 'Below this distance ships push each other away', turnRate: 'How fast a ship can turn',
+  turnSmoothing: 'How fast the nose follows the flying direction (Turning slider)',
+  'weights.separation': 'Steering: keep your distance', 'weights.alignment': 'Steering: fly the same way as neighbours',
+  'weights.cohesion': 'Steering: stay with the group', 'weights.target': 'Steering: head for the swarm target',
+  'weights.feed': 'Steering: head for your own bite',
+  'avoid.minDistance': 'Fly round the planet on trips longer than this', 'avoid.dipMargin': 'Fly-round: margin', 'avoid.altitude': 'Fly-round: height above the surface', 'avoid.pitDepth': 'Fly-round: pit depth',
+  'stuck.frames': 'Frames without progress = stuck', 'stuck.progress': 'Least progress that counts', 'stuck.recentContact': 'How recent the wall contact must be',
+  aimAngle: 'A ship eats / fires only when facing its bite within this many degrees',
+  'retarget.frames': 'No eating this long (10 s) → take another bite', 'retarget.pauseFrames': '…after stopping this long',
+  spawnSpread: 'How spread out the ships come out', spawnGap: 'Spawn distance from the surface, in planet radii',
+  'warp.window': 'Hyperspace: random wait up to this many frames', 'warp.frames': 'Hyperspace: frames until gone', 'warp.accel': 'Hyperspace: speed-up per frame', 'warp.maxSpeed': 'Hyperspace: top speed', 'warp.outward': 'Hyperspace: how much away from the planet',
+  color: 'Ship colour', eaterColor: 'Eater colour', 'swarm:color': 'Swarm colour (click marker)', 'swarm:size': 'Ship size (w, h, length)', 'eater:size': 'Ship size (w, h, length)',
+  reachDistance: 'Closer than this to its bite → lands on it', landSwapDistance: 'May land on a free voxel this close instead',
+  eatFrames: 'Frames sitting on a bite before it is eaten', biteRadius: 'Power: crater radius',
+  reach: 'Fires from this far (units; 1 voxel = 0.5)', speedFactor: '× the swarm speed',
+  centre: 'Share of a laser\'s damage on the bite', side: 'Share on each of the two nearest voxels', fork: 'Where the bolt forks (share of the way)',
+  range: 'Works from this far (units; 1 voxel = 0.5)', pull: 'Towing speed × own speed', deliver: 'Piece gone this close to the tunnel', reward: '× the piece\'s points',
+  radius: 'Radius (units; 1 voxel = 0.5)', 'bomber:radius': 'Blows up everything within this radius', 'booster:radius': 'Force field radius',
+  'orb:speed': 'Orb speed', blast: 'Orb destroys everything within this', every: 'Frames between bolts', jumps: 'Most jumps between ships', jumpRange: 'Most distance of one jump', life: 'Frames the bolt lasts',
+  maxPiece: 'Eats drifting pieces of at most this many voxels',
+  'drill:speed': 'Drilling speed', power: '× Power: radius drilled around the bit', emptyFrames: 'Stops after this long in empty space', maxLength: 'Longest tunnel', spread: 'Random aim off the centre',
+  pierce: 'Voxels in a row at once', damage: '× an eater\'s eating rate per voxel', afterFrames: 'Frames it goes on after getting through', farLength: 'Beam length into space after getting through',
+  chargeFrames: 'Charging time before a shot (frames)', moveFrames: 'Flying time between shots', 'sniper:speed': 'Shot start speed', accel: 'Shot speed-up per voxel',
+  'splasher:speed': 'Bubble speed', 'splasher:size': 'Bubble size', soakFrames: 'Frames the block soaks before it is gone', area: 'Soaked block (across, across, deep) in voxels',
+  boost: '× Power for own ships inside', maxHalf: 'Widest sheet: voxels each side of the line', flashEvery: 'Frames between flashes',
+  debris: 'Debris pieces',
+};
+const note = (sec, key) => NOTES[`${sec}:${key}`] || NOTES[key] || '';
+
+// ---------------------------------------------------------------- tasks
+// standard tasks: what the ships in the game do today (any of them can be given to any ship)
+const ACTIONS = {
+  swarm: ['Fly with the swarm', 'Moves with the others towards the swarm target'],
+  pickBite: ['Pick a bite', 'Takes the nearest free voxel as its own bite'],
+  flyBite: ['Fly to the bite', 'Flies round the planet on long trips'],
+  aim: ['Turn to face the bite', 'Within aimAngle degrees'],
+  land: ['Land and eat', 'Sits on the bite for eatFrames, a crater of Power'],
+  laser: ['Fire a laser beam', 'Eats the bite from reach away'],
+  bolt: ['Fire a forked bolt', 'The bite and its two nearest voxels'],
+  orb: ['Fire a plasma orb', 'One at a time, bursts at the target'],
+  bubble: ['Fire a liquid bubble', 'The block where it lands soaks and is gone'],
+  blowUp: ['Blow up on contact', 'Everything within radius — the ship is gone'],
+  drill: ['Drill towards the centre', 'Straight in until through or maxLength'],
+  pierce: ['Lock a line and pierce', 'Several voxels in a row at once, until through'],
+  cut: ['Lock a sheet and cut', 'The whole row at once, deeper until through'],
+  after: ['Go on after getting through', 'afterFrames more, the beam into space'],
+  stopCharge: ['Stop and charge', 'chargeFrames facing the bite'],
+  shoot: ['Fire a shot', 'Speeds up, destroys the voxel it hits'],
+  flyOn: ['Fly on', 'For moveFrames, then again'],
+  findPiece: ['Find a drifting piece', 'The nearest one'],
+  catchPiece: ['Catch it with a tractor beam', 'Within range'],
+  tow: ['Tow it home', 'To the tunnel, reward × its points'],
+  eatPiece: ['Eat a small drifting piece', 'At most maxPiece voxels'],
+  chain: ['Fire chain lightning', 'Every `every` frames, jumps between own ships'],
+  field: ['Carry a force field', 'Own ships inside get boost × Power'],
+  noEat: ['Never eat', ''],
+  retarget: ['Take another bite when stuck', 'No eating for retarget.frames'],
+  warp: ['Jump to hyperspace', 'When the planet is eaten'],
+};
+const WHEN = ['always', 'has a bite', 'bite in range', 'facing the bite', 'a piece is drifting', 'a small piece is drifting', 'near own ships', 'got through', 'stuck', 'planet eaten', 'nothing else to do'];
+
+const T = (action, when = 'always', value = '') => ({ action, when, value, on: true });
+const BASE_END = [T('retarget', 'stuck'), T('warp', 'planet eaten')];
+const DEFAULT_TASKS = {
+  eater: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('land', 'facing the bite'), ...BASE_END],
+  laser: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('laser', 'facing the bite'), ...BASE_END],
+  storm: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('bolt', 'facing the bite'), ...BASE_END],
+  orb: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('orb', 'facing the bite'), ...BASE_END],
+  splasher: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('bubble', 'facing the bite'), ...BASE_END],
+  bomber: [T('pickBite'), T('flyBite', 'has a bite'), T('blowUp', 'bite in range'), T('warp', 'planet eaten')],
+  drill: [T('pickBite'), T('flyBite', 'has a bite'), T('drill', 'bite in range'), T('flyOn', 'got through'), ...BASE_END],
+  piercer: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('pierce', 'facing the bite'), T('after', 'got through'), ...BASE_END],
+  cutter: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('cut', 'facing the bite'), T('after', 'got through'), ...BASE_END],
+  sniper: [T('pickBite'), T('stopCharge', 'has a bite'), T('shoot', 'facing the bite'), T('flyOn'), ...BASE_END],
+  tug: [T('findPiece', 'a piece is drifting'), T('catchPiece', 'bite in range'), T('tow'), T('swarm', 'nothing else to do'), T('warp', 'planet eaten')],
+  support: [T('noEat'), T('swarm'), T('chain', 'near own ships'), T('warp', 'planet eaten')],
+  cleaner: [T('eatPiece', 'a small piece is drifting'), T('swarm', 'nothing else to do'), T('warp', 'planet eaten')],
+  booster: [T('noEat'), T('swarm'), T('field'), T('warp', 'planet eaten')],
+};
+
+// what a ship goes for, first to last
+const TARGETS = {
+  nearest: 'Nearest voxel', swarmTarget: 'Voxels near the swarm target (click)', pieces: 'Drifting pieces (nearest)',
+  smallPieces: 'Small drifting pieces (≤ maxPiece)', ownShips: 'Own ships (stays near them)', centre: 'The planet\'s centre (direction)',
+};
+const P = (...ids) => ids.map((id) => ({ id, on: true }));
+const DEFAULT_TARGETS = {
+  eater: P('nearest'), laser: P('nearest'), storm: P('nearest'), orb: P('nearest'), splasher: P('nearest'), bomber: P('nearest'),
+  drill: P('nearest', 'centre'), piercer: P('nearest'), cutter: P('nearest'), sniper: P('nearest'),
+  tug: P('pieces', 'ownShips'), support: P('ownShips'), cleaner: P('smallPieces', 'ownShips'), booster: P('ownShips'),
+};
+
+// ---------------------------------------------------------------- state (kept in this browser)
+// values: {section: {path: value}} — only what differs from the game;
+// ships: {section: {tasks, targets, notes}} — tasks/targets only once changed
+let state = { values: {}, ships: {} };
+try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && s.values) state = { values: s.values || {}, ships: s.ships || {} }; } catch { /* nothing kept */ }
+let saveTimer = 0;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch { /* storage off */ } }, 200);
+  updateSummary();
+}
+const valueOf = (sec, key) => (state.values[sec] && key in state.values[sec]) ? state.values[sec][key] : SECTIONS[sec].values[key];
+function setValue(sec, key, v) {
+  const def = SECTIONS[sec].values[key];
+  state.values[sec] = state.values[sec] || {};
+  if (same(v, def)) delete state.values[sec][key]; else state.values[sec][key] = v;
+  if (!Object.keys(state.values[sec]).length) delete state.values[sec];
+  save();
+}
+const ship = (sec) => (state.ships[sec] = state.ships[sec] || {});
+const tasksOf = (sec) => state.ships[sec]?.tasks || clone(DEFAULT_TASKS[sec] || []);
+const targetsOf = (sec) => state.ships[sec]?.targets || clone(DEFAULT_TARGETS[sec] || []);
+function setShip(sec, field, v, def) {
+  const s = ship(sec);
+  if (def !== undefined && same(v, def)) delete s[field]; else s[field] = v;
+  if (!Object.keys(s).length) delete state.ships[sec];
+  save();
+}
+function changes(sec) {
+  let n = Object.keys(state.values[sec] || {}).length;
+  const s = state.ships[sec] || {};
+  if (s.tasks) n++;
+  if (s.targets) n++;
+  if (s.notes) n++;
+  return n;
+}
+
+// ---------------------------------------------------------------- the page
+let current = 'swarm';
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('show'); setTimeout(() => e.classList.remove('show'), 1800); }
+function updateSummary() {
+  const total = Object.keys(SECTIONS).reduce((n, s) => n + changes(s), 0);
+  $('summary').textContent = total ? `${total} change${total > 1 ? 's' : ''}` : 'no changes';
+  for (const b of document.querySelectorAll('nav button[data-sec]')) {
+    const n = changes(b.dataset.sec);
+    b.querySelector('.count').textContent = n || '';
+  }
+}
+
+function renderNav() {
+  const nav = $('nav');
+  nav.textContent = '';
+  let group = '';
+  for (const [id, s] of Object.entries(SECTIONS)) {
+    if (s.group !== group) { group = s.group; nav.append(el('h3', '', group)); }
+    const b = el('button');
+    b.dataset.sec = id;
+    const dot = el('span', 'dot'); dot.style.background = hex(s.color);
+    b.append(dot, el('span', '', s.title), el('span', 'count'));
+    b.classList.toggle('active', id === current);
+    b.onclick = () => { current = id; renderNav(); renderMain(); };
+    nav.append(b);
+  }
+  updateSummary();
+}
+
+function inputFor(sec, key) {
+  const def = SECTIONS[sec].values[key];
+  const v = valueOf(sec, key);
+  const isColor = typeof def === 'number' && /(color|dark|core)$/i.test(key);
+  if (isColor && typeof def === 'number') {
+    const i = el('input'); i.type = 'color'; i.value = hex(v);
+    i.oninput = () => { setValue(sec, key, parseInt(i.value.slice(1), 16)); refreshRow(i, sec, key); };
+    return i;
+  }
+  if (typeof def === 'number') {
+    const i = el('input'); i.type = 'number'; i.step = 'any'; i.value = v;
+    i.oninput = () => {
+      const n = Number(i.value);
+      const ok = i.value.trim() !== '' && Number.isFinite(n);
+      i.classList.toggle('bad', !ok);
+      if (ok) { setValue(sec, key, n); refreshRow(i, sec, key); }
+    };
+    return i;
+  }
+  if (typeof def === 'boolean') {
+    const i = el('input'); i.type = 'checkbox'; i.checked = v;
+    i.onchange = () => { setValue(sec, key, i.checked); refreshRow(i, sec, key); };
+    return i;
+  }
+  // arrays (numbers or texts) and texts
+  const i = el('input', Array.isArray(def) ? 'arr' : ''); i.type = 'text';
+  i.value = Array.isArray(v) ? (typeof def[0] === 'number' ? v.join(', ') : JSON.stringify(v)) : String(v);
+  i.oninput = () => {
+    let val = i.value, ok = true;
+    if (Array.isArray(def)) {
+      try {
+        val = typeof def[0] === 'number' ? i.value.split(',').map((x) => { const n = Number(x.trim()); if (x.trim() === '' || !Number.isFinite(n)) throw 0; return n; }) : JSON.parse(i.value);
+        if (!Array.isArray(val)) throw 0;
+      } catch { ok = false; }
+    }
+    i.classList.toggle('bad', !ok);
+    if (ok) { setValue(sec, key, val); refreshRow(i, sec, key); }
+  };
+  return i;
+}
+const showDef = (d) => Array.isArray(d) ? (typeof d[0] === 'number' ? d.join(', ') : d.length + ' items') : typeof d === 'number' && d > 0xffff && Number.isInteger(d) ? hex(d) : String(d);
+function refreshRow(input, sec, key) {
+  const tr = input.closest('tr');
+  tr.classList.toggle('changed', !!(state.values[sec] && key in state.values[sec]));
+  tr.querySelector('.reset').disabled = !tr.classList.contains('changed');
+  headTags();
+}
+
+function paramTable(sec, keys) {
+  const t = el('table');
+  const h = el('tr');
+  for (const c of ['Setting', 'Value', 'Game', 'What it does', '']) h.append(el('th', '', c));
+  t.append(h);
+  for (const key of keys) {
+    const tr = el('tr');
+    const inp = inputFor(sec, key);
+    const td = el('td'); td.append(inp);
+    const reset = el('button', 'small reset', '↺'); reset.title = 'Back to the game\'s value';
+    reset.onclick = () => { setValue(sec, key, SECTIONS[sec].values[key]); renderMain(); };
+    const tdr = el('td'); tdr.append(reset);
+    tr.append(el('td', 'key', key), td, el('td', 'def', showDef(SECTIONS[sec].values[key])), el('td', 'note', note(sec, key)), tdr);
+    const changed = !!(state.values[sec] && key in state.values[sec]);
+    tr.classList.toggle('changed', changed);
+    reset.disabled = !changed;
+    t.append(tr);
+  }
+  return t;
+}
+
+function box(title, hint) {
+  const b = el('section', 'box');
+  const h = el('h3', '', title);
+  b.append(h);
+  if (hint) b.append(el('p', 'hint', hint));
+  return b;
+}
+
+// a reorderable list: items, a renderer for one row, and what to do on change
+function sortable(ol, items, renderRow, onChange) {
+  let from = -1;
+  items.forEach((it, idx) => {
+    const li = renderRow(it, idx);
+    li.draggable = true;
+    li.addEventListener('dragstart', (e) => { from = idx; li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    li.addEventListener('dragend', () => li.classList.remove('dragging'));
+    li.addEventListener('dragover', (e) => { e.preventDefault(); li.classList.add('over'); });
+    li.addEventListener('dragleave', () => li.classList.remove('over'));
+    li.addEventListener('drop', (e) => {
+      e.preventDefault(); li.classList.remove('over');
+      if (from < 0 || from === idx) return;
+      const [m] = items.splice(from, 1); items.splice(idx, 0, m); from = -1; onChange();
+    });
+    ol.append(li);
+  });
+}
+function rowTools(items, idx, onChange, canDelete = true) {
+  const tools = el('span', 'tools');
+  const up = el('button', 'small', '↑'); up.title = 'Earlier'; up.disabled = idx === 0;
+  up.onclick = () => { [items[idx - 1], items[idx]] = [items[idx], items[idx - 1]]; onChange(); };
+  const down = el('button', 'small', '↓'); down.title = 'Later'; down.disabled = idx === items.length - 1;
+  down.onclick = () => { [items[idx + 1], items[idx]] = [items[idx], items[idx + 1]]; onChange(); };
+  tools.append(up, down);
+  if (canDelete) {
+    const del = el('button', 'small', '✕'); del.title = 'Remove';
+    del.onclick = () => { items.splice(idx, 1); onChange(); };
+    tools.append(del);
+  }
+  return tools;
+}
+
+function tasksBox(sec) {
+  const b = box('Tasks, in order', 'What the ship does, first to last: drag or use ↑ ↓ to change the order, untick to switch a task off, "When" sets when it applies, "Value / note" for numbers or details. Standard tasks are the ones ships in the game do today; your own ones are non-standard (blue).');
+  const tag = el('span', 'tag'); b.querySelector('h3').append(tag);
+  const tasks = tasksOf(sec);
+  const def = DEFAULT_TASKS[sec] || [];
+  const commit = () => { setShip(sec, 'tasks', tasks, def); renderMain(); };
+  tag.textContent = state.ships[sec]?.tasks ? 'changed' : 'as in the game';
+  tag.classList.toggle('changed', !!state.ships[sec]?.tasks);
+  const ol = el('ol', 'steps');
+  sortable(ol, tasks, (t, idx) => {
+    const li = el('li', (t.on ? '' : 'off ') + (t.custom ? 'custom' : ''));
+    const grip = el('span', 'grip', '⋮⋮'); grip.title = 'Drag';
+    const on = el('input'); on.type = 'checkbox'; on.checked = t.on; on.title = 'On / off';
+    on.onchange = () => { t.on = on.checked; commit(); };
+    const label = el('span', 'label');
+    if (t.custom) {
+      const name = el('input'); name.type = 'text'; name.value = t.custom; name.placeholder = 'Your task';
+      name.onchange = () => { t.custom = name.value.trim() || 'Custom task'; commit(); };
+      label.append(name);
+    } else {
+      const a = ACTIONS[t.action] || [t.action, ''];
+      label.append(a[0]); if (a[1]) label.append(el('small', '', a[1]));
+    }
+    const when = el('select', 'when');
+    const whens = WHEN.includes(t.when) ? WHEN : [...WHEN, t.when];
+    for (const w of [...whens, '(other…)']) { const o = el('option', '', w); o.value = w; when.append(o); }
+    when.value = t.when;
+    when.title = 'When';
+    when.onchange = () => {
+      if (when.value === '(other…)') {
+        const w = prompt('When should this task apply?', '');
+        if (w && w.trim()) t.when = w.trim();
+      } else t.when = when.value;
+      commit();
+    };
+    const value = el('input', 'value'); value.type = 'text'; value.placeholder = 'Value / note'; value.value = t.value || '';
+    value.onchange = () => { t.value = value.value; commit(); };
+    li.append(grip, on, label, when, value, rowTools(tasks, idx, commit));
+    return li;
+  }, commit);
+  b.append(ol);
+
+  const add = el('div', 'addrow');
+  const pick = el('select');
+  pick.append(el('option', '', 'Add a standard task…'));
+  for (const [id, a] of Object.entries(ACTIONS)) { const o = el('option', '', a[0]); o.value = id; pick.append(o); }
+  pick.onchange = () => { if (ACTIONS[pick.value]) { tasks.push(T(pick.value)); commit(); } };
+  const own = el('input'); own.type = 'text'; own.placeholder = 'Your own (non-standard) task — e.g. "Circle the bite twice before firing"';
+  const ownAdd = el('button', '', 'Add');
+  const addOwn = () => { const v = own.value.trim(); if (!v) return; tasks.push({ action: 'custom', custom: v, when: 'always', value: '', on: true }); commit(); };
+  ownAdd.onclick = addOwn;
+  own.onkeydown = (e) => { if (e.key === 'Enter') addOwn(); };
+  const reset = el('button', '', 'Reset tasks'); reset.disabled = !state.ships[sec]?.tasks;
+  reset.onclick = () => { setShip(sec, 'tasks', def, def); renderMain(); };
+  add.append(pick, own, ownAdd, reset);
+  b.append(add);
+  return b;
+}
+
+function targetsBox(sec) {
+  const b = box('Goes for (priority)', 'What the ship looks for, the top one first; the next one only when there is none of it. Untick to leave it out, add your own.');
+  const tag = el('span', 'tag'); b.querySelector('h3').append(tag);
+  const list = targetsOf(sec);
+  const def = DEFAULT_TARGETS[sec] || [];
+  tag.textContent = state.ships[sec]?.targets ? 'changed' : 'as in the game';
+  tag.classList.toggle('changed', !!state.ships[sec]?.targets);
+  const commit = () => { setShip(sec, 'targets', list, def); renderMain(); };
+  const ol = el('ol', 'steps');
+  sortable(ol, list, (t, idx) => {
+    const li = el('li', (t.on ? '' : 'off ') + (t.custom ? 'custom' : ''));
+    li.style.gridTemplateColumns = '24px 20px 22px 1fr auto';
+    const grip = el('span', 'grip', '⋮⋮');
+    const on = el('input'); on.type = 'checkbox'; on.checked = t.on;
+    on.onchange = () => { t.on = on.checked; commit(); };
+    const label = el('span', 'label', t.custom || TARGETS[t.id] || t.id);
+    li.append(grip, on, label, rowTools(list, idx, commit));
+    return li;
+  }, commit);
+  b.append(ol);
+  const add = el('div', 'addrow');
+  const pick = el('select');
+  pick.append(el('option', '', 'Add…'));
+  for (const [id, name] of Object.entries(TARGETS)) if (!list.some((t) => t.id === id)) { const o = el('option', '', name); o.value = id; pick.append(o); }
+  pick.onchange = () => { if (TARGETS[pick.value]) { list.push({ id: pick.value, on: true }); commit(); } };
+  const own = el('input'); own.type = 'text'; own.placeholder = 'Your own target — e.g. "The biggest drifting piece"';
+  const ownAdd = el('button', '', 'Add');
+  const addOwn = () => { const v = own.value.trim(); if (!v) return; list.push({ id: 'custom', custom: v, on: true }); commit(); };
+  ownAdd.onclick = addOwn; own.onkeydown = (e) => { if (e.key === 'Enter') addOwn(); };
+  const reset = el('button', '', 'Reset'); reset.disabled = !state.ships[sec]?.targets;
+  reset.onclick = () => { setShip(sec, 'targets', def, def); renderMain(); };
+  add.append(pick, own, ownAdd, reset);
+  b.append(add);
+  return b;
+}
+
+function notesBox(sec) {
+  const b = box('Notes', 'Anything else: what should change, new behaviour, ideas to check.');
+  const ta = el('textarea'); ta.value = state.ships[sec]?.notes || '';
+  ta.placeholder = 'e.g. "Power should be twice as strong, and it should not fire at pieces."';
+  ta.oninput = () => {
+    const s = ship(sec);
+    if (ta.value.trim()) s.notes = ta.value; else delete s.notes;
+    if (!Object.keys(s).length) delete state.ships[sec];
+    save(); headTags();
+  };
+  b.append(ta);
+  return b;
+}
+
+let headTag = null;
+function headTags() {
+  if (!headTag) return;
+  const n = changes(current);
+  headTag.textContent = n ? `${n} change${n > 1 ? 's' : ''}` : 'as in the game';
+  headTag.classList.toggle('changed', !!n);
+  updateSummary();
+}
+
+function renderMain() {
+  const sec = current, s = SECTIONS[sec];
+  const main = $('main');
+  const top = main.scrollTop;
+  main.textContent = '';
+  const h = el('h2');
+  const dot = el('span', 'dot'); dot.style.cssText = `width:16px;height:16px;border-radius:4px;background:${hex(s.color)}`;
+  headTag = el('span', 'tag');
+  const resetShip = el('button', 'small', 'Reset this ship');
+  resetShip.onclick = () => { if (!confirm(`Reset every change to ${s.title}?`)) return; delete state.values[sec]; delete state.ships[sec]; save(); renderMain(); };
+  h.append(dot, s.title, headTag, resetShip);
+  main.append(h, el('p', 'desc', s.desc));
+
+  const keys = Object.keys(s.values);
+  const play = keys.filter((k) => isPlay(sec, k)), look = keys.filter((k) => !isPlay(sec, k));
+  const pb = box('Play', 'Values that change how it plays. Distances are in game units: 1 voxel = 0.5; time in frames: 60 = 1 s.');
+  pb.append(paramTable(sec, play));
+  main.append(pb);
+  if (sec !== 'swarm') { main.append(targetsBox(sec), tasksBox(sec)); }
+  if (look.length) {
+    const lb = box('Look', 'Colours, sizes and effects — only how it looks.');
+    const d = el('details'); d.open = look.some((k) => state.values[sec] && k in state.values[sec]);
+    d.append(el('summary', '', `${look.length} settings`), paramTable(sec, look));
+    lb.append(d);
+    main.append(lb);
+  }
+  main.append(notesBox(sec));
+  main.scrollTop = top;
+  headTags();
+}
+
+// ---------------------------------------------------------------- export / import
+function exportData() {
+  const out = { game: 'Hive Hunger', file: 'ship-editor', version: VERSION, exported: new Date().toISOString(), changes: [], ships: {} };
+  for (const [sec, s] of Object.entries(SECTIONS)) {
+    const vals = state.values[sec] || {};
+    const sh = state.ships[sec] || {};
+    const entry = {};
+    const params = Object.entries(vals).map(([key, to]) => ({ key, from: s.values[key], to }));
+    if (params.length) {
+      entry.values = params;
+      for (const p of params) out.changes.push({ ship: s.title, section: sec, path: sec === 'swarm' || sec === 'eater' ? `swarm.${p.key}` : `swarm.${sec}.${p.key}`, from: p.from, to: p.to });
+    }
+    const describeTask = (t) => ({ task: t.custom || (ACTIONS[t.action] || [t.action])[0], standard: !t.custom, action: t.action, when: t.when, value: t.value || undefined, on: t.on });
+    if (sh.tasks) { entry.tasks = sh.tasks.map(describeTask); entry.tasksInGame = (DEFAULT_TASKS[sec] || []).map(describeTask); }
+    if (sh.targets) { entry.targets = sh.targets.map((t) => ({ target: t.custom || TARGETS[t.id], standard: !t.custom, on: t.on })); entry.targetsInGame = (DEFAULT_TARGETS[sec] || []).map((t) => TARGETS[t.id]); }
+    if (sh.notes) entry.notes = sh.notes;
+    if (Object.keys(entry).length) out.ships[sec] = { name: s.title, ...entry };
+  }
+  out.raw = state;   // to import it again
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = el('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `hive-hunger-ships-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(out.changes.length || Object.keys(out.ships).length ? 'Exported' : 'Exported (no changes)');
+}
+$('export').onclick = exportData;
+$('import').onclick = () => $('file').click();
+$('file').onchange = async () => {
+  const f = $('file').files[0]; $('file').value = '';
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    const raw = d.raw || d;
+    if (!raw || typeof raw.values !== 'object') throw new Error('not an editor file');
+    state = { values: raw.values || {}, ships: raw.ships || {} };
+    // drop settings the game no longer has
+    for (const sec of Object.keys(state.values)) {
+      if (!SECTIONS[sec]) { delete state.values[sec]; continue; }
+      for (const k of Object.keys(state.values[sec])) if (!(k in SECTIONS[sec].values)) delete state.values[sec][k];
+    }
+    for (const sec of Object.keys(state.ships)) if (!SECTIONS[sec]) delete state.ships[sec];
+    save(); renderNav(); renderMain(); toast('Imported');
+  } catch (e) { toast('Could not read the file: ' + e.message); }
+};
+$('reset-all').onclick = () => {
+  if (!confirm('Reset every change for every ship?')) return;
+  state = { values: {}, ships: {} }; save(); renderNav(); renderMain(); toast('Everything as in the game');
+};
+
+$('ver').textContent = `game ${VERSION}`;
+window.__editor = { state: () => state, sections: SECTIONS, exportData, select: (s) => { current = s; renderNav(); renderMain(); } };
+renderNav();
+renderMain();
+</script>
+</body>
+</html>

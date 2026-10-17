@@ -19,6 +19,9 @@ js/
   ui/            HTML panels and menus
   utils/         noise, terrain and sky colours
 css/             one stylesheet per part of the page
+tools/
+  ship-editor.html  the ship editor: a stand-alone page (no game running) that imports js/config.js,
+                    js/version.js and SHIP_INFO from js/ui/ShipGuide.js; Export / Import JSON
 ```
 
 **Classes split over several files.** `Game3D`, `Swarm3D`, `Player` and `VoxelPlanet` are big, so their methods live in several files: each part file exports an object of methods (`export const Input = { bindInput() {…}, … }`), and the class file adds them to its prototype at the end (`Object.defineProperties(Game3D.prototype, Object.getOwnPropertyDescriptors(part))`). The methods behave exactly as if they were written in the class (`this` is the game / swarm); to find one, search for its name. A new part: write the file, import it in the class file and add it to the list there.
@@ -28,6 +31,7 @@ css/             one stylesheet per part of the page
 | `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the settings panel, the start screen, room panel, summary and upgrade tree; Tab / Esc keys; starts the loop |
 | `js/config.js` | All parameters: planet, flock, feeding, ship types, spawn tunnel, hyperspace jump, marker, network, slider ranges |
 | `js/version.js` | Game version (keep in sync with `CHANGELOG.md`) |
+| `tools/ship-editor.html` | The ship editor: values (Play / Look) of the whole swarm and every ship type read from `CONFIG`, each ship's targets in order of priority and its tasks in order (standard tasks = what the game does today, written in the editor as `DEFAULT_TASKS` / `DEFAULT_TARGETS` — keep them in step with the ships), notes; kept in localStorage; Export saves a JSON file with every change (path in `CONFIG`, old and new value), Import loads it back. It changes nothing in the game |
 | `js/settings.js` | The player's own settings (camera turning, zoom speed, FPS counter, resolution, smooth edges, effects), remembered in the browser; `onChange` listeners |
 | **`js/three/game/`** | |
 | `Game3D.js` | Scene, camera, renderer, roles (solo / host / guest), players and their spawns, planet lifecycle, the frame loop (`update`, `updateSim`, `start`) |

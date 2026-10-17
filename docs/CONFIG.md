@@ -2,6 +2,8 @@
 
 Almost every tunable value is in `js/config.js` (upgrade costs and the lightning's base values are in `js/core/SkillTree.js` — see the last sections). Units: 1 = one unit of the 3D world (a voxel is `planet.voxelSize` = 0.5); speeds and times are **per frame** (about 60 frames per second). Values marked *slider* are the defaults of the settings panel — players change them live.
 
+The ship values can also be planned in the **ship editor** (`tools/ship-editor.html`): it shows `swarm` and every ship type with the values here, and exports the changes as JSON (each with its path, e.g. `swarm.cutter.reach`, and the old and new value) to be applied to this file.
+
 ## Camera
 
 | Value | Default | What it does | More / less |

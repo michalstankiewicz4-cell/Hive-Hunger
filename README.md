@@ -83,6 +83,10 @@ Three.js r128 and PeerJS 1.5.4 are in the repository (`js/vendor/`), so the game
 
 Browser tests (single player and multiplayer with a local PeerJS server) are in `tests/` — see [tests/README.md](tests/README.md).
 
+## Ship editor
+
+[`tools/ship-editor.html`](tools/ship-editor.html) (on the site: `/tools/ship-editor.html`) is a separate page for planning changes to the ships: values (Power, reach, speed, colours …), what each ship goes for first, the order of its tasks (standard ones from the game and your own), notes. **Export** saves a JSON file with every change, to be applied to the code; nothing in the game changes by itself. Open it through a local server or the site (it reads `js/config.js`).
+
 ## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — versions and what changed
@@ -124,8 +128,9 @@ js/
   utils/                noise, terrain colours, sky colours
   vendor/               Three.js r128 and PeerJS 1.5.4 (kept here: no CDN), their licences
 img/start.jpg         the start screen picture
+tools/ship-editor.html  the ship editor: plan changes to the ships and export them as JSON
 docs/                 architecture, multiplayer and configuration docs
-tests/                browser tests (Playwright): solo, multiplayer, levels, upgrade tree and a local PeerJS server
+tests/                browser tests (Playwright): solo, multiplayer, levels, upgrade tree, fragments, ship editor and a local PeerJS server
 LICENSE               MIT
 ```
 
