@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.49.0] — 2026-10-17
+
+### Added
+- **Triton** can be played: like Pluto (grey rock with a slightly cooler tint, polar caps), a little bigger — 0.85 × Earth's radius (really 1.14 × Pluto). Missions go Kuiper Belt → Pluto → Charon → Triton → Earth.
+
 ## [0.48.0] — 2026-10-17
 
 ### Added

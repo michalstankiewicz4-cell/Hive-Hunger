@@ -123,6 +123,12 @@ export const CONFIG = Object.freeze({
       surface: { seaLevel: 0.47, iceLatitude: 2, clouds: { threshold: 2 },
         palette: { deepOcean: [150, 158, 170], shallowOcean: [178, 186, 198], beach: [150, 152, 158], lowland: [118, 118, 124],
           highland: [102, 102, 108], mountain: [84, 84, 90], snow: [196, 202, 212], ice: [210, 218, 228] } } },
+    // Triton: like Pluto, a little bigger (really 1353 km to Pluto's 1188: × 1.14 → 0.85 × Earth's radius);
+    // grey rock with a slightly cooler tint, polar caps, no clouds
+    { body: 'triton', radiusScale: 0.85, style: 'smooth', rock: [136, 138, 142], rockCore: [96, 98, 102],
+      surface: { seaLevel: 0.47, iceLatitude: 0.72, clouds: { threshold: 2 },
+        palette: { deepOcean: [196, 200, 208], shallowOcean: [210, 214, 222], beach: [186, 190, 196], lowland: [172, 176, 184],
+          highland: [156, 160, 168], mountain: [140, 144, 152], snow: [224, 228, 236], ice: [238, 243, 250] } } },
     { body: 'earth', radiusScale: 1, style: 'smooth' },
   ],
 

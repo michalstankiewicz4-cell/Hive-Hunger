@@ -333,7 +333,8 @@ async def main():
         # storm ship: from laser range, a forked bolt — 40% of a laser's damage on the bite, 30% on each of the two nearest voxels
         st = await page.evaluate("""() => { const g = window.__dbg, s = g.localPlayer.swarm, pl = g.planet, i = s.lasers;
           const blue = s.mesh.instanceColor.getZ(i) > 0.9 && s.mesh.instanceColor.getX(i) < 0.7;
-          const ready = () => s.landed[i] && s.aimed[i] && s.food[i] >= 0 && pl.strengthOf(s.food[i]) > 0.3 && ((n) => n.length === 2 && n.every((x) => pl.strengthOf(x) > 0.3))(pl.nearestAround(s.food[i], 2, s.food[i]));
+          const far = () => Math.hypot(s.pos[i * 3] - s.foodPos[i * 3], s.pos[i * 3 + 1] - s.foodPos[i * 3 + 1], s.pos[i * 3 + 2] - s.foodPos[i * 3 + 2]) > 1.5; // (not a bite through a wall it got stuck on)
+          const ready = () => s.landed[i] && s.aimed[i] && s.food[i] >= 0 && far() && pl.strengthOf(s.food[i]) > 0.3 && ((n) => n.length === 2 && n.every((x) => pl.strengthOf(x) > 0.3))(pl.nearestAround(s.food[i], 2, s.food[i]));
           let f = 0; while (!ready() && f < 900) { g.update(); f++; }
           if (!ready()) return { found: false, blue };
           const c = s.food[i], sides = pl.nearestAround(c, 2, c), hp = (x) => pl.strengthOf(x);
