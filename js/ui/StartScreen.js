@@ -100,6 +100,15 @@ export class StartScreen {
     this.card.querySelector('.menu-choice')?.focus();
   }
 
+  /** A question with a yes (`yesLabel`, danger) and No; each calls its handler. */
+  showConfirm(title, question, yesLabel, onYes, onNo) {
+    this.open(title, true);
+    const yes = button(yesLabel, onYes, 'lobby-button is-danger menu-yes');
+    const no = button('No', onNo, 'lobby-button is-primary menu-no');
+    this.card.append(el('p', 'menu-note', question), yes, no);
+    no.focus();
+  }
+
   /** A menu choice: a label and a note under it. */
   choice(label, note, onClick, disabled = false, cls = 'menu-choice') {
     const b = button('', onClick, cls);

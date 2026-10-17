@@ -114,21 +114,27 @@ async def main():
 
             # the ship bar on a guest: buying ships and sending a group go through the host
             c0 = await host.evaluate('() => window.__dbg.players[2].swarm.cutters')
-            await guests[1].evaluate("""() => { const g = window.__dbg;
+            gtap = await guests[1].evaluate("""() => { const g = window.__dbg;
               document.querySelector('.shipbar-cutters .shipbar-buy').click();
               document.querySelector('.shipbar-cutters .shipbar-pick').click();
-              // (tap until it lands on a voxel: the middle of the screen may look through a hole by now)
-              const sent = [], send = g.net.sendCommand.bind(g.net);
+              // (a tap on voxels of the belt in view: the middle of the screen may be empty space between the rocks)
+              const sent = [], send = g.net.sendCommand.bind(g.net), pl = g.planet, T = window.THREE, v = new T.Vector3();
               g.net.sendCommand = (c) => { sent.push(c); send(c); };
-              for (const [x, y] of [[0, 0], [0.05, 0.1], [-0.1, 0.05], [0.1, -0.1], [-0.05, -0.15]]) { if (sent.length) break; g.onTap(new window.THREE.Vector2(x, y)); }
-              g.net.sendCommand = send; }""")
+              for (let idx = 0, n = 0; idx < pl.hp.length && !sent.length && n < 400; idx++) {
+                if (!(pl.hp[idx] > 0) || idx % 37) continue;
+                n++;
+                pl.cellCenter(idx, v).project(g.camera);
+                if (Math.abs(v.x) < 0.9 && Math.abs(v.y) < 0.9 && v.z < 1) g.onTap(new T.Vector2(v.x, v.y));
+              }
+              g.net.sendCommand = send;
+              return { sent, started: g.started, home: g.localPlayer.homeMode, alive: g.planet.alive, hit: g.lastPickHit }; }""")
             try:  # (messages can take a while on a busy machine)
                 await host.wait_for_function("() => Boolean(window.__dbg.players[2].group('cutters').point)", timeout=8000)
             except Exception:
                 pass
             await host.wait_for_timeout(1000)
             gb = await host.evaluate("() => { const p = window.__dbg.players[2]; return [p.swarm.cutters, Boolean(p.group('cutters').point), p.group('eaters').point]; }")
-            t.ok(gb == [c0 + 1, True, None], 'a guest buys ships and sends a group (only that group) through the host', gb)
+            t.ok(gb == [c0 + 1, True, None], 'a guest buys ships and sends a group (only that group) through the host', [gb, gtap])
 
             # play a little on the host, then compare
             await host.evaluate("""() => window.__dbg.activePlayers().forEach(p => {

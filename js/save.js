@@ -1,7 +1,8 @@
 /**
- * Single player's saved game (one slot, kept in this browser): written by "Save and exit" in the
- * Esc menu, read by Continue (Single player asks: continue or a new game), removed by a new game or
- * Settings → Delete save game. What is in it: see Game3D.saveData / loadSave.
+ * Single player's saved game (one slot, kept in this browser): written by Save game / "Save and exit"
+ * in the Esc menu and by itself when a mission is done (no mission under way then: Continue opens
+ * the map), read by Continue (Single player asks: continue or a new game), removed by a new game
+ * (after "Delete your saved game and start a new one?") or Settings → Delete save game. What is in it: see Game3D.saveData / loadSave.
  */
 const KEY = 'hive-hunger-save';
 

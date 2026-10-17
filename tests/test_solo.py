@@ -664,6 +664,26 @@ async def main():
             saved: localStorage.getItem('hive-hunger-progress') }; }""")
         t.ok(dn['map'] and not dn['started'] and dn['card'] == 'Earth' and dn['status'] == 'Next mission' and dn['done'] == ['Kuiper Belt'] and 'kuiper' in (dn['saved'] or ''),
              'mission done: back to the map, the belt ticked (and remembered), Earth next', dn)
+        # … and the game is saved there (the tick, the points and upgrades together), with a note on the map
+        au = await page.evaluate("""() => { const s = JSON.parse(localStorage.getItem('hive-hunger-save') || 'null'), n = document.querySelector('.map-note');
+          return { saved: Boolean(s), mission: s && s.mission, score: s && s.score, now: window.__dbg.localPlayer.score, note: n && !n.hidden ? n.textContent : '' }; }""")
+        t.ok(au['saved'] and au['mission'] is None and au['score'] == au['now'] and au['score'] > 0 and au['note'] == 'Kuiper Belt done · game saved',
+             'mission done: the game is saved by itself ("Kuiper Belt done · game saved")', au)
+        # leave without saving and come back: Continue has the points; New game asks first (No keeps the save)
+        await page.click('.map-back')
+        await page.evaluate("() => { window.__dbg.resetProgress(); }")  # (nothing of it left in memory)
+        await page.click('.menu-choice >> nth=0')
+        await page.click('#menu .menu-choice >> text=New game')
+        q = await page.evaluate("() => [document.querySelector('#menu .menu-note')?.textContent, [...document.querySelectorAll('#menu .lobby-button')].map((b) => b.textContent)]")
+        await page.click('#menu .menu-no')
+        kept = await page.evaluate("() => [Boolean(localStorage.getItem('hive-hunger-save')), Boolean(localStorage.getItem('hive-hunger-progress'))]")
+        t.ok(q[0] == 'Delete your saved game and start a new one?' and 'Delete it and start a new game' in q[1] and 'No' in q[1] and kept == [True, True],
+             'New game with a saved game asks first; No keeps the save', [q, kept])
+        await page.click('.menu-choice >> nth=0')
+        await page.click('#menu .menu-choice >> text=Continue')
+        await page.wait_for_timeout(300)
+        cb = await page.evaluate("() => ({ map: !document.getElementById('map').hidden, card: document.querySelector('.map-card-name')?.textContent, score: window.__dbg.localPlayer.score, done: [...document.querySelectorAll('.map-label.is-done')].map((e) => e.textContent) })")
+        t.ok(cb['map'] and cb['card'] == 'Earth' and cb['score'] == au['score'] and cb['done'] == ['Kuiper Belt'], 'Continue after a mission: the map with the belt ticked, Earth next, the points back', cb)
         await page.click('.map-start')
         # the next planet: the tunnel opens, the ships come out of it, it closes
         ar = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm;
@@ -705,6 +725,18 @@ async def main():
              'planet eaten: the ships jump to hyperspace one after another, leaving streaks', jp)
         await page.evaluate("() => window.__dbg.start()")
         t.ok(s['home'] is None, 'the swarm is back to work on the new planet')
+
+        # New game, Yes: the save and the ticks are gone, the map starts again from the Kuiper Belt
+        await page.evaluate("() => { const g = window.__dbg; let f = 0; while (document.getElementById('map').hidden && f < 1500) { g.update(); f++; } }")
+        await page.wait_for_timeout(300)
+        await page.click('.map-back')
+        await page.click('.menu-choice >> nth=0')
+        await page.click('#menu .menu-choice >> text=New game')
+        await page.click('#menu .menu-yes')
+        await page.wait_for_timeout(300)
+        ng = await page.evaluate("() => ({ save: localStorage.getItem('hive-hunger-save'), ticks: localStorage.getItem('hive-hunger-progress'), map: !document.getElementById('map').hidden, card: document.querySelector('.map-card-name')?.textContent, score: window.__dbg.localPlayer.score })")
+        t.ok(ng['save'] is None and ng['map'] and ng['card'] == 'Kuiper Belt' and ng['score'] == 0 and 'kuiper' not in (ng['ticks'] or ''),
+             'New game, Yes: the save and the ticks are gone, the map starts from the Kuiper Belt', ng)
 
         await browser.close()
     return t.done(errors)

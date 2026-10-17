@@ -512,3 +512,13 @@
     background: linear-gradient(180deg, rgba(5, 6, 12, 0) 30%, rgba(5, 6, 12, 0.75) 70%);
   }
 }
+
+/* a question's yes (it deletes something) */
+.lobby-button.is-danger {
+  border-color: #ff6b6b;
+  color: #ff8f8f;
+}
+
+.lobby-button.is-danger:hover {
+  background: rgba(255, 107, 107, 0.12);
+}

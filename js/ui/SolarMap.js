@@ -40,7 +40,10 @@ export class SolarMap {
     head.append(this.title, this.hint, this.back);
     this.card = el('div', 'map-card');
     this.card.hidden = true;
-    this.root.append(this.canvas, this.labels, head, this.card);
+    this.noteEl = el('div', 'map-note');
+    this.noteEl.setAttribute('role', 'status');
+    this.noteEl.hidden = true;
+    this.root.append(this.canvas, this.labels, head, this.card, this.noteEl);
 
     this.renderer = null; // made when first shown (a second WebGL context only while the map is used)
     this.scene = new THREE.Scene();
@@ -154,6 +157,14 @@ export class SolarMap {
       };
       this.frame = requestAnimationFrame(loop);
     }
+  }
+
+  /** A short message over the map (e.g. "Game saved"), gone after `ms`. */
+  note(text, ms = 3500) {
+    this.noteEl.textContent = text;
+    this.noteEl.hidden = false;
+    clearTimeout(this.noteTimer);
+    this.noteTimer = setTimeout(() => { this.noteEl.hidden = true; }, ms);
   }
 
   hide() {

@@ -66,10 +66,13 @@ if (!window.THREE) {
     map.show({ mode: 'solo', next, current: null, done: progress.done });
   };
   // a mission's planet is eaten and the ships are gone: back to the map, the next one marked
+  // the game is saved there (autosave: the tick, points and upgrades stay together)
   game.onMissionDone = (id) => {
     progress.complete(id);
     soloPlayed = false;
     showSoloMap(game.bodyId);
+    const ok = savedGame.write(game.saveData(false));
+    map.note(ok ? `${bodyById(id)?.name || 'Mission'} done · game saved` : `${bodyById(id)?.name || 'Mission'} done · could not save the game`);
   };
   // multiplayer: the map stays behind the waiting room and the summary (where the room goes next);
   // the missions go in order, so it has no Start
@@ -93,7 +96,7 @@ if (!window.THREE) {
     onSolo: () => {
       const save = savedGame.read();
       if (!save) return showSoloMap();
-      menu.showContinue({ mission: bodyById(save.mission)?.name || '', points: (save.score || 0) - (save.tree?.spent || 0), at: save.at });
+      menu.showContinue({ mission: bodyById(save.mission)?.name || (save.mission ? '' : 'Solar system map'), points: (save.score || 0) - (save.tree?.spent || 0), at: save.at });
     },
     // the note under Single player when there is a saved game
     saveNote: () => {
@@ -109,12 +112,13 @@ if (!window.THREE) {
         menu.hide();
       } else showSoloMap();
     },
-    onNewGame: () => {
+    // New game with a saved game: asks once more before the save is deleted
+    onNewGame: () => menu.showConfirm('New game', 'Delete your saved game and start a new one?', 'Delete it and start a new game', () => {
       savedGame.clear();
       progress.clear();
       game.resetProgress();
       showSoloMap();
-    },
+    }, () => menu.showStart()),
     // Esc during a mission: Resume, Save and exit, Exit to main menu (without saving: this game's points are dropped)
     onResume: () => {
       game.started = true;

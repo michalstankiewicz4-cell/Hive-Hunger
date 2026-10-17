@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.46.1] — 2026-10-17
+
+### Added
+- **Autosave:** when a mission is done the game saves itself, and the map says so ("Kuiper Belt done · game saved"). Before, leaving without saving kept the mission ticked on the map but lost the points and upgrades. Continue then opens the map with the points back.
+- **New game** with a saved game asks first: "Delete your saved game and start a new one?" — **Delete it and start a new game** or **No**.
+
 ## [0.46.0] — 2026-10-17
 
 ### Added
