@@ -1,6 +1,6 @@
 /**
  * Upgrade tree. Points come from eating: 1 voxel = 1 point. Each node is bought once, needs its
- * parent, and adds its effect on top of the settings panel (the sliders stay as they are).
+ * parent, and adds its effect on top of the swarm's base values.
  *
  * The tree grows upwards from the core over five levels (rings): traits of the whole swarm (Brood,
  * Wings, Jaws, Agility, Chain lightning …), the ship types and their properties, with links across

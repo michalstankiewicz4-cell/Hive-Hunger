@@ -14,17 +14,23 @@ A recovery file: everything needed to pick the project up again — what it is, 
 ## Where we left off (2026-10-17, 0.45.0)
 
 - Live version: see `js/version.js`; everything is pushed to `main`, and the owner added the tags up to v0.42.1 himself (2026-10-16). For every later version give him the tag command (see Publishing).
-- **Waiting for:** the owner's file exported from the ship editor (see The ship editor below) — apply its changes.
+- **Waiting for:** the owner's files exported from the ship editor and the tree editor (see below) — apply the ship values; talk the tree over with him before building it.
 - **Later, for the release (owner):** the ship bar's thumbnails should appear only once that ship type is unlocked in the upgrade tree.
 - **Next, when the owner asks:** the upgrade tree's logic. The new layout is in `js/core/SkillTree.js` (ships = hexagons, their properties = circles, the swarm's traits = diamonds, levels 0–5, links across branches); only Brood, Wings, Jaws and the lightning work, everything else is `soon`. Open questions for him: (1) what buying a ship does — unlock the type (but every player now starts with 2 of each), +2 ships, or only open its properties; (2) the list of properties; (3) the cross links. A drawn proposal was shown to him (same layout as the game's tree).
 - Other open things: the rest of the solar system's bodies are on the map as "coming soon" (only the Kuiper Belt and Earth have levels); unlocking missions in order is chosen but switched off for now (every playable mission is open); the "fast swarms can't finish a planet" limitation (see Known limitations).
-- How to work: answer in Polish, write game / code / docs in English; propose ideas, don't add them on your own; ask with a few options when a request leaves real choices; run all six test suites before every publish; keep README, CHANGELOG, this file, `docs/*` and `tests/README.md` up to date; one publish = one version bump.
+- How to work: answer in Polish, write game / code / docs in English; propose ideas, don't add them on your own; ask with a few options when a request leaves real choices; run all seven test suites before every publish; keep README, CHANGELOG, this file, `docs/*` and `tests/README.md` up to date; one publish = one version bump.
 
 ## The ship editor (0.44.0, owner)
 
 The owner asked for a separate HTML page with the ships' settings (Power and others) where he can type values or choose actions, priorities, the order of tasks, standard and non-standard actions; **he exports a file and gives it to the assistant to apply the changes**. It is `tools/ship-editor.html` (served on the site too). It imports `js/config.js`, `js/version.js` and `SHIP_INFO` from `js/ui/ShipGuide.js`, so its defaults are always the game's. Assistant's choices: sections = Whole swarm, Eaters (the swarm's eating keys), every ship type (`CONFIG.swarm[kind]`, `warp` under Whole swarm); values split into Play and Look; the tasks and targets "as in the game" are written in the editor (`DEFAULT_TASKS`, `DEFAULT_TARGETS`, standard tasks `ACTIONS`, conditions `WHEN`) — **keep them in step when a ship's behaviour changes**; state in localStorage `hive-hunger-ship-editor`.
 
 **Applying an exported file** (`hive-hunger-ships-<date>.json`): `changes[]` lists every value with `path` in `CONFIG` (e.g. `swarm.cutter.reach`), `from` (the game's value when exported — check it still matches) and `to`. `ships.<kind>` has `tasks` (with `tasksInGame` to compare), `targets` (with `targetsInGame`), `notes`. Values go into `js/config.js` (and the tests / docs that state them); changed tasks, targets and notes describe new behaviour — propose how to build it and ask before changing the game's logic. `raw` is the editor's own state (for Import).
+
+## The tree editor (0.46.0, owner)
+
+The owner asked for a separate page with the upgrade tree to edit: add a node on a level, connect nodes with a line, in a node choose a ship or write in words what should be there, the cost too; other settings such as colours, from a ready palette of 16 ("the ships' colours, only darker pastel, I think"); he exports a file and we talk it over. It is `tools/tree-editor.html`: it imports `NODES` / `BRANCHES` from `js/core/SkillTree.js`, `CONFIG` and `SHIP_INFO`, so it starts from the game's tree. Assistant's choices: the view laid out like the game (rings 0–5, angle), drag to move (level in tenths), Add node at the nearest half level linked to the selected node, Connect = parent first, then child (again = remove), a node's `all` as "Needs any / all parents", node colour overrides the branch's, the palette = the 14 ships' colours + Brood green + lightning violet made softer and darker (`pastel()`), EN / PL like the ship editor, state in localStorage `hive-hunger-tree-editor`.
+
+**An exported file** (`hive-hunger-tree-<date>.json`): `changes` — `added` / `removed` node ids, `changed` ({id, field, from, to}; fields name, kind, branch, ship, wish = the owner's own words, text, cost, depth, angle, all, soon, color), `linksAdded` / `linksRemoved` ([parent, child]), `branchColors`; `nodes` — the whole tree with each node's `status`; `branchColors`, `palette`, `notes`; `raw` (for Import). Talk it over with the owner before changing `SkillTree.js`.
 
 ## How the game is meant to behave (decisions so far)
 
@@ -104,7 +110,7 @@ Licence: MIT (`LICENSE`), chosen by the owner.
 - Versioning: bump `js/version.js`, add a `CHANGELOG.md` entry, tag the commit `vX.Y.Z`.
 - The owner's clone is `C:\Users\micha\vsrepos\Hive-Hunger` (Windows).
 - **Since 0.32.0 (2026-10-16) the cloud workspace can push `main` itself**: the owner connected GitHub to Claude. `git push origin main` works (the remote is `https://github.com/michalstankiewicz4-cell/Hive-Hunger.git`; the old lowercase name redirects). **Tags can't be pushed from there** (the proxy refuses tag refs and the GitHub API) — tell the owner the command for his clone: `git pull`, `git tag vX.Y.Z <commit>`, `git push origin --tags`. After `git pull` he runs `git tag vX.Y.Z <commit>` and `git push origin --tags` in PowerShell (red "NativeCommandError" text there is only git's progress; `* [new tag]` lines mean it worked).
-- Each publish: run the six test suites, update the docs, bump the version (one publish = one version), commit, tag, push `main`, give the owner the tag commands.
+- Each publish: run the seven test suites, update the docs, bump the version (one publish = one version), commit, tag, push `main`, give the owner the tag commands.
 
 Older way, when the workspace had no write access (as done for 0.12.0–0.31.1):
 
@@ -116,7 +122,7 @@ Older way (0.6.0–0.11.1), only as a fallback: fast-forwarding through the Linu
 
 ## Testing
 
-Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` (the same files as `js/vendor/`), a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the missions (the Kuiper Belt band and Earth), the map's bodies and the smooth surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks the tree's nodes, points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). `test_fragments.py` checks pieces coming loose, drifting and being eaten. `test_editor.py` checks the ship editor. Run all six after every change. A refactor that should not change anything can also be checked by comparing with the previous version in a `git worktree`: geometry checksums of the smooth surface, screenshots of the panels with the canvas hidden.
+Browser tests live in `tests/` (see `tests/README.md`): `test_solo.py` and `test_multi.py`, Playwright + headless Chromium with SwiftShader WebGL, Three.js / PeerJS from `tests/node_modules` (the same files as `js/vendor/`), a local PeerJS server, and `window.__dbg = game` added by rewriting `js/main.js` on the fly. `test_levels.py` checks the missions (the Kuiper Belt band and Earth), the map's bodies and the smooth surfaces (`SHOTS=<folder>` saves screenshots). `test_tree.py` checks the tree's nodes, points, buying, bonuses, lightning and the damage animation (`SHOTS=<folder>` saves the tree and a bolt). `test_fragments.py` checks pieces coming loose, drifting and being eaten. `test_editor.py` checks the ship editor, `test_tree_editor.py` the tree editor. Run all seven after every change. A refactor that should not change anything can also be checked by comparing with the previous version in a `git worktree`: geometry checksums of the smooth surface, screenshots of the panels with the canvas hidden.
 
 Lessons from writing them:
 
@@ -207,6 +213,7 @@ Lessons from writing them:
 | 0.44.0 | tag `v0.44.0` | the ship editor (`tools/ship-editor.html`) with Export / Import |
 | 0.45.0 | tag `v0.45.0` | ship bar: choose a group, send it to a voxel or home, buy ships (free); start with 3 eaters; no settings panel / level switch; editor EN / PL |
 | 0.45.1 | tag `v0.45.1` | tree: thin lines (drawn at screen resolution), a node's links light up under the pointer |
+| 0.46.0 | tag `v0.46.0` | the tree editor (`tools/tree-editor.html`) with Export / Import, EN / PL |
 
 ## Known limitations
 

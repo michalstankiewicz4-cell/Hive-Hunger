@@ -81,6 +81,10 @@ Browser tests (single player and multiplayer with a local PeerJS server) are in 
 
 [`tools/ship-editor.html`](tools/ship-editor.html) (on the site: `/tools/ship-editor.html`) is a separate page for planning changes to the ships: values (Power, reach, speed, colours …), what each ship goes for first, the order of its tasks (standard ones from the game and your own), notes. **Export** saves a JSON file with every change, to be applied to the code; nothing in the game changes by itself. Open it through a local server or the site (it reads `js/config.js`).
 
+## Tree editor
+
+[`tools/tree-editor.html`](tools/tree-editor.html) (on the site: `/tools/tree-editor.html`) is a separate page for planning the upgrade tree: move nodes (drag: level and angle), add nodes on any level, connect two nodes (the same two again removes the link), and per node — its name, kind, branch, a ship, **what should be there in your own words**, the text in the game, the cost, whether it needs any or all parents, a colour from a palette of 16 (darker pastel versions of the ships' colours); the branches' colours from the same palette; notes. **Export** saves a JSON file with the whole tree and every change, to talk over and apply to the code. EN / PL.
+
 ## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — versions and what changed
@@ -123,8 +127,9 @@ js/
   vendor/               Three.js r128 and PeerJS 1.5.4 (kept here: no CDN), their licences
 img/start.jpg         the start screen picture
 tools/ship-editor.html  the ship editor: plan changes to the ships and export them as JSON
+tools/tree-editor.html  the tree editor: plan the upgrade tree (nodes, links, costs, colours) and export it as JSON
 docs/                 architecture, multiplayer and configuration docs
-tests/                browser tests (Playwright): solo, multiplayer, levels, upgrade tree, fragments, ship editor and a local PeerJS server
+tests/                browser tests (Playwright): solo, multiplayer, levels, upgrade tree, fragments, ship and tree editors and a local PeerJS server
 LICENSE               MIT
 ```
 

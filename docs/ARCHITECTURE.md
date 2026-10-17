@@ -22,6 +22,8 @@ css/             one stylesheet per part of the page
 tools/
   ship-editor.html  the ship editor: a stand-alone page (no game running) that imports js/config.js,
                     js/version.js and SHIP_INFO from js/ui/ShipGuide.js; Export / Import JSON
+  tree-editor.html  the tree editor: imports NODES / BRANCHES (js/core/SkillTree.js), CONFIG, SHIP_INFO;
+                    Export / Import JSON
 ```
 
 **Classes split over several files.** `Game3D`, `Swarm3D`, `Player` and `VoxelPlanet` are big, so their methods live in several files: each part file exports an object of methods (`export const Input = { bindInput() {…}, … }`), and the class file adds them to its prototype at the end (`Object.defineProperties(Game3D.prototype, Object.getOwnPropertyDescriptors(part))`). The methods behave exactly as if they were written in the class (`this` is the game / swarm); to find one, search for its name. A new part: write the file, import it in the class file and add it to the list there.
@@ -32,6 +34,7 @@ tools/
 | `js/config.js` | All parameters: planet, flock, feeding, ship types, spawn tunnel, hyperspace jump, marker, network; `GROUP_KINDS` (the ship bar's groups: `SHIP_KINDS`, eaters last) |
 | `js/version.js` | Game version (keep in sync with `CHANGELOG.md`) |
 | `tools/ship-editor.html` | The ship editor: values (Play / Look) of the whole swarm and every ship type read from `CONFIG`, each ship's targets in order of priority and its tasks in order (standard tasks = what the game does today, written in the editor as `DEFAULT_TASKS` / `DEFAULT_TARGETS` — keep them in step with the ships), notes; kept in localStorage; Export saves a JSON file with every change (path in `CONFIG`, old and new value), Import loads it back. It changes nothing in the game |
+| `tools/tree-editor.html` | The tree editor: the game's tree (`NODES`, `BRANCHES`) on a canvas laid out like the game's (rings, angles); select / drag / add / connect / delete nodes, per-node fields (name, kind, branch, ship, own words, text, cost, level, angle, any / all parents, soon, colour), branch colours, a palette of 16 (`pastel()` of the ships' colours); kept in localStorage; Export = the whole tree + `diff()` against the game's; it changes nothing in the game |
 | `js/settings.js` | The player's own settings (camera turning, zoom speed, FPS counter, resolution, smooth edges, effects), remembered in the browser; `onChange` listeners |
 | **`js/three/game/`** | |
 | `Game3D.js` | Scene, camera, renderer, roles (solo / host / guest), players and their spawns, planet lifecycle, the frame loop (`update`, `updateSim`, `start`) |

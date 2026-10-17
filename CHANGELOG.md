@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.46.0] — 2026-10-17
+
+### Added
+- **Tree editor** (`tools/tree-editor.html`, also on the site under `/tools/tree-editor.html`): a separate page for planning the upgrade tree, starting from the game's tree. Drag a node to move it (level and angle); **Add node** puts a swarm trait, ship or ship property where you click (linked to the selected node); **Connect** links a lower node to a higher one (the same two again removes the link); for every node: name, kind, branch, ship, what should be there in your own words, the text in the game, cost, level, angle, any or all parents (with their links listed), coming soon, a colour from a palette of 16 darker pastel colours made from the ships' colours; the branches' colours from the same palette; notes. Pointing at or selecting a node lights up its links. Kept in the browser; **Export** saves a JSON file with the whole tree and every change (added and removed nodes, changed fields, links added and removed, colours), **Import** loads it back. EN / PL. Nothing in the game changes.
+- `tests/test_tree_editor.py`.
+
 ## [0.45.1] — 2026-10-17
 
 ### Changed
