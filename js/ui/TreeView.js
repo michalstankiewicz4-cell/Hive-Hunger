@@ -1,12 +1,14 @@
 import { NODES, NODE, BRANCHES } from '../core/SkillTree.js';
 
 /**
- * The upgrade tree (Tab). Drawn on a small canvas and scaled up without smoothing, so it
- * comes out as pixel art. The tree grows upwards from the Hive core at the bottom; rings
- * behind it mark the depth. Diamonds are nodes: big ones with an icon start a branch.
+ * The upgrade tree (Tab). Laid out on a grid of "art pixels" (P screen pixels each) and drawn at
+ * the screen's own resolution: icons and level numbers are blocky pixel art (P × P blocks), while
+ * the lines — links, level rings, node outlines — are one screen pixel thin. The tree grows upwards
+ * from the Hive core at the bottom; rings behind it mark the depth. Ships are hexagons, the swarm's
+ * traits diamonds (big ones with an icon start a branch), ships' properties small circles.
  *
  * Owned nodes are filled with the branch colour, nodes you can buy blink, locked ones are grey.
- * Hover shows what a node does; click buys it.
+ * Hover shows what a node does and lights up its links; click buys it.
  */
 
 // 8 × 8 pixel icons
@@ -70,6 +72,7 @@ export class TreeView {
     this.tip.className = 'tree-tip';
     this.tip.hidden = true;
     root.append(this.canvas, this.header, this.tip);
+    this.canvas.view = this; // (tests: node positions, lit links)
 
     this.canvas.addEventListener('pointermove', (e) => this.onMove(e));
     this.canvas.addEventListener('pointerleave', () => { this.hover = null; this.tip.hidden = true; });
@@ -114,8 +117,10 @@ export class TreeView {
     const P = window.innerWidth < 640 ? 2 : 3;
     this.P = P;
     const W = Math.ceil(window.innerWidth / P), H = Math.ceil(window.innerHeight / P);
-    this.canvas.width = W;
-    this.canvas.height = H;
+    this.canvas.width = W * P;   // (screen pixels: thin lines; layout in art pixels)
+    this.canvas.height = H * P;
+    this.canvas.style.width = `${W * P}px`;  // 1 : 1 with the screen (no scaling blur)
+    this.canvas.style.height = `${H * P}px`;
     this.W = W; this.H = H;
     const cx = W >> 1, cy = H - 20;
     // level d sits on a ring R0 + d·ring from the core (R0 keeps the first level off the core);
@@ -138,95 +143,76 @@ export class TreeView {
     return { core: 11, ship: 8, swarm: n.icon ? 7 : 5, prop: 3 }[n.kind] ?? 4;
   }
 
-  // --- pixel helpers ---
+  // --- drawing helpers (art-pixel coordinates in, screen pixels out) ---
 
+  /** Screen position of the centre of art pixel x (a half pixel in, so 1-pixel lines stay sharp). */
+  sx(x) { return Math.round(x * this.P + this.P / 2) + 0.5; }
+
+  /** One art pixel (a P × P block). */
   px(x, y, c) {
     this.ctx.fillStyle = c;
-    this.ctx.fillRect(x, y, 1, 1);
+    this.ctx.fillRect(x * this.P, y * this.P, this.P, this.P);
   }
 
-  line(x0, y0, x1, y1, c) {
-    this.ctx.fillStyle = c;
-    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
-    const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
-    let err = dx + dy;
-    for (;;) {
-      this.ctx.fillRect(x0, y0, 1, 1);
-      if (x0 === x1 && y0 === y1) break;
-      const e2 = 2 * err;
-      if (e2 >= dy) { err += dy; x0 += sx; }
-      if (e2 <= dx) { err += dx; y0 += sy; }
-    }
-  }
-
-  /** Diamond |dx| + |dy| ≤ r: filled, with an outline and an optional glow. */
-  diamond(x, y, r, fill, outline, glow) {
+  /** A line `w` screen pixels thin (dashed: a link across branches where either parent is enough). */
+  line(x0, y0, x1, y1, c, w = 1, dashed = false) {
     const ctx = this.ctx;
-    for (let dy = -r - 2; dy <= r + 2; dy++) {
-      for (let dx = -r - 2; dx <= r + 2; dx++) {
-        const d = Math.abs(dx) + Math.abs(dy);
-        let c = null;
-        if (d <= r - 1) c = fill;
-        else if (d <= r) c = outline;
-        else if (glow && d <= r + 2) c = glow;
-        if (c) { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, 1, 1); }
-      }
-    }
+    ctx.strokeStyle = c;
+    ctx.lineWidth = w;
+    ctx.setLineDash(dashed ? [this.P * 2, this.P * 2] : []);
+    ctx.beginPath();
+    ctx.moveTo(this.sx(x0), this.sx(y0));
+    ctx.lineTo(this.sx(x1), this.sx(y1));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /** A node's shape: a closed path of `pts` (screen pixels) filled, with a thin outline and an optional glow. */
+  shape(pts, fill, outline, glow) {
+    const ctx = this.ctx;
+    const path = () => { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); };
+    if (glow) { path(); ctx.strokeStyle = glow; ctx.lineWidth = this.P * 2.5; ctx.stroke(); }
+    path();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  /** Diamond of radius r (art pixels). */
+  diamond(x, y, r, fill, outline, glow) {
+    const X = this.sx(x), Y = this.sx(y), R = r * this.P;
+    this.shape([[X, Y - R], [X + R, Y], [X, Y + R], [X - R, Y]], fill, outline, glow);
   }
 
   /** Pointy-top hexagon of radius r (a ship). */
   hexagon(x, y, r, fill, outline, glow) {
-    const ctx = this.ctx, k = Math.sqrt(3) / 2;
-    const inside = (dx, dy, rr) => Math.abs(dx) <= rr * k && Math.abs(dx) * 0.5 + Math.abs(dy) * k <= rr * k;
-    for (let dy = -r - 3; dy <= r + 3; dy++) {
-      for (let dx = -r - 3; dx <= r + 3; dx++) {
-        let c = null;
-        if (inside(dx, dy, r - 1.2)) c = fill;
-        else if (inside(dx, dy, r)) c = outline;
-        else if (glow && inside(dx, dy, r + 2)) c = glow;
-        if (c) { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, 1, 1); }
-      }
-    }
+    const X = this.sx(x), Y = this.sx(y), R = r * this.P;
+    const pts = [];
+    for (let k = 0; k < 6; k++) { const a = (Math.PI / 3) * k - Math.PI / 2; pts.push([X + R * Math.cos(a), Y + R * Math.sin(a)]); }
+    this.shape(pts, fill, outline, glow);
   }
 
   /** A small round node of radius r (a ship's property). */
   circle(x, y, r, fill, outline, glow) {
-    const ctx = this.ctx;
-    for (let dy = -r - 2; dy <= r + 2; dy++) {
-      for (let dx = -r - 2; dx <= r + 2; dx++) {
-        const d = Math.hypot(dx, dy);
-        let c = null;
-        if (d <= r - 0.8) c = fill;
-        else if (d <= r + 0.4) c = outline;
-        else if (glow && d <= r + 2) c = glow;
-        if (c) { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, 1, 1); }
-      }
-    }
+    const X = this.sx(x), Y = this.sx(y), R = r * this.P;
+    const pts = [];
+    for (let k = 0; k < 24; k++) { const a = (Math.PI * 2 * k) / 24; pts.push([X + R * Math.cos(a), Y + R * Math.sin(a)]); }
+    this.shape(pts, fill, outline, glow);
   }
 
   /** A digit 0–9 in a 3 × 5 pixel font (the level numbers). */
   digit(d, x, y, c) {
     const rows = DIGITS[d];
-    this.ctx.fillStyle = c;
-    for (let j = 0; j < 5; j++) for (let i = 0; i < 3; i++) if (rows[j][i] === '#') this.ctx.fillRect(x + i, y + j, 1, 1);
-  }
-
-  /** A dotted pixel line (a link across branches: either parent is enough). */
-  dotted(x0, y0, x1, y1, c) {
-    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-    this.ctx.fillStyle = c;
-    for (let i = 0; i <= n; i++) {
-      if (i % 4 > 1) continue;
-      this.ctx.fillRect(Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), 1, 1);
-    }
+    for (let j = 0; j < 5; j++) for (let i = 0; i < 3; i++) if (rows[j][i] === '#') this.px(x + i, y + j, c);
   }
 
   icon(name, x, y, c) {
     const rows = ICONS[name];
     if (!rows) return;
-    this.ctx.fillStyle = c;
     for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) {
-      if (rows[j][i] === '#') this.ctx.fillRect(x - 4 + i, y - 4 + j, 1, 1);
+      if (rows[j][i] === '#') this.px(x - 4 + i, y - 4 + j, c);
     }
   }
 
@@ -239,18 +225,19 @@ export class TreeView {
     const { ctx, W, H, cx, cy } = this;
     this.pointsEl.textContent = `◆ ${points.toLocaleString('en')} points`;
 
+    const cw = this.canvas.width, ch = this.canvas.height;
     ctx.fillStyle = rgb(BG, 0.94);
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillRect(0, 0, W, H);
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.fillRect(0, 0, cw, ch);
 
     // the level rings (pixel arcs) behind the tree, numbered 0 … 5 on the left
     for (let d = 1; d <= 5; d++) {
       const r = this.radius(d);
-      const c = rgb(RING, d % 2 ? 0.9 : 0.55);
-      for (let a = -80; a <= 80; a += 0.6) {
-        const t = (a * Math.PI) / 180;
-        this.px(Math.round(cx + r * Math.sin(t)), Math.round(cy - r * Math.cos(t)), c);
-      }
+      ctx.strokeStyle = rgb(RING, d % 2 ? 0.9 : 0.55);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(this.sx(cx), this.sx(cy), r * this.P, -Math.PI / 2 - (80 * Math.PI) / 180, -Math.PI / 2 + (80 * Math.PI) / 180);
+      ctx.stroke();
       // (where the ring is still on screen on a narrow window)
       const t = -Math.min((80 * Math.PI) / 180, Math.asin(Math.min(1, (cx - 10) / r)));
       this.digit(d, Math.round(cx + r * Math.sin(t)) - 5, Math.round(cy - r * Math.cos(t)) - 2, rgb(BRANCHES.core.color, 0.8));
@@ -259,23 +246,31 @@ export class TreeView {
     // twinkling dust
     for (let i = 0; i < 70; i++) {
       const x = (i * 97 + 13) % W, y = (i * 53 + 7) % H;
-      if ((i + (this.t >> 4)) % 5 === 0) this.px(x, y, rgb([120, 100, 180], 0.6));
+      if ((i + (this.t >> 4)) % 5 === 0) { ctx.fillStyle = rgb([120, 100, 180], 0.6); ctx.fillRect(x * this.P, y * this.P, 1, 1); }
     }
 
     // edges: bought = branch colour, buyable = dim, locked / not built yet = grey. A link across
-    // branches is lighter: dotted when either parent is enough, solid when it needs both
+    // branches is lighter: dashed when either parent is enough, solid when it needs both.
+    // The links of the node under the pointer light up (drawn last, on top, a little wider)
+    const lit = [];
     for (const n of NODES) {
       for (const pid of n.parents) {
         const a = this.pos[pid], b = this.pos[n.id];
         const col = BRANCHES[n.branch].color;
         const st = tree.state(n.id);
         const cross = NODES_BY_ID[pid].branch !== n.branch && NODES_BY_ID[pid].kind !== 'core' && n.kind !== 'prop';
+        const dashed = cross && !n.all;
+        if (this.hover && (this.hover === n.id || this.hover === pid)) { lit.push([a, b, col, dashed]); continue; }
         const base = st === 'owned' ? col : st === 'available' ? mix(col, BG, 0.55) : st === 'soon' ? mix(col, BG, 0.72) : LOCKED;
         const c = cross ? rgb(mix(base, [255, 255, 255], 0.35), 0.75) : rgb(base, st === 'locked' ? 0.6 : 1);
-        if (cross && !n.all) this.dotted(a.x, a.y, b.x, b.y, c);
-        else this.line(a.x, a.y, b.x, b.y, c);
+        this.line(a.x, a.y, b.x, b.y, c, 1, dashed);
       }
     }
+    for (const [a, b, col, dashed] of lit) {
+      this.line(a.x, a.y, b.x, b.y, rgb(col, 0.35), 4, false); // a soft glow
+      this.line(a.x, a.y, b.x, b.y, rgb(mix(col, [255, 255, 255], 0.6)), 2, dashed);
+    }
+    this.litLinks = lit.length; // (tests)
 
     // nodes
     const blink = (this.t >> 4) % 2 === 0;

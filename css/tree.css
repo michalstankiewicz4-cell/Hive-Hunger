@@ -1,4 +1,4 @@
-/* Upgrade tree (Tab): pixel-art canvas */
+/* Upgrade tree (Tab): a canvas at the screen's resolution (pixel-art icons, thin lines) */
 
 /* upgrade tree (Tab): pixel-art canvas */
 .tree {
@@ -14,10 +14,6 @@
 .tree-canvas {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
   cursor: pointer;
 }
 

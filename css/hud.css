@@ -68,7 +68,7 @@
   opacity: 0.85;
 }
 
-/* single player: "Press Space to pause" at the bottom */
+/* single player: "Paused" at the bottom while Space has paused it */
 .pause-hint {
   position: fixed;
   left: 50%;

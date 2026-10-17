@@ -32,6 +32,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 
 - **Ship bar and groups (0.45.0, owner):** ships can be sent only to voxels (planets, asteroids, drifting pieces) or the tunnel — clicks into space do nothing. Thumbnails of the ships along the bottom choose a group; the count next to each; buying is a + on the thumbnail, free for now. The settings panel (Units, Speed, Power, Turning, Reset) and the level switch are gone; the ship-type sliders too. Start: 3 eaters, nothing else. Owner's choices: one group at a time (no "all"), the choice stays after a click, ships that don't eat fly to the spot and then carry on as usual, + buys 1 and Shift + 10. Assistant's choices: eaters chosen at first, the tunnel calls only the chosen group home, tugs sent somewhere let go of their piece, a sent group carries on once one of its ships got there (`groupArrive`, then `leader.dwellFrames`), the bar's look (the Ship guide's pictures, small), a new ship inserted as the last of its type (no ship changes type), at most 100 ships. The swarm's leader now only wanders on its own (clicks no longer move it). **Later (release):** thumbnails appear only once the type is unlocked in the tree.
 - **Ship editor language (0.45.0, owner):** an EN / PL switch in the editor.
+- **Tree lines (0.45.1, owner):** "everything is thick and overlaps" — the links, the level rings and the node outlines thinner; pointing at a node lights up its links. Assistant's choice: the canvas at the screen's resolution with 1-pixel lines (the icons and digits stay pixel art), cross links dashed, lit links 2 px with a glow.
 
 - **3D only** (a 2D version existed early on and was removed on request).
 - **Points & upgrades:** 1 voxel = 1 point (counter at the top). Tab opens a pixel-art upgrade tree growing upwards (single player stands still meanwhile, 0.41.1, owner): units, speed, power, chain lightning (+ jumps / voltage / capacitor). Upgrades add to the sliders (sliders stay). Saved only by Save and exit (0.40.0; before: reset on reload); in multiplayer every player has their own. Lightning fires on its own every few seconds and only weakens voxels. Voxels have a destruction animation (on the smooth surface: it sinks in and darkens); they are still one bite for now (harder voxels planned later).
@@ -68,7 +69,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Tunnel shape (0.28.0, owner):** 10° narrower only while opening (owner's correction; widens back once open), opening out like the bell of a trumpet, half the streaks (35) bunched unevenly, their last 20% fading to transparent (owner).
 - **Start (0.27.0, owner):** every player starts with 2 ships of every type (28 units with the fourteen types of 0.43.0).
 - **Drills (0.27.0, owner, from the assistant's list of proposals):** orange, "with a nice spiral orange drill bit". Assistant's choices: they drill straight towards the planet's centre (±`spread`), until through or 60 units; on pieces they eat like eaters. (Width: see 0.28.0.)
-- **Space pause (0.27.0, owner):** single player only, "Press Space to pause" at the bottom; the camera still turns while paused (assistant's choice).
+- **Space pause (0.27.0, owner):** single player only, "Press Space to pause" at the bottom (removed in 0.45.1, owner: only "Paused" shows while paused); the camera still turns while paused (assistant's choice).
 - **Cleaners (0.26.0, owner):** grey; eat only drifting pieces of 1, 2 or 3 voxels (owner's limit; the assistant had proposed a ship for the last isolated voxels). Assistant's choices: nearest small piece first, otherwise they fly with the swarm; normal speed and bite. Same release: **at most 100 units** (owner; the Units slider and upgrades together), **arrows** next to the ship-type sliders (one ship per click, owner).
 - **Level switch (0.17.0; removed in 0.45.0, owner):** single player only, a button per playable mission in the settings panel (1–5 before 0.34.0); the swarm restarts from its beacon (owner: so it never gets stuck inside a shape). Hidden in multiplayer.
 - **100% means every voxel is gone.** Then the ships jump to hyperspace and only then does the next planet appear (0.25.0; before that they flew home).
@@ -205,6 +206,7 @@ Lessons from writing them:
 | 0.43.2 | tag `v0.43.2` | cutters shine on 1 s after getting through; on the belt through one rock only |
 | 0.44.0 | tag `v0.44.0` | the ship editor (`tools/ship-editor.html`) with Export / Import |
 | 0.45.0 | tag `v0.45.0` | ship bar: choose a group, send it to a voxel or home, buy ships (free); start with 3 eaters; no settings panel / level switch; editor EN / PL |
+| 0.45.1 | tag `v0.45.1` | tree: thin lines (drawn at screen resolution), a node's links light up under the pointer |
 
 ## Known limitations
 

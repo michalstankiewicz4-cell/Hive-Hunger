@@ -47,8 +47,17 @@ async def main():
         tp2 = await page.evaluate("() => window.__dbg.localPlayer.swarm.pos[0]")
         t.ok(tp['paused'] and tp['x'] == tp2, 'single player: the game stands still while the tree is open', [tp, tp2])
         await page.wait_for_timeout(400)
-        pix = await page.evaluate("() => { const c = document.querySelector('.tree-canvas'); return [c.width, c.height, getComputedStyle(c).imageRendering]; }")
-        t.ok(pix[0] < 500 and pix[2] in ('pixelated', 'crisp-edges'), 'drawn small and scaled up without smoothing (pixel art)', pix)
+        pix = await page.evaluate("() => { const c = document.querySelector('.tree-canvas'); return [c.width, c.height, window.innerWidth, c.view.P]; }")
+        t.ok(abs(pix[0] - pix[2]) < pix[3], 'drawn at the screen\'s resolution: lines one pixel thin (icons still pixel art)', pix)
+        # pointing at a node lights up its links (to its parents and children)
+        lit = await page.evaluate("""async () => { const c = document.querySelector('.tree-canvas'), v = c.view, r = c.getBoundingClientRect();
+          const before = v.litLinks; const p = v.pos.lasers;
+          c.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left + (p.x + 0.5) * v.P, clientY: r.top + (p.y + 0.5) * v.P, bubbles: true }));
+          await new Promise((ok) => setTimeout(ok, 100));
+          const { NODES } = await import('./js/core/SkillTree.js');
+          const want = NODES.filter((n) => n.id === 'lasers').reduce((k, n) => k + n.parents.length, 0) + NODES.filter((n) => n.parents.includes('lasers')).length;
+          return { before, hover: v.hover, lit: v.litLinks, want }; }""")
+        t.ok(lit['before'] == 0 and lit['hover'] == 'lasers' and lit['lit'] == lit['want'] and lit['want'] > 1, 'pointing at a node lights up all its links', lit)
 
         # the tree: ships (hexagons), the swarm's traits, ships' properties, on levels 0 … 5; ships and their
         # properties are shown but can't be bought yet; a link across branches may need either parent or both

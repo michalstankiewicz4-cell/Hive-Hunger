@@ -188,12 +188,12 @@ if (!window.THREE) {
   pointsEl.addEventListener('click', () => tree.toggle());
   // Tab: upgrade tree. Esc: closes the tree; in single player it opens the start screen
   // (the game pauses) and closes it again (the game carries on)
-  // single player: "Press Space to pause" at the bottom (and "Paused" while it is)
+  // single player: "Paused" at the bottom while Space has paused it (nothing shown otherwise)
   const pauseHint = document.getElementById('pause-hint');
   const showPauseHint = () => {
-    pauseHint.hidden = !(game.role === 'solo' && game.started && menuEl.hidden);
+    pauseHint.hidden = !(game.role === 'solo' && game.started && menuEl.hidden && game.paused);
     pauseHint.classList.toggle('is-paused', game.paused);
-    pauseHint.textContent = game.paused ? 'Paused · press Space to continue' : 'Press Space to pause';
+    pauseHint.textContent = 'Paused · press Space to continue';
   };
   setInterval(showPauseHint, 300);
 

@@ -619,9 +619,9 @@ async def main():
         ps2 = await page.evaluate("() => { const g = window.__dbg; return { frame: g.frameNo, pos: g.localPlayer.swarm.pos[0] }; }")
         await page.keyboard.press('Space')
         await page.wait_for_timeout(500)
-        ps3 = await page.evaluate("() => { const g = window.__dbg; return { paused: g.paused, frame: g.frameNo, hint: document.getElementById('pause-hint').textContent }; }")
+        ps3 = await page.evaluate("() => { const g = window.__dbg; return { paused: g.paused, frame: g.frameNo, hint: document.getElementById('pause-hint').hidden }; }")
         t.ok(ps['paused'] and ps2['frame'] == ps['frame'] and ps2['pos'] == ps['pos'] and 'Paused' in ps['hint'], 'Space pauses single player ("Paused" at the bottom)', {**ps, 'later': ps2})
-        t.ok(not ps3['paused'] and ps3['frame'] > ps['frame'] and ps3['hint'] == 'Press Space to pause', 'Space again carries on ("Press Space to pause")', ps3)
+        t.ok(not ps3['paused'] and ps3['frame'] > ps['frame'] and ps3['hint'], 'Space again carries on (and no hint about Space on the game screen)', ps3)
         frames = {}
         for kind in ("laser", "eater"):
             aim = await page.evaluate(AIM, kind == "laser")

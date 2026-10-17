@@ -2,6 +2,13 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.45.1] — 2026-10-17
+
+### Changed
+- **Upgrade tree:** all lines are thinner — the links between nodes, the level rings and the nodes' outlines are one pixel now (the tree is drawn at the screen's resolution; icons and level numbers stay pixel art). Links across branches are dashed.
+- **Upgrade tree:** pointing at a node lights up its links to the nodes above and below it.
+- The game screen no longer shows "Press Space to pause"; Space still pauses single player, and "Paused · press Space to continue" shows while it is paused.
+
 ## [0.45.0] — 2026-10-17
 
 ### Added
