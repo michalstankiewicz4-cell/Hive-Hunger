@@ -4,7 +4,7 @@ A recovery file: everything needed to pick the project up again — what it is, 
 
 ## What it is
 
-**Hive Hunger** — a free 3D browser game: a swarm that behaves like a flock of birds eats voxel planets. Single player goes through missions on a solar system map (only the Kuiper Belt and Earth can be played so far) with a saved game; multiplayer (Co-op / PvP, up to 4) over WebRTC, the missions in order. 14 ship types, an upgrade tree, a start screen with the owner's picture.
+**Hive Hunger** — a free 3D browser game: a swarm that behaves like a flock of birds eats voxel planets. Single player goes through missions on a solar system map (the bodies with a level in `CONFIG.levels` can be played — see docs/CONFIG.md, Levels) with a saved game; multiplayer (Co-op / PvP, up to 4) over WebRTC, the missions in order. 14 ship types, an upgrade tree, a start screen with the owner's picture.
 
 - Play: https://michalstankiewicz4-cell.github.io/Hive-Hunger/
 - Repository: https://github.com/michalstankiewicz4-cell/Hive-Hunger (branch `main`)
@@ -17,7 +17,7 @@ A recovery file: everything needed to pick the project up again — what it is, 
 - **Waiting for:** the owner's files exported from the ship editor and the tree editor (see below) — apply the ship values; talk the tree over with him before building it.
 - **Later, for the release (owner):** the ship bar's thumbnails should appear only once that ship type is unlocked in the upgrade tree.
 - **Next, when the owner asks:** the upgrade tree's logic. The new layout is in `js/core/SkillTree.js` (ships = hexagons, their properties = circles, the swarm's traits = diamonds, levels 0–5, links across branches); only Brood, Wings, Jaws and the lightning work, everything else is `soon`. Open questions for him: (1) what buying a ship does — unlock the type (but every player now starts with 2 of each), +2 ships, or only open its properties; (2) the list of properties; (3) the cross links. A drawn proposal was shown to him (same layout as the game's tree).
-- Other open things: the rest of the solar system's bodies are on the map as "coming soon" (only the Kuiper Belt and Earth have levels); unlocking missions in order is chosen but switched off for now (every playable mission is open); the "fast swarms can't finish a planet" limitation (see Known limitations).
+- Other open things: the rest of the solar system's bodies are on the map as "coming soon" (only the bodies in `CONFIG.levels` have levels); unlocking missions in order is chosen but switched off for now (every playable mission is open); the "fast swarms can't finish a planet" limitation (see Known limitations).
 - How to work: answer in Polish, write game / code / docs in English; propose ideas, don't add them on your own; ask with a few options when a request leaves real choices; run all seven test suites before every publish; keep README, CHANGELOG, this file, `docs/*` and `tests/README.md` up to date; one publish = one version bump.
 
 ## The ship editor (0.44.0, owner)
@@ -89,6 +89,7 @@ These came from the owner's requests; keep them unless he asks otherwise.
 - **Upgrade tree (0.42.0, owner):** keep our tree's look and its growth upwards; like the owner's example — not symmetrical, unexpected links; ships with properties to upgrade and traits of the whole swarm; costs don't matter yet; ships on different levels; levels numbered (5 + the start); bigger ship nodes of another shape, the swarm's and the properties' of their own. The assistant proposed the layout (owner: "send it to GitHub under Tab, the logic later"). Open questions for later: what buying a ship does (unlock the type / +2 ships / only open its properties), the list of properties, the cross links.
 - **"New or continue" note (0.41.0, owner):** under Single player in the main menu when a save exists, so the player knows before pressing.
 - **Save game (0.41.0, owner):** under Resume in the Esc menu; it stays paused and the note says "Saved ✓" with the time (assistant's choice).
+- **Bodies of the outer solar system (0.47.0–, owner, in this order, one publish each):** Charon — half of Pluto, "an icy guy + rocks, darker grey than Pluto"; Pluto — 0.75 × Earth's radius (a correction: first 1.5), polar caps, light grey rock; Triton — like Pluto, size estimated; Neptune — size estimated, light blue. Pluto = 0.75, so Charon = 0.375. Assistant's choices: the colours (palette per level), ice below `seaLevel` and rock above it on Charon.
 - **Autosave and New game question (0.46.1, owner):** finishing a mission and leaving without saving left the map ticked but the points gone — now a mission done saves the game by itself, with a note on the map ("Kuiper Belt done · game saved"); New game with a save asks "Delete your saved game and start a new one?" (Delete it and start a new game / No). Assistant's choices: the note's wording and place (over the map), No goes back to the start screen.
 - **Saving (0.40.0, owner):** Esc in single player shows "Save and exit" or simply "Exit to main menu"; then Single player asks whether to continue or start a new game; Settings get "Delete save game". Assistant's choices: Resume and Settings kept in the Esc menu (Esc used to toggle the menu), one save slot in localStorage (mission, seed, eaten voxels as run lengths, points, upgrades, panel settings; drifting pieces go back in place, the swarm restarts from its tunnel), the question only when a save exists, New game and Delete save game also clear the map's ticks, Delete asks once more, Exit without saving drops that game's points and upgrades.
 - **Kuiper Belt at an angle (0.39.0, owner):** "in single player at least", like the owner's screenshot (the band running off diagonally). The band is tipped back 1 rad (`pitch`, every mode) and single player starts with the camera turned 0.35 rad (`view`); turning the band itself would have tripled its grid (≈ 8 million voxels), so the camera turns instead (assistant's choice).
@@ -216,6 +217,7 @@ Lessons from writing them:
 | 0.45.1 | tag `v0.45.1` | tree: thin lines (drawn at screen resolution), a node's links light up under the pointer |
 | 0.46.0 | tag `v0.46.0` | the tree editor (`tools/tree-editor.html`) with Export / Import, EN / PL |
 | 0.46.1 | tag `v0.46.1` | autosave when a mission is done (note on the map); New game asks before deleting the save |
+| 0.47.0 | tag `v0.47.0` | Charon (0.375 × Earth, icy, darker grey rock); a level's own surface look |
 
 ## Known limitations
 

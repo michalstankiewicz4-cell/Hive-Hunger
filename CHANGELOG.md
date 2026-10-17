@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.47.0] — 2026-10-17
+
+### Added
+- **Charon** can be played: a moon half the size of Pluto (0.375 × Earth's radius), icy, with rock darker grey than Pluto's. On the map it is no longer "coming soon"; missions go Kuiper Belt → Charon → Earth.
+- A mission may have its own look: surface colours, sea level, polar caps, clouds and the inside's rock (`CONFIG.levels[].surface`, `rock`, `rockCore`).
+
 ## [0.46.1] — 2026-10-17
 
 ### Added

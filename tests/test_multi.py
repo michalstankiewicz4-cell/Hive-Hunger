@@ -41,6 +41,9 @@ async def main():
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(args=h.BROWSER_ARGS)
             host = await h.open_page(browser, url, errors, 'host', peer=True)
+            nx = await host.evaluate("""async () => { const g = window.__dbg, { SOLAR } = await import('./js/solar.js'), id = g.cfg.levels[1].body;
+          return { id, name: SOLAR.find((b) => b.id === id).name, earth: g.cfg.levels.findIndex((l) => l.body === 'earth') + 1 }; }""")
+            NEXT, NEXT_ID = nx['name'], nx['id']
             # play single player first: points, an upgrade, part of the planet eaten …
             await host.click('.menu-choice >> nth=0')
             await host.click('.map-start')  # (the map: the first mission)
@@ -172,10 +175,10 @@ async def main():
             text = await guests[1].inner_text('#summary')
             t.ok(('wins this planet' in text or 'You win this planet' in text) and 'Share' in text and 'Won' in text, 'PvP summary: winner, shares, planets won',
                  text.replace(chr(10), ' | ')[:200])
-            t.ok('Kuiper Belt eaten' in text and 'Next mission: Earth' in text, 'missions go in order: the Kuiper Belt first, Earth next', text.replace(chr(10), ' | ')[:200])
+            t.ok('Kuiper Belt eaten' in text and f'Next mission: {NEXT}' in text, f'missions go in order: the Kuiper Belt first, {NEXT} next', text.replace(chr(10), ' | ')[:200])
             await guests[1].wait_for_timeout(500)
             gm = await guests[1].evaluate("() => ({ map: !document.getElementById('map').hidden, card: document.querySelector('.map-card-name')?.textContent, start: Boolean(document.querySelector('.map-card .map-start:not(:disabled)')) })")
-            t.ok(gm['map'] and gm['card'] == 'Earth' and not gm['start'], 'the map behind the summary shows the next mission (no Start: they go in order)', gm)
+            t.ok(gm['map'] and gm['card'] == NEXT and not gm['start'], 'the map behind the summary shows the next mission (no Start: they go in order)', gm)
             rows = await host.evaluate('() => window.__dbg.summary.rows.map(r => r.planet)')
             t.ok(rows == sorted(rows, reverse=True), 'players sorted by voxels eaten', rows)
             await host.click('#summary .menu-start')
@@ -191,7 +194,7 @@ async def main():
                  and await guests[1].locator('#summary').is_hidden(), 'everyone pressed: next planet, summary closed')
             bodies = [await host.evaluate('() => window.__dbg.bodyId'), await guests[1].evaluate('() => window.__dbg.bodyId'),
                       await guests[1].evaluate("() => document.getElementById('map').hidden")]
-            t.ok(bodies == ['earth', 'earth', True], 'the next mission (Earth) on host and guests, the map gone', bodies)
+            t.ok(bodies == [NEXT_ID, NEXT_ID, True], f'the next mission ({NEXT}) on host and guests, the map gone', bodies)
 
             # a piece bitten off on the host drifts on every screen; eating it there shows on the guests
             cut = await host.evaluate("""() => { const g = window.__dbg, pl = g.planet, N = pl.N;

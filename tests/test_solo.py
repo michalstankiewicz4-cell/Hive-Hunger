@@ -50,6 +50,10 @@ async def main():
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(args=h.BROWSER_ARGS)
         page = await h.open_page(browser, url, errors, 'solo')
+        # the mission after the Kuiper Belt, and Earth's level number (missions come in the map's order)
+        nx = await page.evaluate("""async () => { const g = window.__dbg, { SOLAR } = await import('./js/solar.js'), id = g.cfg.levels[1].body;
+          return { id, name: SOLAR.find((b) => b.id === id).name, earth: g.cfg.levels.findIndex((l) => l.body === 'earth') + 1 }; }""")
+        NEXT, EARTH = nx['name'], nx['earth']
 
         # the loader goes once everything is in; the start screen over the start picture, the title and the menu
         await page.wait_for_function("() => !document.getElementById('loader')", timeout=10000)
@@ -220,13 +224,13 @@ async def main():
         t.ok(gone == [None, None, None, None], 'no settings panel (Units, Speed, Power, Turning, Reset) and no level switch', gone)
 
         # a planet right away (as Start on the map does): the swarm starts again from its tunnel
-        await page.evaluate('() => window.__dbg.jumpToLevel(2)')
+        await page.evaluate('(n) => window.__dbg.jumpToLevel(n)', EARTH)
         await page.wait_for_timeout(300)
         jump = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet;
           const c = s.center(), home = p.spawnWorld(); let inside = 0;
           for (let i = 0; i < s.count; i++) { const idx = pl.cellAt({ x: s.pos[i * 3], y: s.pos[i * 3 + 1], z: s.pos[i * 3 + 2] }); if (idx >= 0 && pl.hp[idx] > 0) inside++; }
           return { level: g.level, shape: pl.shape, home: Math.hypot(c.x - home.x, c.y - home.y, c.z - home.z), inside, left: pl.left, total: pl.total }; }""")
-        t.ok(jump['level'] == 2 and jump['shape'] == 'sphere', 'level 2 (Earth) right away', jump)
+        t.ok(jump['level'] == EARTH and jump['shape'] == 'sphere', 'Earth right away', jump)
         t.ok(jump['home'] < 5 and jump['inside'] == 0, 'the swarm starts again from its beacon, not inside the planet', jump)
         await page.evaluate("() => window.__dbg.localPlayer.setSetting('speed', 0.3)")
         await h.fast_forward(page, 400)
@@ -243,7 +247,7 @@ async def main():
         await page.wait_for_timeout(400)
         ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
         t.ok(ui == [12, 2, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'the thumbnails show how many ships of each type', ui)
-        await page.evaluate('() => window.__dbg.jumpToLevel(2)')
+        await page.evaluate('(n) => window.__dbg.jumpToLevel(n)', EARTH)
         await page.evaluate("() => window.__dbg.localPlayer.setSetting('speed', 0.3)")
         await h.fast_forward(page, 300)
         # buying: + on a thumbnail = one more of that type (free for now), Shift = 10; no other ship changes its type
@@ -654,7 +658,7 @@ async def main():
         t.ok(worst_inside == 0, 'no unit inside solid voxels', [worst_inside, await page.evaluate('() => (window.__inside || []).slice(0, 5)')])
         t.ok(worst_shared == 0, 'no bite shared while free voxels are left', worst_shared)
 
-        # the mission is done: once the ships are gone, back to the map — the belt ticked, Earth next
+        # the mission is done: once the ships are gone, back to the map — the belt ticked, the next mission marked
         dn = await page.evaluate("""() => { const g = window.__dbg; let f = 0;
           while (document.getElementById('map').hidden && f < 1500) { g.update(); f++; } }""")
         await page.wait_for_timeout(300)  # (the map draws its labels)
@@ -662,8 +666,8 @@ async def main():
           return { map: !document.getElementById('map').hidden, started: g.started, card: document.querySelector('.map-card-name')?.textContent,
             status: document.querySelector('.map-card-status')?.textContent, done: [...document.querySelectorAll('.map-label.is-done')].map((e) => e.textContent),
             saved: localStorage.getItem('hive-hunger-progress') }; }""")
-        t.ok(dn['map'] and not dn['started'] and dn['card'] == 'Earth' and dn['status'] == 'Next mission' and dn['done'] == ['Kuiper Belt'] and 'kuiper' in (dn['saved'] or ''),
-             'mission done: back to the map, the belt ticked (and remembered), Earth next', dn)
+        t.ok(dn['map'] and not dn['started'] and dn['card'] == NEXT and dn['status'] == 'Next mission' and dn['done'] == ['Kuiper Belt'] and 'kuiper' in (dn['saved'] or ''),
+             f'mission done: back to the map, the belt ticked (and remembered), {NEXT} next', dn)
         # … and the game is saved there (the tick, the points and upgrades together), with a note on the map
         au = await page.evaluate("""() => { const s = JSON.parse(localStorage.getItem('hive-hunger-save') || 'null'), n = document.querySelector('.map-note');
           return { saved: Boolean(s), mission: s && s.mission, score: s && s.score, now: window.__dbg.localPlayer.score, note: n && !n.hidden ? n.textContent : '' }; }""")
@@ -683,7 +687,7 @@ async def main():
         await page.click('#menu .menu-choice >> text=Continue')
         await page.wait_for_timeout(300)
         cb = await page.evaluate("() => ({ map: !document.getElementById('map').hidden, card: document.querySelector('.map-card-name')?.textContent, score: window.__dbg.localPlayer.score, done: [...document.querySelectorAll('.map-label.is-done')].map((e) => e.textContent) })")
-        t.ok(cb['map'] and cb['card'] == 'Earth' and cb['score'] == au['score'] and cb['done'] == ['Kuiper Belt'], 'Continue after a mission: the map with the belt ticked, Earth next, the points back', cb)
+        t.ok(cb['map'] and cb['card'] == NEXT and cb['score'] == au['score'] and cb['done'] == ['Kuiper Belt'], f'Continue after a mission: the map with the belt ticked, {NEXT} next, the points back', cb)
         await page.click('.map-start')
         # the next planet: the tunnel opens, the ships come out of it, it closes
         ar = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm;

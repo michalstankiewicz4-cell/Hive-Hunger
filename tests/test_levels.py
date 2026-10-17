@@ -1,4 +1,4 @@
-"""Planet levels: the missions that can be played (CONFIG.levels: the Kuiper Belt and Earth, in the
+"""Planet levels: the missions that can be played (CONFIG.levels: the Kuiper Belt first, then the bodies in the
 solar system map's order), their shapes and sizes, all drawn as a smooth surface that is built and
 updated when voxels are eaten; the map's bodies.
 
@@ -55,12 +55,13 @@ async def main():
         await page.click('.menu-choice >> nth=0')
         levels = await page.evaluate('() => window.__dbg.cfg.levels')
         R = await page.evaluate('() => window.__dbg.cfg.planet.radius')
-        t.ok([l.get('body') for l in levels] == ['kuiper', 'earth'] and all(l.get('style') == 'smooth' for l in levels),
-             'two missions to play: the Kuiper Belt and Earth, both smooth', [l.get('body') + '/' + l.get('shape', 'sphere') for l in levels])
+        bodies = [l.get('body') for l in levels]
+        t.ok(bodies[0] == 'kuiper' and 'earth' in bodies and all(l.get('style') == 'smooth' for l in levels),
+             f'{len(levels)} missions to play, the Kuiper Belt first, Earth among them, all smooth', [l.get('body') + '/' + l.get('shape', 'sphere') for l in levels])
         solar = await page.evaluate("async () => (await import('./js/solar.js')).SOLAR.map((b) => b.id)")
         t.ok(len(solar) == 20 and solar[0] == 'kuiper' and solar[-1] == 'sun' and solar.index('pluto') < solar.index('neptune') < solar.index('jupiter') < solar.index('earth') < solar.index('mercury'),
              'the map: 20 bodies from the Kuiper Belt in to the Sun, in order', solar)
-        t.ok(all(l['body'] in solar for l in levels) and solar.index('kuiper') < solar.index('earth'), 'every mission is a body of the map, in the map\'s order')
+        t.ok(all(l['body'] in solar for l in levels) and [solar.index(b) for b in bodies] == sorted(solar.index(b) for b in bodies), 'every mission is a body of the map, in the map\'s order', bodies)
 
         for level in range(1, len(levels) + 2):
             want = levels[(level - 1) % len(levels)]
@@ -121,15 +122,15 @@ async def main():
         t.ok(belt['minSpan'] >= 2 and belt['maxSpan'] <= 9 and belt['irregular'] > belt['rocks'] // 3, 'small, irregular rocks (lumps of overlapping balls)', belt)
         t.ok(belt['colours'] > 10 and belt['total'] == belt['again'], 'each in its own shade; the same seed builds the same belt', belt)
 
-        # planet 2: Earth — the full planet
-        full = await page.evaluate(BUILD, 2)
-        t.ok(full['shape'] == 'sphere' and abs(full['R'] - R) < 0.01, 'planet 2: Earth, the full-size planet', full)
+        # Earth — the full planet
+        full = await page.evaluate(BUILD, bodies.index('earth') + 1)
+        t.ok(full['shape'] == 'sphere' and abs(full['R'] - R) < 0.01, 'Earth, the full-size planet', full)
         await page.evaluate(BUILD, 1)
         await page.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
           p.onNewPlanet(); p.setSetting('count', 100); p.setSetting('speed', 0.3); p.setSetting('power', 1.5); g.started = true; g.stop(); }''')
         await h.fast_forward(page, 1500)
         st = await page.evaluate('() => ({ left: window.__dbg.planet.left, total: window.__dbg.planet.total, body: window.__dbg.bodyId })')
-        t.ok(st['body'] == 'earth' or st['left'] < st['total'], 'the swarm eats the asteroids', 'eaten whole, Earth next' if st['body'] == 'earth' else st)
+        t.ok(st['body'] == bodies[1] or st['left'] < st['total'], 'the swarm eats the asteroids', 'eaten whole, the next one up' if st['body'] == bodies[1] else st)
 
         await browser.close()
     return t.done(errors)

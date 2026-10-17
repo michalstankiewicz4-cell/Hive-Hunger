@@ -112,6 +112,12 @@ export const CONFIG = Object.freeze({
   levels: [
     { body: 'kuiper', shape: 'belt', count: 335, minSize: 2, maxSize: 6, width: 0.95, length: 9.5, curve: 0.06, thick: 6, pitch: -1, view: 0.35, style: 'smooth',
       colors: [[176, 190, 214], [150, 160, 180], [200, 206, 218], [130, 136, 150], [186, 176, 168]] },
+    // Charon: half of Pluto's size (Pluto: 0.75 × Earth's radius) — icy plains with rock darker grey than
+    // Pluto's (`seaLevel` splits ice below from rock above; no clouds, no polar caps)
+    { body: 'charon', radiusScale: 0.375, style: 'smooth', rock: [92, 90, 92], rockCore: [62, 60, 62],
+      surface: { seaLevel: 0.47, iceLatitude: 2, clouds: { threshold: 2 },
+        palette: { deepOcean: [150, 158, 170], shallowOcean: [178, 186, 198], beach: [150, 152, 158], lowland: [118, 118, 124],
+          highland: [102, 102, 108], mountain: [84, 84, 90], snow: [196, 202, 212], ice: [210, 218, 228] } } },
     { body: 'earth', radiusScale: 1, style: 'smooth' },
   ],
 

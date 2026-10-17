@@ -35,7 +35,15 @@ export class VoxelPlanet {
    */
   constructor(scene, cfg, seed, look = {}, fragmentCfg = null) {
     this.scene = scene;
-    this.cfg = cfg;
+    // a level may have its own look: `surface` (anything of planet.surface, its palette and clouds
+    // too), `rock` and `rockCore` (the inside) — the rest comes from CONFIG.planet
+    const ls = look.surface;
+    this.cfg = ls || look.rock || look.rockCore ? {
+      ...cfg,
+      rock: look.rock || cfg.rock,
+      rockCore: look.rockCore || cfg.rockCore,
+      surface: { ...cfg.surface, ...ls, clouds: { ...cfg.surface.clouds, ...ls?.clouds }, palette: { ...cfg.surface.palette, ...ls?.palette } },
+    } : cfg;
     this.s = cfg.voxelSize;
     this.style = look.style || 'cubes';
     this.seed = seed ?? ((Math.random() * 1e6) | 0);

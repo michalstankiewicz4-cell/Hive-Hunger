@@ -43,11 +43,11 @@ The point the flock heads for.
 
 ## Levels (`levels`)
 
-The missions that can be played, in the solar system map's order (`js/solar.js`): single player picks one on the map; multiplayer goes through them in order (planet 1 the first, then round again). Default: the Kuiper Belt and Earth.
+The missions that can be played, in the solar system map's order (`js/solar.js`): single player picks one on the map; multiplayer goes through them in order (planet 1 the first, then round again). Default: the Kuiper Belt, Charon and Earth.
 
 | Field | What it does |
 | --- | --- |
-| `body` | the map body this mission is (`kuiper`, `earth`) |
+| `body` | the map body this mission is (`kuiper`, `charon`, `earth`, …) |
 | `shape` | `sphere` (default), `belt` (a long band of small asteroids, see below), `cube` (half-edge = radius), `pair` (a sphere and a cube of `radius`, `gap` voxels apart), `boxes` (every box shape up to `max`×`max`×`max` once, `gap` apart) or `text` (voxel letters) |
 | `gap` | `pair`: voxels between the sphere and the cube (10); `boxes`: between boxes and rows (5) |
 | `max` | `boxes` only: the largest edge (4) |
@@ -57,9 +57,10 @@ The missions that can be played, in the solar system map's order (`js/solar.js`)
 | `pitch`, `view` | `belt`: the band tipped back −1 rad; single player starts with the camera turned 0.35 rad round (any level may have `view`) |
 | `width`, `length`, `curve`, `thick` | `belt`: the band 0.95 × `planet.radius` wide and 9.5 × long (five times its width ×2), its middle 0.06 × its length nearer the camera than its ends, 6 voxels deep |
 | `colors` | `belt`: rock colours in turn (icy greys), each a little lighter or darker |
+| `surface`, `rock`, `rockCore` | a sphere's own look: anything of `planet.surface` (`seaLevel`, `iceLatitude`, `clouds`, `palette` colours — only what differs), and the inside's colours; the rest comes from `planet`. Charon: ice below `seaLevel` (the "ocean" colours), darker grey rock above it, no clouds (`clouds.threshold` 2), no polar caps (`iceLatitude` 2) |
 | `style` | graphics only: `smooth` (smooth surface, cubes hidden), `cubes` or `wedges` (cubes + ramps and corners in the steps) |
 
-Default (both `smooth`): the Kuiper Belt (a band of 335 rocks), Earth (sphere 1). The other shapes (`cube`, `pair`, `boxes`, `text`) are no longer missions; the tests build them.
+Default (all `smooth`): the Kuiper Belt (a band of 335 rocks), Charon (sphere 0.375 — half of Pluto's 0.75; icy, darker grey rock), Earth (sphere 1). The other shapes (`cube`, `pair`, `boxes`, `text`) are no longer missions; the tests build them.
 
 ## Flock (`swarm`)
 
