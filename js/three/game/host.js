@@ -1,3 +1,4 @@
+import { GROUP_KINDS } from '../../config.js';
 import { PLAYERS } from './players.js';
 import { bodyById } from '../../solar.js';
 
@@ -60,8 +61,10 @@ export const HostSide = {
   onGuestMessage(index, msg) {
     const p = this.players[index];
     if (!p) return;
-    if (msg.t === 'cmd' && msg.kind === 'click' && msg.p) p.command(msg.p);
-    else if (msg.t === 'cmd' && msg.kind === 'recall') p.recall();
+    const group = GROUP_KINDS.includes(msg.group) ? msg.group : 'eaters';
+    if (msg.t === 'cmd' && msg.kind === 'click' && msg.p) p.command(msg.p, group);
+    else if (msg.t === 'cmd' && msg.kind === 'recall') p.recall(group);
+    else if (msg.t === 'cmd' && msg.kind === 'buy') p.buyShips(group, Math.max(1, Math.min(10, msg.n | 0)));
     else if (msg.t === 'set') p.setSetting(msg.key, msg.value);
     else if (msg.t === 'next') this.nextPlanetReady(index);
   },

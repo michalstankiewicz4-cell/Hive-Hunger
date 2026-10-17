@@ -70,6 +70,8 @@
   .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--accent); padding: 8px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .toast.show { opacity: 1; }
   .legend { color: var(--muted); font-size: 12px; }
+  .langs { display: inline-flex; gap: 2px; }
+  .langs button[aria-pressed=true] { background: var(--accent); color: #1a1500; border-color: var(--accent); }
   @media (max-width: 760px) {
     .layout { flex-direction: column; }
     nav { width: auto; max-height: 34vh; border-right: none; border-bottom: 1px solid var(--line); }
@@ -86,6 +88,7 @@
   <h1>Hive Hunger — Ship editor</h1>
   <span class="ver" id="ver"></span>
   <span class="legend" id="summary"></span>
+  <span class="langs" role="group" aria-label="Language"><button id="lang-en" class="small">EN</button><button id="lang-pl" class="small">PL</button></span>
   <button id="import">Import…</button>
   <button id="reset-all">Reset all</button>
   <button id="export" class="primary">Export</button>
@@ -116,6 +119,124 @@ const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls)
 const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
 const clone = (v) => JSON.parse(JSON.stringify(v));
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// ---------------------------------------------------------------- language (English / Polski)
+// every text on the page goes through T(): the English text, or its Polish one when PL is chosen.
+// (The exported file is always in English.)
+const PL = {
+  'Hive Hunger — Ship editor': 'Hive Hunger — edytor statków', 'Import…': 'Importuj…', 'Reset all': 'Resetuj wszystko', 'Export': 'Eksportuj',
+  'game': 'gra', 'no changes': 'bez zmian', 'change': 'zmiana', 'changes': 'zmian', 'as in the game': 'jak w grze', 'changed': 'zmienione',
+  'Swarm': 'Rój', 'Attack': 'Atak', 'Support': 'Wsparcie', 'Whole swarm': 'Cały rój',
+  'Settings shared by every ship: flying together, steering, getting unstuck, the start and the jump to hyperspace when a planet is eaten.':
+    'Ustawienia wspólne dla wszystkich statków: lot w grupie, sterowanie, wychodzenie z zakleszczeń, start i skok w nadprzestrzeń po zjedzeniu planety.',
+  // ships (names and the Ship guide's descriptions)
+  'Eaters': 'Zjadacze', 'Lasers': 'Lasery', 'Storms': 'Burze', 'Orbs': 'Kule', 'Splashers': 'Chlapacze', 'Bombers': 'Bombowce', 'Drills': 'Wiertła',
+  'Piercers': 'Przebijacze', 'Cutters': 'Tnące', 'Snipers': 'Snajperzy', 'Tugs': 'Holowniki', 'Cleaners': 'Sprzątacze', 'Boosters': 'Wzmacniacze',
+  'Fly to the nearest voxel, land on it and eat it — a crater as wide as your Power.': 'Lecą do najbliższego voxela, lądują na nim i go zjadają — krater tak szeroki jak Twoja Moc (Power).',
+  'Eat from 5 voxels away with a red beam; 10% slower.': 'Jedzą z 5 voxeli czerwonym promieniem; o 10% wolniejsze.',
+  'Lightning from laser range that forks into three: the bite and its two nearest voxels.': 'Błyskawica z zasięgu lasera, rozwidlająca się na trzy: cel i dwa najbliższe voxele.',
+  'A slow plasma orb with a fiery tail from 10 voxels; it bursts and destroys everything within 2 voxels.': 'Wolna kula plazmy z ognistym ogonem z 10 voxeli; wybucha i niszczy wszystko w promieniu 2 voxeli.',
+  'A wobbling bubble of liquid from 10 voxels that bends the view like a lens; where it lands, 3 × 3 × 2 voxels soak for 3 s and are gone.': 'Falująca bańka cieczy z 10 voxeli, zniekształca obraz jak soczewka; gdzie spadnie, 3 × 3 × 2 voxele nasiąkają przez 3 s i znikają.',
+  'Blow up everything within 10 voxels on contact — and are gone. A black hole stays for 4 s.': 'Przy zetknięciu wysadzają wszystko w promieniu 10 voxeli — i znikają. Zostaje czarna dziura na 4 s.',
+  'Drill a straight tunnel towards the centre with a spiral bit, until through.': 'Wiercą prosty tunel do środka spiralnym wiertłem, aż na wylot.',
+  'Lock a line from 20 voxels and fire along it until through: an orange beam with a spiral bolt, 3 voxels at once.': 'Blokują linię z 20 voxeli i strzelają wzdłuż niej aż na wylot: pomarańczowy promień ze spiralną błyskawicą, 3 voxele naraz.',
+  'From 20 voxels a flat red sheet as wide as what it hits: it cuts the whole row at once, deeper and deeper, until through.': 'Z 20 voxeli płaski czerwony promień tak szeroki jak to, w co trafia: tnie cały rząd naraz, coraz głębiej, aż na wylot.',
+  'From any distance: stop, charge 5 s, fire a shot that speeds up 5% per voxel and destroys the voxel it hits.': 'Z dowolnej odległości: stają, ładują 5 s, strzelają pociskiem, który przyspiesza o 5% na voxel i niszczy trafiony voxel.',
+  'Catch drifting pieces with a tractor beam and tow them home for 5 × the points.': 'Łapią dryfujące kawałki promieniem ściągającym i holują je do tunelu za 5 × punkty.',
+  'Every 3 s a bolt jumps between your own ships, destroying the voxels on its way.': 'Co 3 s błyskawica skacze między Twoimi statkami, niszcząc voxele po drodze.',
+  'Eat only drifting pieces of 1–3 voxels.': 'Jedzą tylko dryfujące kawałki z 1–3 voxeli.',
+  'Fly with the swarm in a gentle pink force field 5 voxels across: your ships inside it get +20% Power: a wider crater, eating harder.': 'Lecą z rojem w delikatnym różowym polu siłowym o średnicy 5 voxeli: Twoje statki w środku dostają +20% Mocy: szerszy krater, mocniejsze jedzenie.',
+  // boxes and buttons
+  'Play': 'Gra', 'Values that change how it plays. Distances are in game units: 1 voxel = 0.5; time in frames: 60 = 1 s.': 'Wartości, które zmieniają rozgrywkę. Odległości w jednostkach gry: 1 voxel = 0,5; czas w klatkach: 60 = 1 s.',
+  'Look': 'Wygląd', 'Colours, sizes and effects — only how it looks.': 'Kolory, rozmiary i efekty — tylko wygląd.', 'settings': 'ustawień',
+  'Setting': 'Ustawienie', 'Value': 'Wartość', 'Game': 'Gra', 'What it does': 'Co robi', "Back to the game's value": 'Wróć do wartości z gry',
+  'Reset this ship': 'Resetuj ten statek', 'Reset every change to': 'Cofnąć wszystkie zmiany:',
+  'Tasks, in order': 'Zadania, po kolei',
+  'What the ship does, first to last: drag or use ↑ ↓ to change the order, untick to switch a task off, "When" sets when it applies, "Value / note" for numbers or details. Standard tasks are the ones ships in the game do today; your own ones are non-standard (blue).':
+    'Co statek robi, od pierwszego do ostatniego: przeciągnij albo użyj ↑ ↓, by zmienić kolejność, odznacz, by wyłączyć zadanie, „Kiedy” ustala, kiedy działa, „Wartość / uwaga” na liczby i szczegóły. Standardowe zadania to te, które statki w grze robią dziś; Twoje własne są niestandardowe (niebieskie).',
+  'Earlier': 'Wcześniej', 'Later': 'Później', 'Remove': 'Usuń', 'Drag': 'Przeciągnij', 'On / off': 'Wł. / wył.', 'When': 'Kiedy',
+  'Your task': 'Twoje zadanie', 'Custom task': 'Własne zadanie', 'When should this task apply?': 'Kiedy to zadanie ma działać?', 'Value / note': 'Wartość / uwaga',
+  'Add a standard task…': 'Dodaj standardowe zadanie…', 'Your own (non-standard) task — e.g. "Circle the bite twice before firing"': 'Twoje własne (niestandardowe) zadanie — np. „Okrąż cel dwa razy przed strzałem”',
+  'Add': 'Dodaj', 'Reset tasks': 'Resetuj zadania', 'Reset': 'Resetuj', 'Add…': 'Dodaj…',
+  'Goes for (priority)': 'Na co leci (priorytet)',
+  'What the ship looks for, the top one first; the next one only when there is none of it. Untick to leave it out, add your own.': 'Czego statek szuka, najpierw górnego; następnego dopiero, gdy pierwszego brak. Odznacz, by pominąć, dodaj własne.',
+  'Your own target — e.g. "The biggest drifting piece"': 'Twój własny cel — np. „Największy dryfujący kawałek”',
+  'Notes': 'Notatki', 'Anything else: what should change, new behaviour, ideas to check.': 'Wszystko inne: co zmienić, nowe zachowanie, pomysły do sprawdzenia.',
+  'e.g. "Power should be twice as strong, and it should not fire at pieces."': 'np. „Moc ma być dwa razy większa i niech nie strzela w kawałki.”',
+  'Exported': 'Wyeksportowano', 'Exported (no changes)': 'Wyeksportowano (bez zmian)', 'Imported': 'Zaimportowano', 'Could not read the file: ': 'Nie udało się odczytać pliku: ',
+  'Reset every change for every ship?': 'Cofnąć wszystkie zmiany we wszystkich statkach?', 'Everything as in the game': 'Wszystko jak w grze',
+  // when
+  'always': 'zawsze', 'has a bite': 'ma cel', 'bite in range': 'cel w zasięgu', 'facing the bite': 'zwrócony do celu', 'a piece is drifting': 'dryfuje kawałek',
+  'a small piece is drifting': 'dryfuje mały kawałek', 'near own ships': 'przy własnych statkach', 'got through': 'przebił się na wylot', 'stuck': 'utknął',
+  'planet eaten': 'planeta zjedzona', 'nothing else to do': 'nie ma nic innego do roboty', '(other…)': '(inne…)',
+  // targets
+  'Nearest voxel': 'Najbliższy voxel', 'Voxels near the swarm target (click)': 'Voxele przy celu roju (kliknięcie)', 'Drifting pieces (nearest)': 'Dryfujące kawałki (najbliższe)',
+  'Small drifting pieces (≤ maxPiece)': 'Małe dryfujące kawałki (≤ maxPiece)', 'Own ships (stays near them)': 'Własne statki (trzyma się przy nich)', "The planet's centre (direction)": 'Środek planety (kierunek)',
+  // standard tasks
+  'Fly with the swarm': 'Leć z rojem', 'Moves with the others towards the swarm target': 'Leci z innymi do celu roju',
+  'Pick a bite': 'Wybierz cel', 'Takes the nearest free voxel as its own bite': 'Bierze najbliższy wolny voxel jako swój cel',
+  'Fly to the bite': 'Leć do celu', 'Flies round the planet on long trips': 'Na długich trasach okrąża planetę',
+  'Turn to face the bite': 'Obróć się do celu', 'Within aimAngle degrees': 'W granicach aimAngle stopni',
+  'Land and eat': 'Wyląduj i zjedz', 'Sits on the bite for eatFrames, a crater of Power': 'Siedzi na celu przez eatFrames, krater wielkości Mocy',
+  'Fire a laser beam': 'Strzel promieniem lasera', 'Eats the bite from reach away': 'Zjada cel z odległości reach',
+  'Fire a forked bolt': 'Strzel rozwidloną błyskawicą', 'The bite and its two nearest voxels': 'Cel i dwa najbliższe voxele',
+  'Fire a plasma orb': 'Wystrzel kulę plazmy', 'One at a time, bursts at the target': 'Po jednej, wybucha przy celu',
+  'Fire a liquid bubble': 'Wystrzel bańkę cieczy', 'The block where it lands soaks and is gone': 'Blok, w który trafi, nasiąka i znika',
+  'Blow up on contact': 'Wybuchnij przy zetknięciu', 'Everything within radius — the ship is gone': 'Wszystko w promieniu radius — statek znika',
+  'Drill towards the centre': 'Wierć do środka', 'Straight in until through or maxLength': 'Prosto, aż na wylot albo maxLength',
+  'Lock a line and pierce': 'Zablokuj linię i przebijaj', 'Several voxels in a row at once, until through': 'Kilka voxeli w rzędzie naraz, aż na wylot',
+  'Lock a sheet and cut': 'Zablokuj płaszczyznę i tnij', 'The whole row at once, deeper until through': 'Cały rząd naraz, coraz głębiej, aż na wylot',
+  'Go on after getting through': 'Działaj dalej po przebiciu', 'afterFrames more, the beam into space': 'Jeszcze afterFrames, promień w kosmos',
+  'Stop and charge': 'Zatrzymaj się i ładuj', 'chargeFrames facing the bite': 'chargeFrames zwrócony do celu',
+  'Fire a shot': 'Strzel', 'Speeds up, destroys the voxel it hits': 'Przyspiesza, niszczy trafiony voxel',
+  'Fly on': 'Leć dalej', 'For moveFrames, then again': 'Przez moveFrames, potem znowu',
+  'Find a drifting piece': 'Znajdź dryfujący kawałek', 'The nearest one': 'Najbliższy',
+  'Catch it with a tractor beam': 'Złap go promieniem ściągającym', 'Within range': 'W zasięgu range',
+  'Tow it home': 'Holuj do tunelu', 'To the tunnel, reward × its points': 'Do tunelu, reward × jego punkty',
+  'Eat a small drifting piece': 'Zjedz mały dryfujący kawałek', 'At most maxPiece voxels': 'Najwyżej maxPiece voxeli',
+  'Fire chain lightning': 'Wypuść błyskawicę łańcuchową', 'Every `every` frames, jumps between own ships': 'Co `every` klatek, skacze między własnymi statkami',
+  'Carry a force field': 'Nieś pole siłowe', 'Own ships inside get boost × Power': 'Własne statki w środku dostają boost × Moc',
+  'Never eat': 'Nigdy nie jedz', 'Take another bite when stuck': 'Weź inny cel, gdy utknie', 'No eating for retarget.frames': 'Bez jedzenia przez retarget.frames',
+  'Jump to hyperspace': 'Skocz w nadprzestrzeń', 'When the planet is eaten': 'Gdy planeta jest zjedzona',
+  // what the values do
+  'How many of these ships at the start': 'Ile tych statków na starcie', 'Fewest ships a swarm can have': 'Najmniej statków w roju', 'Most ships a swarm can have': 'Najwięcej statków w roju',
+  'Units per frame (60 frames = 1 s)': 'Jednostki na klatkę (60 klatek = 1 s)', 'How far a ship sees its neighbours': 'Jak daleko statek widzi sąsiadów',
+  'Below this distance ships push each other away': 'Poniżej tej odległości statki się odpychają', 'How fast a ship can turn': 'Jak szybko statek może skręcać',
+  'How fast the nose follows the flying direction': 'Jak szybko dziób podąża za kierunkiem lotu',
+  'Steering: keep your distance': 'Sterowanie: trzymaj odstęp', 'Steering: fly the same way as neighbours': 'Sterowanie: leć jak sąsiedzi',
+  'Steering: stay with the group': 'Sterowanie: trzymaj się grupy', 'Steering: head for the swarm target': 'Sterowanie: leć do celu roju', 'Steering: head for your own bite': 'Sterowanie: leć do własnego celu',
+  'Fly round the planet on trips longer than this': 'Okrążaj planetę na trasach dłuższych niż to', 'Fly-round: margin': 'Okrążanie: margines',
+  'Fly-round: height above the surface': 'Okrążanie: wysokość nad powierzchnią', 'Fly-round: pit depth': 'Okrążanie: głębokość dołu',
+  'Frames without progress = stuck': 'Klatki bez postępu = utknięcie', 'Least progress that counts': 'Najmniejszy liczący się postęp', 'How recent the wall contact must be': 'Jak niedawny musi być kontakt ze ścianą',
+  'A ship eats / fires only when facing its bite within this many degrees': 'Statek je / strzela dopiero, gdy jest zwrócony do celu w tylu stopniach',
+  'No eating this long (10 s) → take another bite': 'Bez jedzenia tak długo (10 s) → inny cel', '…after stopping this long': '…po zatrzymaniu na tyle',
+  'How spread out the ships come out': 'Jak rozproszone wylatują statki', 'Spawn distance from the surface, in planet radii': 'Odległość startu od powierzchni, w promieniach planety',
+  'Hyperspace: random wait up to this many frames': 'Nadprzestrzeń: losowe czekanie do tylu klatek', 'Hyperspace: frames until gone': 'Nadprzestrzeń: klatki do zniknięcia',
+  'Hyperspace: speed-up per frame': 'Nadprzestrzeń: przyspieszenie na klatkę', 'Hyperspace: top speed': 'Nadprzestrzeń: prędkość maksymalna', 'Hyperspace: how much away from the planet': 'Nadprzestrzeń: jak bardzo od planety',
+  'Ship colour': 'Kolor statku', 'Eater colour': 'Kolor zjadaczy', 'Swarm colour (click marker)': 'Kolor roju (znacznik kliknięcia)', 'Ship size (w, h, length)': 'Rozmiar statku (szer., wys., dł.)',
+  'Closer than this to its bite → lands on it': 'Bliżej celu niż to → ląduje', 'May land on a free voxel this close instead': 'Może zamiast tego wylądować na wolnym voxelu tak blisko',
+  'Frames sitting on a bite before it is eaten': 'Klatki na celu, zanim zostanie zjedzony', 'Power: crater radius': 'Moc: promień krateru',
+  'Fires from this far (units; 1 voxel = 0.5)': 'Strzela z takiej odległości (jednostki; 1 voxel = 0,5)', '× the swarm speed': '× prędkość roju',
+  "Share of a laser's damage on the bite": 'Część obrażeń lasera na celu', 'Share on each of the two nearest voxels': 'Część na każdym z dwóch najbliższych voxeli', 'Where the bolt forks (share of the way)': 'Gdzie błyskawica się rozwidla (część drogi)',
+  'Works from this far (units; 1 voxel = 0.5)': 'Działa z takiej odległości (jednostki; 1 voxel = 0,5)', 'Towing speed × own speed': 'Prędkość holowania × własna prędkość',
+  'Piece gone this close to the tunnel': 'Kawałek znika tak blisko tunelu', "× the piece's points": '× punkty kawałka',
+  'Radius (units; 1 voxel = 0.5)': 'Promień (jednostki; 1 voxel = 0,5)', 'Blows up everything within this radius': 'Wysadza wszystko w tym promieniu', 'Force field radius': 'Promień pola siłowego',
+  'Orb speed': 'Prędkość kuli', 'Orb destroys everything within this': 'Kula niszczy wszystko w tym promieniu', 'Frames between bolts': 'Klatki między błyskawicami',
+  'Most jumps between ships': 'Najwięcej skoków między statkami', 'Most distance of one jump': 'Największa długość jednego skoku', 'Frames the bolt lasts': 'Ile klatek trwa błyskawica',
+  'Eats drifting pieces of at most this many voxels': 'Je dryfujące kawałki z najwyżej tylu voxeli',
+  'Drilling speed': 'Prędkość wiercenia', '× Power: radius drilled around the bit': '× Moc: promień wiercenia wokół wiertła', 'Stops after this long in empty space': 'Przestaje po tylu klatkach w pustce',
+  'Longest tunnel': 'Najdłuższy tunel', 'Random aim off the centre': 'Losowe odchylenie od środka',
+  'Voxels in a row at once': 'Voxele w rzędzie naraz', "× an eater's eating rate per voxel": '× tempo jedzenia zjadacza na voxel',
+  'Frames it goes on after getting through': 'Ile klatek działa dalej po przebiciu', 'Beam length into space after getting through': 'Długość promienia w kosmos po przebiciu',
+  'Charging time before a shot (frames)': 'Czas ładowania przed strzałem (klatki)', 'Flying time between shots': 'Czas lotu między strzałami', 'Shot start speed': 'Prędkość początkowa pocisku',
+  'Shot speed-up per voxel': 'Przyspieszenie pocisku na voxel', 'Bubble speed': 'Prędkość bańki', 'Bubble size': 'Rozmiar bańki',
+  'Frames the block soaks before it is gone': 'Ile klatek blok nasiąka, zanim zniknie', 'Soaked block (across, across, deep) in voxels': 'Nasiąknięty blok (w poprzek, w poprzek, w głąb) w voxelach',
+  '× Power for own ships inside': '× Moc dla własnych statków w środku', 'Widest sheet: voxels each side of the line': 'Najszerszy promień: voxele po każdej stronie linii',
+  'Frames between flashes': 'Klatki między błyskami', 'Debris pieces': 'Odłamki',
+};
+let LANG = 'en';
+try { if (localStorage.getItem(STORE + '-lang') === 'pl') LANG = 'pl'; } catch { /* storage off */ }
+const T = (s) => (LANG === 'pl' && s && PL[s]) || s;
 
 // ---------------------------------------------------------------- the sections and their values
 // every section is a flat list of settings: path (a.b for nested ones) → default value
@@ -168,7 +289,7 @@ const NOTES = {
   minCount: 'Fewest ships a swarm can have', maxCount: 'Most ships a swarm can have',
   speed: 'Units per frame (60 frames = 1 s)', perception: 'How far a ship sees its neighbours',
   separationDistance: 'Below this distance ships push each other away', turnRate: 'How fast a ship can turn',
-  turnSmoothing: 'How fast the nose follows the flying direction (Turning slider)',
+  turnSmoothing: 'How fast the nose follows the flying direction',
   'weights.separation': 'Steering: keep your distance', 'weights.alignment': 'Steering: fly the same way as neighbours',
   'weights.cohesion': 'Steering: stay with the group', 'weights.target': 'Steering: head for the swarm target',
   'weights.feed': 'Steering: head for your own bite',
@@ -194,7 +315,7 @@ const NOTES = {
   boost: '× Power for own ships inside', maxHalf: 'Widest sheet: voxels each side of the line', flashEvery: 'Frames between flashes',
   debris: 'Debris pieces',
 };
-const note = (sec, key) => NOTES[`${sec}:${key}`] || NOTES[key] || '';
+const note = (sec, key) => T(NOTES[`${sec}:${key}`] || NOTES[key] || '');
 
 // ---------------------------------------------------------------- tasks
 // standard tasks: what the ships in the game do today (any of them can be given to any ship)
@@ -228,23 +349,23 @@ const ACTIONS = {
 };
 const WHEN = ['always', 'has a bite', 'bite in range', 'facing the bite', 'a piece is drifting', 'a small piece is drifting', 'near own ships', 'got through', 'stuck', 'planet eaten', 'nothing else to do'];
 
-const T = (action, when = 'always', value = '') => ({ action, when, value, on: true });
-const BASE_END = [T('retarget', 'stuck'), T('warp', 'planet eaten')];
+const Task = (action, when = 'always', value = '') => ({ action, when, value, on: true });
+const BASE_END = [Task('retarget', 'stuck'), Task('warp', 'planet eaten')];
 const DEFAULT_TASKS = {
-  eater: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('land', 'facing the bite'), ...BASE_END],
-  laser: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('laser', 'facing the bite'), ...BASE_END],
-  storm: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('bolt', 'facing the bite'), ...BASE_END],
-  orb: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('orb', 'facing the bite'), ...BASE_END],
-  splasher: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('bubble', 'facing the bite'), ...BASE_END],
-  bomber: [T('pickBite'), T('flyBite', 'has a bite'), T('blowUp', 'bite in range'), T('warp', 'planet eaten')],
-  drill: [T('pickBite'), T('flyBite', 'has a bite'), T('drill', 'bite in range'), T('flyOn', 'got through'), ...BASE_END],
-  piercer: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('pierce', 'facing the bite'), T('after', 'got through'), ...BASE_END],
-  cutter: [T('pickBite'), T('flyBite', 'has a bite'), T('aim', 'bite in range'), T('cut', 'facing the bite'), T('after', 'got through'), ...BASE_END],
-  sniper: [T('pickBite'), T('stopCharge', 'has a bite'), T('shoot', 'facing the bite'), T('flyOn'), ...BASE_END],
-  tug: [T('findPiece', 'a piece is drifting'), T('catchPiece', 'bite in range'), T('tow'), T('swarm', 'nothing else to do'), T('warp', 'planet eaten')],
-  support: [T('noEat'), T('swarm'), T('chain', 'near own ships'), T('warp', 'planet eaten')],
-  cleaner: [T('eatPiece', 'a small piece is drifting'), T('swarm', 'nothing else to do'), T('warp', 'planet eaten')],
-  booster: [T('noEat'), T('swarm'), T('field'), T('warp', 'planet eaten')],
+  eater: [Task('pickBite'), Task('flyBite', 'has a bite'), Task('aim', 'bite in range'), Task('land', 'facing the bite'), ...BASE_END],
+  laser: [Task('pickBite'), Task('flyBite', 'has a bite'), Task('aim', 'bite in range'), Task('laser', 'facing the bite'), ...BASE_END],
+  storm: [Task('pickBite'), Task('flyBite', 'has a bite'), Task('aim', 'bite in range'), Task('bolt', 'facing the bite'), ...BASE_END],
+  orb: [Task('pickBite'), Task('flyBite', 'has a bite'), Task('aim', 'bite in range'), Task('orb', 'facing the bite'), ...BASE_END],
+  splasher: [Task('pickBite'), Task('flyBite', 'has a bite'), Task('aim', 'bite in range'), Task('bubble', 'facing the bite'), ...BASE_END],
+  bomber: [Task('pickBite'), Task('flyBite', 'has a bite'), Task('blowUp', 'bite in range'), Task('warp', 'planet eaten')],
+  drill: [Task('pickBite'), Task('flyBite', 'has a bite'), Task('drill', 'bite in range'), Task('flyOn', 'got through'), ...BASE_END],
+  piercer: [Task('pickBite'), Task('flyBite', 'has a bite'), Task('aim', 'bite in range'), Task('pierce', 'facing the bite'), Task('after', 'got through'), ...BASE_END],
+  cutter: [Task('pickBite'), Task('flyBite', 'has a bite'), Task('aim', 'bite in range'), Task('cut', 'facing the bite'), Task('after', 'got through'), ...BASE_END],
+  sniper: [Task('pickBite'), Task('stopCharge', 'has a bite'), Task('shoot', 'facing the bite'), Task('flyOn'), ...BASE_END],
+  tug: [Task('findPiece', 'a piece is drifting'), Task('catchPiece', 'bite in range'), Task('tow'), Task('swarm', 'nothing else to do'), Task('warp', 'planet eaten')],
+  support: [Task('noEat'), Task('swarm'), Task('chain', 'near own ships'), Task('warp', 'planet eaten')],
+  cleaner: [Task('eatPiece', 'a small piece is drifting'), Task('swarm', 'nothing else to do'), Task('warp', 'planet eaten')],
+  booster: [Task('noEat'), Task('swarm'), Task('field'), Task('warp', 'planet eaten')],
 };
 
 // what a ship goes for, first to last
@@ -301,7 +422,7 @@ let current = 'swarm';
 function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('show'); setTimeout(() => e.classList.remove('show'), 1800); }
 function updateSummary() {
   const total = Object.keys(SECTIONS).reduce((n, s) => n + changes(s), 0);
-  $('summary').textContent = total ? `${total} change${total > 1 ? 's' : ''}` : 'no changes';
+  $('summary').textContent = total ? `${total} ${T(total > 1 ? 'changes' : 'change')}` : T('no changes');
   for (const b of document.querySelectorAll('nav button[data-sec]')) {
     const n = changes(b.dataset.sec);
     b.querySelector('.count').textContent = n || '';
@@ -313,11 +434,11 @@ function renderNav() {
   nav.textContent = '';
   let group = '';
   for (const [id, s] of Object.entries(SECTIONS)) {
-    if (s.group !== group) { group = s.group; nav.append(el('h3', '', group)); }
+    if (s.group !== group) { group = s.group; nav.append(el('h3', '', T(group))); }
     const b = el('button');
     b.dataset.sec = id;
     const dot = el('span', 'dot'); dot.style.background = hex(s.color);
-    b.append(dot, el('span', '', s.title), el('span', 'count'));
+    b.append(dot, el('span', '', T(s.title)), el('span', 'count'));
     b.classList.toggle('active', id === current);
     b.onclick = () => { current = id; renderNav(); renderMain(); };
     nav.append(b);
@@ -376,13 +497,13 @@ function refreshRow(input, sec, key) {
 function paramTable(sec, keys) {
   const t = el('table');
   const h = el('tr');
-  for (const c of ['Setting', 'Value', 'Game', 'What it does', '']) h.append(el('th', '', c));
+  for (const c of ['Setting', 'Value', 'Game', 'What it does', '']) h.append(el('th', '', T(c)));
   t.append(h);
   for (const key of keys) {
     const tr = el('tr');
     const inp = inputFor(sec, key);
     const td = el('td'); td.append(inp);
-    const reset = el('button', 'small reset', '↺'); reset.title = 'Back to the game\'s value';
+    const reset = el('button', 'small reset', '↺'); reset.title = T("Back to the game's value");
     reset.onclick = () => { setValue(sec, key, SECTIONS[sec].values[key]); renderMain(); };
     const tdr = el('td'); tdr.append(reset);
     tr.append(el('td', 'key', key), td, el('td', 'def', showDef(SECTIONS[sec].values[key])), el('td', 'note', note(sec, key)), tdr);
@@ -396,9 +517,9 @@ function paramTable(sec, keys) {
 
 function box(title, hint) {
   const b = el('section', 'box');
-  const h = el('h3', '', title);
+  const h = el('h3', '', T(title));
   b.append(h);
-  if (hint) b.append(el('p', 'hint', hint));
+  if (hint) b.append(el('p', 'hint', T(hint)));
   return b;
 }
 
@@ -422,13 +543,13 @@ function sortable(ol, items, renderRow, onChange) {
 }
 function rowTools(items, idx, onChange, canDelete = true) {
   const tools = el('span', 'tools');
-  const up = el('button', 'small', '↑'); up.title = 'Earlier'; up.disabled = idx === 0;
+  const up = el('button', 'small', '↑'); up.title = T('Earlier'); up.disabled = idx === 0;
   up.onclick = () => { [items[idx - 1], items[idx]] = [items[idx], items[idx - 1]]; onChange(); };
-  const down = el('button', 'small', '↓'); down.title = 'Later'; down.disabled = idx === items.length - 1;
+  const down = el('button', 'small', '↓'); down.title = T('Later'); down.disabled = idx === items.length - 1;
   down.onclick = () => { [items[idx + 1], items[idx]] = [items[idx], items[idx + 1]]; onChange(); };
   tools.append(up, down);
   if (canDelete) {
-    const del = el('button', 'small', '✕'); del.title = 'Remove';
+    const del = el('button', 'small', '✕'); del.title = T('Remove');
     del.onclick = () => { items.splice(idx, 1); onChange(); };
     tools.append(del);
   }
@@ -441,36 +562,36 @@ function tasksBox(sec) {
   const tasks = tasksOf(sec);
   const def = DEFAULT_TASKS[sec] || [];
   const commit = () => { setShip(sec, 'tasks', tasks, def); renderMain(); };
-  tag.textContent = state.ships[sec]?.tasks ? 'changed' : 'as in the game';
+  tag.textContent = T(state.ships[sec]?.tasks ? 'changed' : 'as in the game');
   tag.classList.toggle('changed', !!state.ships[sec]?.tasks);
   const ol = el('ol', 'steps');
   sortable(ol, tasks, (t, idx) => {
     const li = el('li', (t.on ? '' : 'off ') + (t.custom ? 'custom' : ''));
-    const grip = el('span', 'grip', '⋮⋮'); grip.title = 'Drag';
-    const on = el('input'); on.type = 'checkbox'; on.checked = t.on; on.title = 'On / off';
+    const grip = el('span', 'grip', '⋮⋮'); grip.title = T('Drag');
+    const on = el('input'); on.type = 'checkbox'; on.checked = t.on; on.title = T('On / off');
     on.onchange = () => { t.on = on.checked; commit(); };
     const label = el('span', 'label');
     if (t.custom) {
-      const name = el('input'); name.type = 'text'; name.value = t.custom; name.placeholder = 'Your task';
+      const name = el('input'); name.type = 'text'; name.value = t.custom; name.placeholder = T('Your task');
       name.onchange = () => { t.custom = name.value.trim() || 'Custom task'; commit(); };
       label.append(name);
     } else {
       const a = ACTIONS[t.action] || [t.action, ''];
-      label.append(a[0]); if (a[1]) label.append(el('small', '', a[1]));
+      label.append(T(a[0])); if (a[1]) label.append(el('small', '', T(a[1])));
     }
     const when = el('select', 'when');
     const whens = WHEN.includes(t.when) ? WHEN : [...WHEN, t.when];
-    for (const w of [...whens, '(other…)']) { const o = el('option', '', w); o.value = w; when.append(o); }
+    for (const w of [...whens, '(other…)']) { const o = el('option', '', T(w)); o.value = w; when.append(o); }
     when.value = t.when;
-    when.title = 'When';
+    when.title = T('When');
     when.onchange = () => {
       if (when.value === '(other…)') {
-        const w = prompt('When should this task apply?', '');
+        const w = prompt(T('When should this task apply?'), '');
         if (w && w.trim()) t.when = w.trim();
       } else t.when = when.value;
       commit();
     };
-    const value = el('input', 'value'); value.type = 'text'; value.placeholder = 'Value / note'; value.value = t.value || '';
+    const value = el('input', 'value'); value.type = 'text'; value.placeholder = T('Value / note'); value.value = t.value || '';
     value.onchange = () => { t.value = value.value; commit(); };
     li.append(grip, on, label, when, value, rowTools(tasks, idx, commit));
     return li;
@@ -479,15 +600,15 @@ function tasksBox(sec) {
 
   const add = el('div', 'addrow');
   const pick = el('select');
-  pick.append(el('option', '', 'Add a standard task…'));
-  for (const [id, a] of Object.entries(ACTIONS)) { const o = el('option', '', a[0]); o.value = id; pick.append(o); }
-  pick.onchange = () => { if (ACTIONS[pick.value]) { tasks.push(T(pick.value)); commit(); } };
-  const own = el('input'); own.type = 'text'; own.placeholder = 'Your own (non-standard) task — e.g. "Circle the bite twice before firing"';
-  const ownAdd = el('button', '', 'Add');
+  pick.append(el('option', '', T('Add a standard task…')));
+  for (const [id, a] of Object.entries(ACTIONS)) { const o = el('option', '', T(a[0])); o.value = id; pick.append(o); }
+  pick.onchange = () => { if (ACTIONS[pick.value]) { tasks.push(Task(pick.value)); commit(); } };
+  const own = el('input'); own.type = 'text'; own.placeholder = T('Your own (non-standard) task — e.g. "Circle the bite twice before firing"');
+  const ownAdd = el('button', '', T('Add'));
   const addOwn = () => { const v = own.value.trim(); if (!v) return; tasks.push({ action: 'custom', custom: v, when: 'always', value: '', on: true }); commit(); };
   ownAdd.onclick = addOwn;
   own.onkeydown = (e) => { if (e.key === 'Enter') addOwn(); };
-  const reset = el('button', '', 'Reset tasks'); reset.disabled = !state.ships[sec]?.tasks;
+  const reset = el('button', '', T('Reset tasks')); reset.disabled = !state.ships[sec]?.tasks;
   reset.onclick = () => { setShip(sec, 'tasks', def, def); renderMain(); };
   add.append(pick, own, ownAdd, reset);
   b.append(add);
@@ -499,7 +620,7 @@ function targetsBox(sec) {
   const tag = el('span', 'tag'); b.querySelector('h3').append(tag);
   const list = targetsOf(sec);
   const def = DEFAULT_TARGETS[sec] || [];
-  tag.textContent = state.ships[sec]?.targets ? 'changed' : 'as in the game';
+  tag.textContent = T(state.ships[sec]?.targets ? 'changed' : 'as in the game');
   tag.classList.toggle('changed', !!state.ships[sec]?.targets);
   const commit = () => { setShip(sec, 'targets', list, def); renderMain(); };
   const ol = el('ol', 'steps');
@@ -509,21 +630,21 @@ function targetsBox(sec) {
     const grip = el('span', 'grip', '⋮⋮');
     const on = el('input'); on.type = 'checkbox'; on.checked = t.on;
     on.onchange = () => { t.on = on.checked; commit(); };
-    const label = el('span', 'label', t.custom || TARGETS[t.id] || t.id);
+    const label = el('span', 'label', t.custom || T(TARGETS[t.id]) || t.id);
     li.append(grip, on, label, rowTools(list, idx, commit));
     return li;
   }, commit);
   b.append(ol);
   const add = el('div', 'addrow');
   const pick = el('select');
-  pick.append(el('option', '', 'Add…'));
-  for (const [id, name] of Object.entries(TARGETS)) if (!list.some((t) => t.id === id)) { const o = el('option', '', name); o.value = id; pick.append(o); }
+  pick.append(el('option', '', T('Add…')));
+  for (const [id, name] of Object.entries(TARGETS)) if (!list.some((t) => t.id === id)) { const o = el('option', '', T(name)); o.value = id; pick.append(o); }
   pick.onchange = () => { if (TARGETS[pick.value]) { list.push({ id: pick.value, on: true }); commit(); } };
-  const own = el('input'); own.type = 'text'; own.placeholder = 'Your own target — e.g. "The biggest drifting piece"';
-  const ownAdd = el('button', '', 'Add');
+  const own = el('input'); own.type = 'text'; own.placeholder = T('Your own target — e.g. "The biggest drifting piece"');
+  const ownAdd = el('button', '', T('Add'));
   const addOwn = () => { const v = own.value.trim(); if (!v) return; list.push({ id: 'custom', custom: v, on: true }); commit(); };
   ownAdd.onclick = addOwn; own.onkeydown = (e) => { if (e.key === 'Enter') addOwn(); };
-  const reset = el('button', '', 'Reset'); reset.disabled = !state.ships[sec]?.targets;
+  const reset = el('button', '', T('Reset')); reset.disabled = !state.ships[sec]?.targets;
   reset.onclick = () => { setShip(sec, 'targets', def, def); renderMain(); };
   add.append(pick, own, ownAdd, reset);
   b.append(add);
@@ -533,7 +654,7 @@ function targetsBox(sec) {
 function notesBox(sec) {
   const b = box('Notes', 'Anything else: what should change, new behaviour, ideas to check.');
   const ta = el('textarea'); ta.value = state.ships[sec]?.notes || '';
-  ta.placeholder = 'e.g. "Power should be twice as strong, and it should not fire at pieces."';
+  ta.placeholder = T('e.g. "Power should be twice as strong, and it should not fire at pieces."');
   ta.oninput = () => {
     const s = ship(sec);
     if (ta.value.trim()) s.notes = ta.value; else delete s.notes;
@@ -548,7 +669,7 @@ let headTag = null;
 function headTags() {
   if (!headTag) return;
   const n = changes(current);
-  headTag.textContent = n ? `${n} change${n > 1 ? 's' : ''}` : 'as in the game';
+  headTag.textContent = n ? `${n} ${T(n > 1 ? 'changes' : 'change')}` : T('as in the game');
   headTag.classList.toggle('changed', !!n);
   updateSummary();
 }
@@ -561,10 +682,10 @@ function renderMain() {
   const h = el('h2');
   const dot = el('span', 'dot'); dot.style.cssText = `width:16px;height:16px;border-radius:4px;background:${hex(s.color)}`;
   headTag = el('span', 'tag');
-  const resetShip = el('button', 'small', 'Reset this ship');
-  resetShip.onclick = () => { if (!confirm(`Reset every change to ${s.title}?`)) return; delete state.values[sec]; delete state.ships[sec]; save(); renderMain(); };
-  h.append(dot, s.title, headTag, resetShip);
-  main.append(h, el('p', 'desc', s.desc));
+  const resetShip = el('button', 'small', T('Reset this ship'));
+  resetShip.onclick = () => { if (!confirm(`${T('Reset every change to')} ${T(s.title)}?`)) return; delete state.values[sec]; delete state.ships[sec]; save(); renderMain(); };
+  h.append(dot, T(s.title), headTag, resetShip);
+  main.append(h, el('p', 'desc', T(s.desc)));
 
   const keys = Object.keys(s.values);
   const play = keys.filter((k) => isPlay(sec, k)), look = keys.filter((k) => !isPlay(sec, k));
@@ -575,7 +696,7 @@ function renderMain() {
   if (look.length) {
     const lb = box('Look', 'Colours, sizes and effects — only how it looks.');
     const d = el('details'); d.open = look.some((k) => state.values[sec] && k in state.values[sec]);
-    d.append(el('summary', '', `${look.length} settings`), paramTable(sec, look));
+    d.append(el('summary', '', `${look.length} ${T('settings')}`), paramTable(sec, look));
     lb.append(d);
     main.append(lb);
   }
@@ -609,7 +730,7 @@ function exportData() {
   a.download = `hive-hunger-ships-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast(out.changes.length || Object.keys(out.ships).length ? 'Exported' : 'Exported (no changes)');
+  toast(T(out.changes.length || Object.keys(out.ships).length ? 'Exported' : 'Exported (no changes)'));
 }
 $('export').onclick = exportData;
 $('import').onclick = () => $('file').click();
@@ -627,16 +748,35 @@ $('file').onchange = async () => {
       for (const k of Object.keys(state.values[sec])) if (!(k in SECTIONS[sec].values)) delete state.values[sec][k];
     }
     for (const sec of Object.keys(state.ships)) if (!SECTIONS[sec]) delete state.ships[sec];
-    save(); renderNav(); renderMain(); toast('Imported');
-  } catch (e) { toast('Could not read the file: ' + e.message); }
+    save(); renderNav(); renderMain(); toast(T('Imported'));
+  } catch (e) { toast(T('Could not read the file: ') + e.message); }
 };
 $('reset-all').onclick = () => {
-  if (!confirm('Reset every change for every ship?')) return;
-  state = { values: {}, ships: {} }; save(); renderNav(); renderMain(); toast('Everything as in the game');
+  if (!confirm(T('Reset every change for every ship?'))) return;
+  state = { values: {}, ships: {} }; save(); renderNav(); renderMain(); toast(T('Everything as in the game'));
 };
 
-$('ver').textContent = `game ${VERSION}`;
-window.__editor = { state: () => state, sections: SECTIONS, exportData, select: (s) => { current = s; renderNav(); renderMain(); } };
+// the header's texts, and the language buttons (remembered in this browser)
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.title = T('Hive Hunger — Ship editor');
+  document.querySelector('header h1').textContent = T('Hive Hunger — Ship editor');
+  $('import').textContent = T('Import…');
+  $('reset-all').textContent = T('Reset all');
+  $('export').textContent = T('Export');
+  $('ver').textContent = `${T('game')} ${VERSION}`;
+  $('lang-en').setAttribute('aria-pressed', String(LANG === 'en'));
+  $('lang-pl').setAttribute('aria-pressed', String(LANG === 'pl'));
+}
+function setLang(l) {
+  LANG = l;
+  try { localStorage.setItem(STORE + '-lang', l); } catch { /* storage off */ }
+  applyLang(); renderNav(); renderMain();
+}
+$('lang-en').onclick = () => setLang('en');
+$('lang-pl').onclick = () => setLang('pl');
+applyLang();
+window.__editor = { english: new Map(Object.entries(PL)), setLang, state: () => state, sections: SECTIONS, exportData, select: (s) => { current = s; renderNav(); renderMain(); } };
 renderNav();
 renderMain();
 </script>

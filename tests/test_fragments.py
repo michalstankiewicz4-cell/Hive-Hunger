@@ -78,6 +78,13 @@ async def main():
         t.ok(c['left'] == b['total'] - c['cut'], 'coming loose is not eating: only the cut voxels count', c['left'])
         m = await page.evaluate(MOTION, 120)
         t.ok(m['moved'] > 0.3 and m['turned'] > 0.05 and m['triangles'] > 100, 'the piece drifts, turns and is drawn smooth', m)
+        # a click can land on a drifting piece (ships are sent only to voxels)
+        ck = await page.evaluate('''() => { const g = window.__dbg, pl = g.planet, f = pl.fragments.list.find((x) => !x.dead), T = window.THREE;
+          const from = f.pos.clone().multiplyScalar(4).add(new T.Vector3(0, 0.01, 0)), ray = new T.Ray(from, f.pos.clone().sub(from).normalize());
+          const out = new T.Vector3(), hit = pl.raycastSolid(ray, out, true);
+          const miss = pl.raycastSolid(new T.Ray(from, from.clone().normalize()), new T.Vector3(), true);
+          return { hit: Boolean(hit), onPiece: hit ? pl.fragments.at(out) >= 0 || out.distanceTo(f.pos) <= f.radius + 1 : false, miss }; }''')
+        t.ok(ck['hit'] and ck['onPiece'] and ck['miss'] is None, 'a click hits a drifting piece; empty space hits nothing', ck)
         if shots:
             await page.evaluate('() => { const g = window.__dbg; g.renderer.render(g.scene, g.camera); }')
             await page.screenshot(path=os.path.join(shots, 'fragment.png'))

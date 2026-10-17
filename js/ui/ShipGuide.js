@@ -92,6 +92,11 @@ export function fillGuide(card, onBack) {
 const BG = '#0d1120';
 const VOX = 7; // a voxel in the pictures (px)
 
+/** The guide's still picture of ship `kind` (120 × 64, scale the context for other sizes) — the ship bar's thumbnails. */
+export function paintShip(g, kind) {
+  paint(g, kind, STILL);
+}
+
 /** Draws ship `kind` at phase t (0…1 of the loop). */
 function paint(g, kind, t) {
   g.clearRect(0, 0, W, H);

@@ -1,4 +1,4 @@
-import { CONFIG, SHIP_KINDS, kindConfig } from '../../config.js';
+import { CONFIG, SHIP_KINDS, GROUP_KINDS, kindConfig } from '../../config.js';
 import { Swarm3D } from '../swarm/Swarm3D.js';
 import { aroundPlanet } from '../swarm/steering.js';
 import { Portal3D } from '../scene/Portal3D.js';
@@ -74,10 +74,14 @@ export class Player {
 
     const feedCenter = new THREE.Vector3();
     const nearestScratch = [];
+    // what each group of ships was told (GROUP_KINDS order): mode null (on its own), 'go' (sent to
+    // `point`: its next bites are the nearest voxels to it; ships that don't eat fly there, then
+    // carry on as usual) or 'home' (called back to the tunnel: no eating, waiting there)
+    this.groups = GROUP_KINDS.map((kind) => ({ kind, mode: null, point: null, dwell: 0 }));
     this.swarmWorld = {
-      clickPoint: null,
+      groups: this.groups,
       planetRadius: 0,
-      holding: false, // called back home: nobody picks new bites
+      holding: false, // jumping to hyperspace: nobody picks new bites
       // every unit eats the nearest free (unclaimed) voxel to itself. Shared only when the
       // planet has fewer exposed voxels left than there are units (there are no more).
       pickFood: (p) => {
@@ -153,25 +157,104 @@ export class Player {
     }
   }
 
-  /**
-   * A click / tap: the swarm target heads for the point and every unit drops its current
-   * bite, so the whole swarm goes there. Each unit's next bite is
-   * the nearest free voxel to the clicked point.
-   */
-  command(point) {
-    if (this.homeMode === 'jump' || !this.game.planet.alive) return;
-    this.homeMode = null;
-    this.leader.command(point);
-    this.swarmWorld.clickPoint = point;
-    this.dropAllBites(1);
+  /** The group of ships of type `kind` (GROUP_KINDS), or null. */
+  group(kind) {
+    return this.groups.find((g) => g.kind === kind) || null;
   }
 
-  /** The tunnel was clicked: the swarm stops eating and flies home, and waits there for a new click. */
-  recall() {
-    if (this.homeMode === 'jump') return;
-    this.homeMode = 'recall';
-    this.swarmWorld.clickPoint = null;
-    this.dropAllBites(0);
+  /**
+   * A click / tap on a voxel (the planet or a drifting piece) with group `kind` chosen: only the
+   * ships of that type drop their bites and go there — each one's next bite is the nearest free
+   * voxel to the point; ships that don't eat fly there and then carry on as usual. The other
+   * groups go on with what they were doing.
+   */
+  command(point, kind = 'eaters') {
+    const g = this.group(kind);
+    if (!g || this.homeMode === 'jump' || !this.game.planet.alive) return;
+    g.mode = 'go';
+    g.point = { x: point.x, y: point.y, z: point.z };
+    g.dwell = 0;
+    this.dropGroupBites(kind, 1);
+  }
+
+  /** The tunnel clicked with group `kind` chosen: those ships stop eating, fly home and wait there for a new click. */
+  recall(kind = 'eaters') {
+    const g = this.group(kind);
+    if (!g || this.homeMode === 'jump') return;
+    g.mode = 'home';
+    g.point = this.spawnWorld();
+    this.dropGroupBites(kind, 0);
+  }
+
+  /** Is any group called back to the tunnel? (A guest knows only that from the host.) */
+  anyHome() {
+    return this.homeMode === 'recall' || this.groups.some((g) => g.mode === 'home');
+  }
+
+  /** Units first … end of group `kind` (eaters: everything after the other types). */
+  groupRange(kind) {
+    const s = this.swarm, a = s.kindStart(kind);
+    return [a, kind === 'eaters' ? s.count : Math.min(s.count, a + s[kind])];
+  }
+
+  /** The ships of group `kind` drop their bites (and tugs their pieces). */
+  dropGroupBites(kind, redirect) {
+    const s = this.swarm, [a, b] = this.groupRange(kind);
+    for (let i = a; i < b; i++) {
+      if (s.food[i] >= 0) this.game.planet.release(s.food[i]);
+      s.food[i] = -1;
+      s.landed[i] = 0;
+      s.redirect[i] = redirect;
+      s.hungry[i] = 0;
+      s.pierceOn[i] = 0; s.cutOn[i] = 0; s.cutAfter[i] = 0; s.drillLeft[i] = 0; // lines and tunnels are left
+      const t = this.towing.get(i);
+      if (t) this.letGo(i, t);
+    }
+  }
+
+  /**
+   * Buys `n` ships of type `kind` (free for now), at most up to `swarm.maxCount` ships in all.
+   * Each new one comes as the last of its type, so no other ship changes its type: a new unit at
+   * the end, then moved in front of every later type's first ship. Returns how many were bought.
+   */
+  buyShips(kind, n = 1) {
+    const s = this.swarm;
+    if (!GROUP_KINDS.includes(kind)) return 0;
+    let bought = 0;
+    for (; bought < n && s.count < CONFIG.swarm.maxCount; bought++) {
+      this.base.count++;
+      this.applyUpgrades(); // a new unit at the end (an eater)
+      if (kind === 'eaters') continue;
+      let at = s.count - 1;
+      const later = SHIP_KINDS.slice(SHIP_KINDS.indexOf(kind) + 1).reverse();
+      const eaters = s.kindStart('eaters');
+      if (eaters < at) { s.swapUnits(at, eaters); at = eaters; }
+      for (const k of later) {
+        if (!s[k]) continue;
+        const st = s.kindStart(k);
+        s.swapUnits(at, st);
+        at = st;
+      }
+      this[kind]++;
+      this.applyUpgrades();
+    }
+    return bought;
+  }
+
+  /** Groups sent somewhere: done once one of their ships got there and stayed a moment (or there are none). */
+  updateGroups() {
+    const s = this.swarm, L = CONFIG.leader;
+    for (const g of this.groups) {
+      if (g.mode === 'home') { g.point = this.spawnWorld(); continue; } // (the tunnel moves as space turns)
+      if (g.mode !== 'go') continue;
+      const [a, b] = this.groupRange(g.kind);
+      let there = a >= b;
+      for (let i = a; i < b && !there; i++) {
+        const dx = s.pos[i * 3] - g.point.x, dy = s.pos[i * 3 + 1] - g.point.y, dz = s.pos[i * 3 + 2] - g.point.z;
+        if (dx * dx + dy * dy + dz * dz < CONFIG.swarm.groupArrive ** 2 || s.landed[i]) there = true;
+      }
+      if (there && ++g.dwell > L.dwellFrames) g.mode = null; // (the point stays: bites still being picked near it)
+    }
   }
 
   /** Applies one setting from the panel (locally or sent by a guest). */
@@ -216,6 +299,7 @@ export class Player {
     this.homeMode = null;
     this.leader.commanded = false;
     this.leader.goal = null;
+    for (const g of this.groups) { g.mode = null; g.point = null; g.dwell = 0; }
   }
 
   /** While travelling to a click, the swarm target flies around the planet, not through it. */
@@ -249,17 +333,12 @@ export class Player {
     // ships added while the others jump (Units slider, an upgrade) jump too
     if (this.homeMode === 'jump') this.swarm.jumpAll();
     const L = this.leader;
-    if (this.homeMode === 'recall') {
-      // called home: the swarm target keeps following the tunnel (it moves as space turns)
-      L.goal = this.spawnWorld();
-      L.commanded = true;
-      L.dwell = 0;
-    }
     L.update(this.world);
+    this.updateGroups();
     this.keepLeaderOverSurface();
 
     this.swarmWorld.planetRadius = planet.alive ? planet.R : 0;
-    this.swarmWorld.holding = Boolean(this.homeMode);
+    this.swarmWorld.holding = this.homeMode === 'jump';
     this.updateTugs();
     // pieces small enough for cleaners
     const fr = planet.fragments, maxPiece = CONFIG.swarm.cleaner.maxPiece;
@@ -269,7 +348,7 @@ export class Player {
     this.updateSupport();
     this.updateLightning();
 
-    this.beacon.active = this.homeMode === 'recall';
+    this.beacon.active = this.anyHome();
   }
 
   dispose() {

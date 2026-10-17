@@ -26,8 +26,10 @@ export const ShipRoles = {
     if (!fr || start >= end) return;
     const home = this.spawnWorld();
     const p = TUG_P, g = TUG_G, d = TUG_D;
+    const sent = this.group('tugs').mode; // tugs sent somewhere or called home: no pieces meanwhile
     for (let i = start; i < end; i++) {
       s.tugHas[i] = 0;
+      if (sent) { const t = this.towing.get(i); if (t) this.letGo(i, t); continue; }
       p.fromArray(s.pos, i * 3);
       let t = this.towing.get(i);
       if (!t) {

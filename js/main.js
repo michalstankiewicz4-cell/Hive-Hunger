@@ -1,10 +1,8 @@
-import { CONFIG, SHIP_KINDS, kindConfig } from './config.js';
+import { CONFIG } from './config.js';
 import { VERSION } from './version.js';
 import { settings } from './settings.js';
 import { Hud } from './ui/Hud.js';
-import { ControlPanel } from './ui/ControlPanel.js';
-import { LevelSwitch } from './ui/LevelSwitch.js';
-import { ShipTypes } from './ui/ShipTypes.js';
+import { ShipBar, countsOf } from './ui/ShipBar.js';
 import { Lobby } from './ui/Lobby.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { Summary } from './ui/Summary.js';
@@ -34,36 +32,15 @@ if (!window.THREE) {
   const role = roomCode && canNet ? 'guest' : 'solo';
   const game = new Game3D(document.body, new Hud(hudEl, pointsEl), { role });
 
-  // the panel controls your own swarm; a guest's settings are sent to the host
-  const S = CONFIG.swarm;
-  const guestSettings = { count: S.count, speed: S.speed, power: S.biteRadius, turn: S.turnSmoothing,
-    ...Object.fromEntries(SHIP_KINDS.map((k) => [k, S[kindConfig(k)].count])) };
-  const bind = (key) => ({
-    get: () => (game.role === 'guest' ? guestSettings[key] : game.localPlayer.getSetting(key)),
-    set: (v) => {
-      guestSettings[key] = v;
-      game.setLocalSetting(key, v);
-    },
+  // the ship bar (bottom): your ships by type; choose the group a click sends, buy ships (free for now)
+  const shipBar = new ShipBar(document.getElementById('ships'), {
+    counts: () => (game.localPlayer ? countsOf(game.localPlayer.swarm) : null),
+    total: () => game.localPlayer?.swarm.count ?? 0,
+    chosen: () => game.group,
+    choose: (kind) => { game.group = kind; },
+    buy: (kind, n) => game.buyShips(kind, n),
   });
-  const panel = new ControlPanel(document.getElementById('controls'), CONFIG.controls,
-    Object.fromEntries(['count', 'speed', 'power', 'turn'].map((k) => [k, bind(k)])));
-  // single player: jump straight to any level (the swarm starts again from its tunnel)
-  const levels = new LevelSwitch(document.getElementById('controls'), CONFIG.levels, {
-    isSolo: () => game.role === 'solo',
-    current: () => game.mission + 1,
-    onPick: (n) => game.jumpToLevel(n),
-  });
-  setInterval(() => levels.sync(), 500); // hides it once a room is created; follows the planet number
-
-  // ship types (bottom-right): yellow eaters / red laser ships / blue storm ships / green tugs / purple bombers / magenta orb ships / white support ships / grey cleaners, together all your units
-  const ships = new ShipTypes(document.getElementById('ships'), {
-    total: () => game.localPlayer?.swarm.count ?? guestSettings.count,
-    get: (key) => bind(key).get(),
-    set: (key, v) => bind(key).set(v),
-  });
-  setInterval(() => { ships.sync(); panel.sync(); }, 300); // follows the Units slider, upgrades, bombers lost
-  // guest: the host lowered our Units / Bombers (bombers blew up)
-  game.onSettingsChange = (values) => Object.assign(guestSettings, values);
+  setInterval(() => shipBar.sync(), 300); // follows buying, upgrades, bombers lost
 
   // start screen → (single player) the solar system map → a mission; (multiplayer) waiting room → match.
   // The room panel stays during the match

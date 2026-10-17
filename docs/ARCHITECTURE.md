@@ -28,24 +28,24 @@ tools/
 
 | File | What it does |
 | --- | --- |
-| `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the settings panel, the start screen, room panel, summary and upgrade tree; Tab / Esc keys; starts the loop |
-| `js/config.js` | All parameters: planet, flock, feeding, ship types, spawn tunnel, hyperspace jump, marker, network, slider ranges |
+| `js/main.js` | Entry point: reads `?room=`, creates the game (solo or guest), the ship bar, the start screen, room panel, summary and upgrade tree; Tab / Esc keys; starts the loop |
+| `js/config.js` | All parameters: planet, flock, feeding, ship types, spawn tunnel, hyperspace jump, marker, network; `GROUP_KINDS` (the ship bar's groups: `SHIP_KINDS`, eaters last) |
 | `js/version.js` | Game version (keep in sync with `CHANGELOG.md`) |
 | `tools/ship-editor.html` | The ship editor: values (Play / Look) of the whole swarm and every ship type read from `CONFIG`, each ship's targets in order of priority and its tasks in order (standard tasks = what the game does today, written in the editor as `DEFAULT_TASKS` / `DEFAULT_TARGETS` — keep them in step with the ships), notes; kept in localStorage; Export saves a JSON file with every change (path in `CONFIG`, old and new value), Import loads it back. It changes nothing in the game |
 | `js/settings.js` | The player's own settings (camera turning, zoom speed, FPS counter, resolution, smooth edges, effects), remembered in the browser; `onChange` listeners |
 | **`js/three/game/`** | |
 | `Game3D.js` | Scene, camera, renderer, roles (solo / host / guest), players and their spawns, planet lifecycle, the frame loop (`update`, `updateSim`, `start`) |
-| `input.js` | (Game3D) mouse and touch: tap to steer or to call the swarm back at its tunnel, camera turning and zoom, screen → world point. The camera's orientation is a quaternion (`orbit.q`) turned around its own axes, so it can go over the poles; the planet's spin is added about the world's Y axis |
+| `input.js` | (Game3D) mouse and touch: a tap on a voxel (planet or drifting piece — `raycastSolid(ray, out, true)`; empty space does nothing) sends the group chosen in the ship bar (`game.group`), on the tunnel calls that group home; `buyShips` (a guest asks the host), camera turning and zoom, screen → world point. The camera's orientation is a quaternion (`orbit.q`) turned around its own axes, so it can go over the poles; the planet's spin is added about the world's Y axis |
 | `destruction.js` | (Game3D) what ships do to voxels: bites, storm bolts, bomber blasts, orb bursts, support lightning, black holes swallowing pieces |
 | `host.js` | (Game3D) host side: summary after a planet, PvP winner, Next planet, guests' commands and purchases, buying upgrades |
 | `guest.js` | (Game3D) guest side: following the host — snapshots, planets, pieces, jumps, orbs, bolts, black holes, settings, tree |
 | `hud.js` | (Game3D) HUD text: progress, status line (jumping, called back, connecting — no description of the controls), scores and pings, notices |
 | `graphics.js` | (Game3D) graphics settings: making the renderer (resolution, smooth edges — a new renderer and canvas when it changes, input bound again), amount of effects, frames per second |
 | `players.js` | Player names and colours in multiplayer |
-| `Player.js` | One player: swarm + leader + tunnel + settings + score; setting up, commands, recall, settings, a new planet, the per-player frame step |
+| `Player.js` | One player: swarm + leader + tunnel + settings + score; setting up; **groups** (`groups`, one per `GROUP_KINDS`: mode `go` with a `point` or `home`), `command(point, kind)`, `recall(kind)`, `updateGroups` (a group sent somewhere carries on as usual once one of its ships got there), `buyShips(kind, n)` (a new unit moved to the end of its type so no other ship changes type); settings, a new planet, the per-player frame step |
 | `arrival.js` | (Player) the tunnel: ships coming out of it, the jump to hyperspace, the spawn point and where it is in the world |
 | `ships.js` | (Player) ships with their own jobs: tugs towing pieces home, removing bombers that blew up, orbs, support ships' lightning |
-| `upgrades.js` | (Player) points, buying upgrades, bonuses on top of the sliders, chain lightning |
+| `upgrades.js` | (Player) points, buying upgrades, bonuses on top of the base values, chain lightning |
 | **`js/three/swarm/`** | |
 | `Swarm3D.js` | The flock (boids): per-unit state, neighbour grid, feeding, collisions, getting unstuck, aiming, drawing the ships |
 | `types.js` | (Swarm3D) ship types by unit index, their colours, swapping two units |
@@ -88,9 +88,7 @@ tools/
 | `Protocol.js` | Binary snapshot, planet and fragment messages |
 | **`js/ui/`** | |
 | `Hud.js` | Planet counter, points counter, hints, notices, multiplayer scoreboard and banner |
-| `ControlPanel.js` | Sliders (Units, Speed, Power, Turning), "Reset to default" |
-| `ShipTypes.js` | Ship types panel (bottom-right): linked sliders for eaters and every type in `SHIP_KINDS` (together all your units), each with arrows (one ship less / more) and a lock checkbox |
-| `LevelSwitch.js` | A level button per playable mission under the panel (single player only): `Game3D.jumpToLevel` builds that planet and lets the swarm out of its tunnel again |
+| `ShipBar.js` | The ship bar (bottom): a thumbnail of every type (the Ship guide's still picture, `paintShip`) in `SHIP_GROUPS` order with how many you have (`countsOf(swarm)`; a guest's numbers come with the host's snapshots), click = choose the group (`game.group`, one at a time), + = `game.buyShips` (Shift: 10) |
 | `SolarMap.js` | The solar system map (`#map`, over the game): its own WebGL renderer and scene, made when first shown — the Sun (glow sprite, point light), orbit circles, bodies along them (moons round their planets, canvas textures: bands on the giants, land on Earth), rings, the belts as points, HTML labels; drag / wheel / pinch turn and zoom; a click (raycast on invisible hit spheres, belts by the orbit plane) opens the card: a 2D-painted picture, kind, text, task, Start / Coming soon; the next mission pulses |
 | `StartScreen.js` | `showPause` (Esc in single player: Resume, Save game, Save and exit, Exit to main menu, Settings), `showContinue` (Continue / New game when a save exists); start screen over the start picture (`img/start.jpg`, class `is-splash`; also the Ship guide and Settings opened from it): the title and Single player / Co-op / PvP / Ship guide / Settings and the multiplayer waiting room (link, players, Start) |
 | `Summary.js` | Multiplayer summary after a planet: per-player results, winner, Next planet |
@@ -162,7 +160,7 @@ The surface is split into chunks of 16³ voxels. `VoxelPlanet.remove()` and `sho
 ## Points, upgrades and lightning
 
 - **Points** = `player.score − player.tree.spent`; `score` counts eaten voxels (1 voxel = 1 point).
-- **Upgrades** (`SkillTree`): every node is bought once and needs its parent. `Player.base` keeps the slider values; `Player.applyUpgrades()` sets the swarm to base + bonuses (units +, speed ×, bite radius +) and the lightning settings. Moving a slider changes the base, the bonus stays on top.
+- **Upgrades** (`SkillTree`): every node is bought once and needs its parent. `Player.base` keeps the base values (count — raised by buying ships —, speed, power); `Player.applyUpgrades()` sets the swarm to base + bonuses (units +, speed ×, bite radius +) and the lightning settings.
 - **Chain lightning** (`Player.updateLightning`, host / single player): every `interval` seconds a bolt starts at a random drone and jumps to the nearest drone not hit yet within `range`, `jumps` times. `VoxelPlanet.weakenAlong` takes `damage × strength` from every voxel on the path (down to 5%, never removing it). `Game3D.showBolt` draws it and the host sends it to guests.
 - **Destruction animation** (`VoxelPlanet.showDamage`): whenever a voxel loses strength the smooth surface over it sinks and darkens (see above); with the `cubes` style its instance is scaled down (to 45%), darkened and jittered instead. Removal emits debris as before. Guests don't receive voxel strength, so they see only the debris.
 - **Multiplayer:** each player has their own tree on the host; a guest sends `buy`, the host checks the guest's points and answers with `tree`.
@@ -186,8 +184,9 @@ Until the match has started (`game.started`: Single player chosen, or every play
 
 ## The swarm (`Swarm3D.update`)
 
-- **Flocking (boids):** separation (within `separationDistance`), alignment and cohesion with neighbours found through a spatial hash grid, plus steering towards the unit's target. Every unit flies at the same constant `speed`; only its direction changes, at most `turnRate` per frame. The ship's nose (`look`) follows that direction smoothly (`turnSmoothing`, slider Turning) — in the simulation, because a landed ship eats only once its nose faces its bite within `aimAngle` (`aim()`).
-- **Feeding:** a unit without a bite picks the nearest free voxel to itself (after a click: to the clicked point) and flies straight to it — no alignment or cohesion while it has a bite, only separation. The voxel is **claimed** (`VoxelPlanet.claims`), so nobody else takes or bites it; bites are shared only when the planet has fewer exposed voxels than there are units. A unit lands when it touches its bite (or a free voxel right next to it) or comes within `reachDistance`, then eats a crater of radius `power` over `eatFrames` frames, skipping voxels claimed by others.
+- **Flocking (boids):** separation (within `separationDistance`), alignment and cohesion with neighbours found through a spatial hash grid, plus steering towards the unit's target. Every unit flies at the same constant `speed`; only its direction changes, at most `turnRate` per frame. The ship's nose (`look`) follows that direction smoothly (`turnSmoothing`) — in the simulation, because a landed ship eats only once its nose faces its bite within `aimAngle` (`aim()`).
+- **Groups:** `fillKinds()` gives every unit its type index once a frame (`kindOf`, `GROUP_KINDS` order); `world.groups[kindOf[i]]` is what its group was told (`Player.groups`). A group sent somewhere (`go`) picks its next bites nearest to `point` (units with `redirect` set); its units without a bite — and those that don't eat — steer for `point`. A group called home (`home`) doesn't eat (`held`: no new bites, drills / piercers / cutters / snipers stop) and steers for the tunnel. `world.holding` (the jump to hyperspace) holds everyone.
+- **Feeding:** a unit without a bite picks the nearest free voxel to itself (after its group was sent somewhere: to that point) and flies straight to it — no alignment or cohesion while it has a bite, only separation. The voxel is **claimed** (`VoxelPlanet.claims`), so nobody else takes or bites it; bites are shared only when the planet has fewer exposed voxels than there are units. A unit lands when it touches its bite (or a free voxel right next to it) or comes within `reachDistance`, then eats a crater of radius `power` over `eatFrames` frames, skipping voxels claimed by others.
 - **Collisions:** movement goes axis by axis in substeps; a solid voxel stops movement on that axis — no bounce and no passing through; the unit slides along the surface. Units in passing never eat.
 - **Long trips:** `aroundPlanet()` gives a waypoint over the surface when the straight path would go through the planet, or straight up when the unit is down in a pit.
 - **Laser ships:** units `0 … lasers−1` (`Swarm3D.lasers`, from the player's `lasers` setting, at most all units) are red laser ships: they land at `laser.reach` (2.5) from their bite instead of `reachDistance`, eat it from there — but only once their heading (`look`, turned in the simulation by `turnLook`) faces the bite within `aimAngle` (`aim()`; eaters too) — and fly at `laser.speedFactor` (0.9) × the speed. `render(camera)` colours the units (instance colours) and draws a glowing band (a camera-facing quad with a white-core-to-red gradient, additive) from every firing laser ship to its bite, plus a glow sprite where it hits; on a guest the beams come from the snapshot.

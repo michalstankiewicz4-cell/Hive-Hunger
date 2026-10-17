@@ -88,6 +88,42 @@ async def main():
               json.dumps(laser)[:300])
         check('export: the game version', bool(data['version']))
 
+        # Polish: the switch in the header, remembered; every text in Polish (the export stays in English)
+        # (every text on the page has a Polish one)
+        untranslated = await page.evaluate("""() => { const out = new Set();
+          for (const sec of Object.keys(__editor.sections)) {
+            __editor.select(sec);
+            for (const e of document.querySelectorAll('header h1, nav h3, nav span, main h3, main .hint, main td.note, main .label, main small, main option, main th, main .desc, main button, main summary')) {
+              const t = (e.firstChild && e.firstChild.nodeType === 3 ? e.firstChild.textContent : e.textContent).trim().replace(/^\\d+ /, '');
+              if (/[A-Za-z]{2,}/.test(t) && !__editor.english.has(t)) out.add(t);
+            }
+          }
+          return [...out]; }""")
+        check('every text has a Polish one', not untranslated, str(untranslated[:10]))
+        await page.click('#lang-pl')
+        pl = await page.evaluate("""async () => { const out = {}; out.h1 = document.querySelector('header h1').textContent;
+          out.nav = [...document.querySelectorAll('nav button span:nth-child(2)')].map((e) => e.textContent);
+          const missing = new Set();
+          for (const sec of Object.keys(__editor.sections)) {
+            __editor.select(sec);
+            for (const e of document.querySelectorAll('main h3, main .hint, main td.note, main .label, main small, main option, main th, main .desc, main button')) {
+              const t = (e.firstChild && e.firstChild.nodeType === 3 ? e.firstChild.textContent : e.textContent).trim();
+              if (t && __editor.english.has(t) && __editor.english.get(t) !== t) missing.add(t); // still the English text
+            }
+          }
+          out.missing = [...missing];
+          return out; }""")
+        check('Polish: the header and the ships', pl['h1'] == 'Hive Hunger — edytor statków' and 'Zjadacze' in pl['nav'] and 'Cały rój' in pl['nav'], str(pl['nav'][:4]))
+        check('Polish: no text left in English', not pl['missing'], str(pl['missing'][:8]))
+        await page.reload()
+        await page.wait_for_function('window.__editor !== undefined')
+        check('the language is remembered', await page.text_content('header h1') == 'Hive Hunger — edytor statków')
+        async with page.expect_download() as dl2:
+            await page.click('#export')
+        d2 = json.load(open(await (await dl2.value).path(), encoding='utf-8'))
+        check('the export stays in English', d2['ships']['laser']['tasks'][0]['task'] == 'Pick a bite', d2['ships']['laser']['tasks'][0]['task'])
+        await page.click('#lang-en')
+
         # reset all, then import the file back
         page.once('dialog', lambda d: asyncio.ensure_future(d.accept()))
         await page.click('#reset-all')

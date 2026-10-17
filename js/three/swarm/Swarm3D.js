@@ -334,15 +334,20 @@ export class Swarm3D {
 
     this.stepWarp();
     this.updateBoost();
+    this.fillKinds();
+    const groups = world.groups; // what each group was told to do (by kind, eaters last; see Player.groups)
 
     for (let i = 0; i < this.count; i++) {
       const i3 = i * 3;
 
       if (this.hidden[i] || this.warpT[i] > 0) continue; // not here (yet / any more), or jumping away
+      // this unit's group: sent somewhere (`go`) or called back to the tunnel (`home`: it doesn't eat)
+      const grp = groups ? groups[this.kindOf[i]] : null;
+      const held = world.holding || (grp !== null && grp.mode === 'home');
       if (this.dying.length && this.dying.includes(i)) continue; // blew up this frame
       // drilling: straight on through the voxels, eating everything around the bit
       if (this.drillLeft[i] > 0) {
-        if (!this.isDrill(i) || world.holding) { this.drillLeft[i] = 0; continue; } // another type now / called back
+        if (!this.isDrill(i) || held) { this.drillLeft[i] = 0; continue; } // another type now / called back
         const dc = c.drill, D = this.drillDir;
         pos[i3] += D[i3] * dc.speed; pos[i3 + 1] += D[i3 + 1] * dc.speed; pos[i3 + 2] += D[i3 + 2] * dc.speed;
         dir[i3] = D[i3]; dir[i3 + 1] = D[i3 + 1]; dir[i3 + 2] = D[i3 + 2];
@@ -361,7 +366,7 @@ export class Swarm3D {
       // a piercer locked on a line: it fires along it until it is through, then `piercer.afterFrames`
       // (2 s) more, then switches off and flies on
       if (this.pierceOn[i]) {
-        if (!this.isPiercer(i) || world.holding) { this.pierceOn[i] = 0; continue; } // another type now / called back
+        if (!this.isPiercer(i) || held) { this.pierceOn[i] = 0; continue; } // another type now / called back
         const E = this.pierceEnd;
         const hit = world.pierceLine(i, pos[i3], pos[i3 + 1], pos[i3 + 2], this.pierceDir, E);
         this.hungry[i] = 0;
@@ -378,7 +383,7 @@ export class Swarm3D {
       // a cutter on its locked line: it cuts the row across it; when the row is gone, the next one deeper,
       // until through — then it flies on
       if (this.cutOn[i]) {
-        if (!this.isCutter(i) || world.holding) { this.cutOn[i] = 0; this.cutAfter[i] = 0; continue; } // another type now / called back
+        if (!this.isCutter(i) || held) { this.cutOn[i] = 0; this.cutAfter[i] = 0; continue; } // another type now / called back
         // through: for `afterFrames` (1 s) more the sheet goes on out through the cut and into space
         if (this.cutAfter[i] > 0) {
           if (++this.cutAfter[i] > c.cutter.afterFrames) { this.cutOn[i] = 0; this.cutAfter[i] = 0; best[i] = Infinity; stuck[i] = 0; }
@@ -399,7 +404,7 @@ export class Swarm3D {
       }
       // a sniper: from anywhere at its bite — stop, charge `sniper.chargeFrames` (5 s) facing it, fire,
       // then fly on for `sniper.moveFrames` (1 s), stop and charge again
-      if (this.isSniper(i) && !world.holding) {
+      if (this.isSniper(i) && !held) {
         landed[i] = 0; // (it never lands: it fires from where it is)
         if (food[i] >= 0 && !world.isFood(food[i])) { world.release(food[i]); food[i] = -1; }
         if (this.snipePhase[i] === 1) {
@@ -565,12 +570,12 @@ export class Swarm3D {
       const cleaner = this.isCleaner(i);
       // was another type a moment ago (a slider moved): its bite isn't one for it any more
       if (food[i] >= 0 && (passive || (cleaner && !world.isScrap(food[i])))) { world.release(food[i]); food[i] = -1; }
-      if (food[i] < 0 && !passive && !world.holding) {
+      if (food[i] < 0 && !passive && !held) {
         p.x = px; p.y = py; p.z = pz;
         if (cleaner) {
           food[i] = world.pickScrap(p);
-        } else if (this.redirect[i] && world.clickPoint) {
-          food[i] = world.pickFood(world.clickPoint);
+        } else if (this.redirect[i] && grp && grp.point) {
+          food[i] = world.pickFood(grp.point); // its group was sent there: the nearest voxel to that point
         } else {
           food[i] = world.pickFood(p);
         }
@@ -595,6 +600,11 @@ export class Swarm3D {
         const r = Math.hypot(px, py, pz), tl = Math.hypot(tx, ty, tz) || 1;
         tx = (tx / tl) * r; ty = (ty / tl) * r; tz = (tz / tl) * r;
       }
+      // its group sent somewhere (and it has no bite there yet, or doesn't eat) or called back home
+      if (grp && grp.mode && grp.point && (held || food[i] < 0 || passive)) {
+        tx = grp.point.x; ty = grp.point.y; tz = grp.point.z;
+        targetWeight = w.feed;
+      }
       // a tug flies to its piece (or, towing it, ahead of it towards home)
       if (tug && this.tugHas[i]) {
         tx = this.tugGoal[i3]; ty = this.tugGoal[i3 + 1]; tz = this.tugGoal[i3 + 2];
@@ -604,7 +614,7 @@ export class Swarm3D {
 
       // no bite eaten for `retarget.frames` while chasing one: stop for `retarget.pauseFrames`
       // (a moving bite may come closer meanwhile), then take another (see retarget)
-      if (food[i] >= 0 && !world.holding) {
+      if (food[i] >= 0 && !held) {
         if (++this.hungry[i] >= c.retarget.frames) {
           this.hungry[i] = 0;
           this.pause[i] = c.retarget.pauseFrames;
@@ -638,7 +648,7 @@ export class Swarm3D {
       if (stuck[i] > c.stuck.frames) {
         const b = lastBlock[i];
         if (blockAge[i] < c.stuck.recentContact && world.isFood(b)) {
-          if (!world.holding && !passive && world.canBite(b, food[i]) && (!cleaner || world.isScrap(b))) {
+          if (!held && !passive && world.canBite(b, food[i]) && (!cleaner || world.isScrap(b))) {
             if (b !== food[i]) {
               world.release(food[i]);
               world.claim(b);

@@ -50,13 +50,12 @@ async def main():
             solo = await host.evaluate('() => ({ score: window.__dbg.localPlayer.score, left: window.__dbg.planet.left, total: window.__dbg.planet.total, count: window.__dbg.localPlayer.base.count })')
             await host.keyboard.press('Escape')
             await host.click('#menu .menu-choice >> text=Exit to main menu')
-            # … then a PvP room: nothing carries over except the settings panel
+            # … then a PvP room: nothing carries over except the number of ships
             await host.click('.menu-choice >> nth=2')  # Multiplayer · PvP
             await host.wait_for_selector('.menu-card .lobby-link', timeout=20000)
             code = (await host.input_value('.menu-card .lobby-link')).split('room=')[1]
             t.ok(len(code) == 6, 'room created', code)
             await host.wait_for_timeout(700)
-            t.ok(await host.locator('.control-levels').is_hidden(), 'no level switch in multiplayer')
             wm = await host.evaluate("() => ({ map: !document.getElementById('map').hidden, card: document.querySelector('.map-card-name')?.textContent, body: window.__dbg.bodyId })")
             t.ok(wm['map'] and wm['card'] == 'Kuiper Belt' and wm['body'] == 'kuiper', 'the waiting room over the map: the first mission, the Kuiper Belt', wm)
             fresh = await host.evaluate('''() => { const g = window.__dbg, p = g.localPlayer;
@@ -65,7 +64,7 @@ async def main():
             t.ok(solo['score'] > 0 and fresh['score'] == 0 and fresh['owned'] == ['core'] and fresh['level'] == 1
                  and fresh['left'] == fresh['total'], 'a room starts from scratch (no points, upgrades or eaten planet from single player)', fresh)
             # (Units as set in single player — bombers that blew up there took some away)
-            t.ok(fresh['count'] == solo['count'] and fresh['units'] == solo['count'], 'the settings panel values stay', [solo['count'], fresh['count']])
+            t.ok(fresh['count'] == solo['count'] and fresh['units'] == solo['count'], 'the number of ships stays', [solo['count'], fresh['count']])
             await host.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('speed', 0.05); }")
 
             guests = []
@@ -113,9 +112,29 @@ async def main():
             await host.wait_for_timeout(1000)
             t.ok(await guests[0].evaluate('() => window.__dbg.lightning.shown') > before, 'other guests see the lightning')
 
+            # the ship bar on a guest: buying ships and sending a group go through the host
+            c0 = await host.evaluate('() => window.__dbg.players[2].swarm.cutters')
+            await guests[1].evaluate("""() => { const g = window.__dbg;
+              document.querySelector('.shipbar-cutters .shipbar-buy').click();
+              document.querySelector('.shipbar-cutters .shipbar-pick').click();
+              // (tap until it lands on a voxel: the middle of the screen may look through a hole by now)
+              const sent = [], send = g.net.sendCommand.bind(g.net);
+              g.net.sendCommand = (c) => { sent.push(c); send(c); };
+              for (const [x, y] of [[0, 0], [0.05, 0.1], [-0.1, 0.05], [0.1, -0.1], [-0.05, -0.15]]) { if (sent.length) break; g.onTap(new window.THREE.Vector2(x, y)); }
+              g.net.sendCommand = send; }""")
+            try:  # (messages can take a while on a busy machine)
+                await host.wait_for_function("() => Boolean(window.__dbg.players[2].group('cutters').point)", timeout=8000)
+            except Exception:
+                pass
+            await host.wait_for_timeout(1000)
+            gb = await host.evaluate("() => { const p = window.__dbg.players[2]; return [p.swarm.cutters, Boolean(p.group('cutters').point), p.group('eaters').point]; }")
+            t.ok(gb == [c0 + 1, True, None], 'a guest buys ships and sends a group (only that group) through the host', gb)
+
             # play a little on the host, then compare
             await host.evaluate("""() => window.__dbg.activePlayers().forEach(p => {
-              p.setSetting('count', 100); p.setSetting('speed', 0.5); p.setSetting('power', 2); })""")
+              p.setSetting('count', 100); p.setSetting('speed', 0.5); p.setSetting('power', 2);
+              // 2 ships of every type (players start with eaters only)
+              ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].forEach((k) => p.setSetting(k, 2)); })""")
             await h.fast_forward(host, 1200)
             await host.wait_for_timeout(1500)
             for g in guests:  # let paused guests apply the queued snapshots
@@ -126,7 +145,7 @@ async def main():
                  f"host {hs['left']} guest {gs['left']}")
             t.ok(sum(hs['scores']) > 0, 'swarms eat', hs['scores'])
             await host.wait_for_timeout(500)
-            ls = await guests[1].evaluate('() => window.__dbg.activePlayers().map(p => [p.swarm.lasers, p.swarm.storms, p.swarm.mesh.instanceColor.getX(0) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.lasers) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.count - 1) < 0.5, p.swarm.tugs, p.swarm.mesh.instanceColor.getY(p.swarm.lasers + p.swarm.storms) > 0.9 && p.swarm.mesh.instanceColor.getX(p.swarm.lasers + p.swarm.storms) < 0.6])')
+            ls = await guests[1].evaluate('() => window.__dbg.activePlayers().map(p => (p.swarm.updateColors(), 0) || [p.swarm.lasers, p.swarm.storms, p.swarm.mesh.instanceColor.getX(0) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.lasers) > 0.9, p.swarm.mesh.instanceColor.getZ(p.swarm.count - 1) < 0.5, p.swarm.tugs, p.swarm.mesh.instanceColor.getY(p.swarm.lasers + p.swarm.storms) > 0.9 && p.swarm.mesh.instanceColor.getX(p.swarm.lasers + p.swarm.storms) < 0.6])')
             t.ok(len(ls) == 3 and all(x == [2, 2, True, True, True, 2, True] for x in ls), 'guests see every player\'s ships in the type colours (red lasers, blue storms, green tugs, yellow eaters)', ls)
             hb = await host.evaluate('() => [window.__dbg.holes.made, window.__dbg.activePlayers().map(p => p.swarm.bombers)]')
             gb = await guests[1].evaluate('() => [window.__dbg.holes.made, window.__dbg.activePlayers().map(p => p.swarm.bombers)]')

@@ -24,7 +24,7 @@ export const HudText = {
     const hint = !me ? 'connecting…'
       : me.homeMode === 'jump'
         ? 'planet eaten — jumping to hyperspace'
-        : me.homeMode === 'recall'
+        : me.anyHome()
           ? 'called back to the tunnel'
           : '';
 

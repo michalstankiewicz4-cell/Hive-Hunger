@@ -16,12 +16,13 @@ When eating cuts a piece off — a part no longer connected to the rest — it c
 
 ## Points and upgrades
 
-Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the counter) opens the upgrade tree, growing upwards over levels 0–5 with links across branches: traits of the whole swarm (diamonds) — Brood (+units), Wings (+speed), Jaws (+bite radius) and Chain lightning (a bolt that jumps between your drones every few seconds and weakens the voxels on its way, with Arcs, Voltage and Capacitor) — and every ship type (hexagons) with its own properties (small circles). For now the ships, their properties, Agility and Swarm sense are *coming soon*. Upgrades add to the settings panel. Voxels show damage as they are eaten: the surface sinks in and darkens before the voxel breaks apart.
+Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the counter) opens the upgrade tree, growing upwards over levels 0–5 with links across branches: traits of the whole swarm (diamonds) — Brood (+units), Wings (+speed), Jaws (+bite radius) and Chain lightning (a bolt that jumps between your drones every few seconds and weakens the voxels on its way, with Arcs, Voltage and Capacitor) — and every ship type (hexagons) with its own properties (small circles). For now the ships, their properties, Agility and Swarm sense are *coming soon*. Upgrades add to your swarm's base values (Brood adds ships). Voxels show damage as they are eaten: the surface sinks in and darkens before the voxel breaks apart.
 
 ## Controls
 
-- **Click / tap** — send the swarm there (a pulsing ring marks the spot): every unit drops its current bite, the swarm flies over (around the planet, not through it) and starts eating at the clicked spot. A unit stuck in a corner of a crater or tunnel bites through the blocking voxel (if it isn't someone else's) and carries on
-- **Click the tunnel** (the small blue vortex at the spawn point) — call the swarm back home; it stops eating and waits there until you click the planet again
+- **Ship bar** (along the bottom) — a thumbnail of every ship type with how many you have. Click a thumbnail to **choose that group** (one at a time; eaters at first; it stays chosen). **+** on a thumbnail buys one ship of that type (**Shift**: 10) — free for now — up to 100 ships in all. You start with **3 eaters** and nothing else
+- **Click / tap a voxel** (the planet, an asteroid or a drifting piece) — send the chosen group there (a pulsing ring marks the spot): only those ships drop their bites and their next bites are the voxels nearest to it; ships that don't eat (tugs, support, cleaners, boosters) fly there and then carry on as usual. The other groups go on with what they were doing. Clicks into empty space do nothing. A unit stuck in a corner of a crater or tunnel bites through the blocking voxel (if it isn't someone else's) and carries on
+- **Click the tunnel** (the small blue vortex at the spawn point) — call the chosen group back home; it stops eating and waits there until you send it out again
 - **Right mouse button / two fingers** — turn the camera, any way round (it can go over the poles)
 - **Mouse wheel** — zoom
 - **Tab** (or a click on the points counter) — upgrade tree (Esc closes it); in single player the game stands still while it is open
@@ -29,14 +30,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 - **Esc** — single player: pause — **Resume** (or Esc again), **Save game** (saves and stays paused), **Save and exit** (keeps the game in this browser and goes to the main menu), **Exit to main menu** (without saving), **Settings**. With a saved game, **Single player** says so under it (*New game or continue your saved game*) and asks: **Continue** (the same planet with the voxels eaten so far, your points, upgrades and settings) or **New game** (the save and the map's ticks are deleted). **Settings → Delete save game** deletes them too (it asks once more). Esc also closes the upgrade tree
 - **Ship guide** (start screen) — every ship type with a small picture and what it does, attack and support ships apart, in a window that fits the screen (only the ships scroll; the title and Back stay); pointing at a ship plays its shot.
 - **Settings** (start screen, waiting room, or the room panel during a match) — **Mouse** (what it does, camera turning and zoom speed), **Keyboard** (the keys) and **Graphics** (FPS counter, render resolution 50 / 75 / 100% / native, smooth edges, amount of effects Low / Medium / High). They apply at once and are remembered in your browser; **Reset settings** restores them. The game screen itself shows no description of the controls — they are listed here. — the three side by side
-- **Panel in the top-right corner** — adjust your swarm live:
-  - **Units** — number of units in the swarm (10–100; upgrades can't take it past 100)
-  - **Speed** — the shared flying speed
-  - **Power** — radius of the crater a unit eats out of its bite
-  - **Turning** — how fast ships turn their nose; a ship eats only once it faces its bite
-  - **Reset to default** — restore all settings to their starting values
-  - **Level 1–2** (single player) — jump straight to that mission's planet (1 the Kuiper Belt, 2 Earth); the swarm comes out of its tunnel again
-- **Ship types panel in the bottom-right corner** — how many of your units are yellow **Eaters**, red **Lasers**, blue **Storms**, green **Tugs**, purple **Bombers**, magenta **Orbs**, blue **Splashers**, white **Support** ships, grey **Cleaners**, orange **Drills**, copper **Piercers**, teal **Snipers**, crimson **Cutters** and pink **Boosters** — a slider each (linked: together they are all your units; at the start 2 of each type — 28 units). Attack ships are listed first, support ships (Tugs, Support, Cleaners, Boosters) below a line, in the same order as the Ship guide. The arrows on both sides of a slider move it by one ship. The checkbox in front of a slider locks it: it can't be moved, and moving the others never changes it. Every ship eats only once it faces its bite.
+- **The ship types** (each eats only once it faces its bite):
   - **Laser** ships eat their bite from 5 voxels away with a glowing red beam, but fly 10% slower.
   - **Storm** ships fire lightning from the same distance: it forks at 70% of the way into three — the bite gets 40% of a laser's damage, the two nearest voxels 30% each. When the bite is gone, the ship picks its next one like any other.
   - **Tugs** don't eat: they fly only to drifting pieces. From 10 voxels away a green tractor beam takes in the whole piece and the tug tows it home to your tunnel. There the piece is gone and you get **5 ×** the points of what is left of it — other ships (yours or other players') may eat it on the way.
@@ -53,12 +47,12 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 
 ## Multiplayer
 
-The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). A room always starts from scratch — the first mission (the Kuiper Belt), no points or upgrades — even if you were playing single player before (only your settings panel stays). The match begins when every player in the room has pressed **Start** (**Not ready** takes it back).
+The start screen offers **Single player**, **Multiplayer · Co-op** and **Multiplayer · PvP**. Choosing a multiplayer mode opens a room: click **Copy link** and send it — others join by opening the link (up to 4 players). A room always starts from scratch — the first mission (the Kuiper Belt), no points or upgrades — even if you were playing single player before (only the number of your ships stays). The match begins when every player in the room has pressed **Start** (**Not ready** takes it back).
 
 - **Co-op** — everyone eats the same planet together; the scoreboard shows how many voxels each player has eaten (the summary after each planet shows the shares).
 - **PvP** — a race on the same planet: whoever eats more of it wins the planet.
 
-Every player has their own swarm (Blue, Pink, Green, Violet), tunnel and settings. After each planet a summary shows who ate how much of it (and in PvP who won it); the next planet comes once everyone has pressed **Next planet**. The scoreboard shows each player's ping (the host is marked "host"), the room panel shows your connection, and a short notice appears when someone joins, leaves or loses the connection. Spawn points are spread evenly around the planet (2 players opposite each other, 3 a third of a turn apart, 4 a quarter). It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
+Every player has their own swarm (Blue, Pink, Green, Violet), tunnel and ship bar (buying and sending groups go through the host). After each planet a summary shows who ate how much of it (and in PvP who won it); the next planet comes once everyone has pressed **Next planet**. The scoreboard shows each player's ping (the host is marked "host"), the room panel shows your connection, and a short notice appears when someone joins, leaves or loses the connection. Spawn points are spread evenly around the planet (2 players opposite each other, 3 a third of a turn apart, 4 a quarter). It runs peer to peer over WebRTC ([PeerJS](https://peerjs.com/)); the host's browser runs the game. Details: [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 ## Troubleshooting
 
@@ -107,7 +101,7 @@ sitemap.xml           sitemap for Google Search Console
 css/                  one stylesheet per part of the page (base, hud, panel, lobby, menu, summary, points, tree)
 js/
   main.js               entry point: start screen, single player, hosting or joining a room
-  config.js             all game, network and slider parameters
+  config.js             all game and network parameters
   version.js            game version
   core/                 rules without graphics: Leader (the swarm's "brain"), SkillTree (upgrades)
   three/game/           Game3D (scene, roles, planets, frame loop) and its parts: input, destruction,
@@ -121,7 +115,7 @@ js/
   three/scene/          sky, the subspace tunnel at the spawn point, click marker
   three/textures.js     glow and gradient textures shared by the effects
   net/                  multiplayer host and guest over PeerJS, binary messages
-  ui/                   HUD, settings panel, ship types, level switch, menus, summary, upgrade tree,
+  ui/                   HUD, ship bar, menus, summary, upgrade tree,
                         the solar system map
   solar.js, progress.js the map's bodies (outside in); single player's finished missions
   save.js               single player's saved game (one slot in this browser)
@@ -134,7 +128,7 @@ tests/                browser tests (Playwright): solo, multiplayer, levels, upg
 LICENSE               MIT
 ```
 
-Almost all tunable values (planet size, voxel size, levels, flock weights, eating speed, network timing, slider ranges) live in `js/config.js`; upgrade costs and the lightning's base values are in `js/core/SkillTree.js` (see [docs/CONFIG.md](docs/CONFIG.md)).
+Almost all tunable values (planet size, voxel size, levels, flock weights, eating speed, network timing) live in `js/config.js`; upgrade costs and the lightning's base values are in `js/core/SkillTree.js` (see [docs/CONFIG.md](docs/CONFIG.md)).
 
 ## Search & sharing
 

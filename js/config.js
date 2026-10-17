@@ -1,8 +1,9 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
-// at the start every player has START_EACH ships of every type (eaters, laser ships, storm ships,
-// tugs, bombers, orb ships, support ships, cleaners, drills, piercers, snipers, splashers, boosters, cutters): 2 × 14 = 28 units
-const START_EACH = 2;
-const START_UNITS = START_EACH * 14;
+// at the start every player has START_UNITS eaters and START_EACH ships of every other type (laser ships,
+// storm ships, tugs, bombers, orb ships, support ships, cleaners, drills, piercers, snipers, splashers,
+// boosters, cutters): 3 eaters, nothing else — more are bought on the ship bar
+const START_EACH = 0;
+const START_UNITS = 3;
 
 /**
  * Ship types other than eaters, in the order their units come in the swarm: units 0 … lasers−1 are
@@ -18,6 +19,11 @@ export const SHIP_GROUPS = Object.freeze([
   { name: 'Attack', kinds: ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'cutters', 'snipers'] },
   { name: 'Support', kinds: ['tugs', 'supports', 'cleaners', 'boosters'] },
 ]);
+/**
+ * Groups of ships you send (the ship bar): every type in SHIP_KINDS order, eaters last — the index is
+ * `Swarm3D.kindOf[i]`.
+ */
+export const GROUP_KINDS = Object.freeze([...SHIP_KINDS, 'eaters']);
 /** The CONFIG.swarm entry of a ship type: 'lasers' → 'laser', 'supports' → 'support', … */
 export const kindConfig = (kind) => kind.slice(0, -1);
 
@@ -112,7 +118,7 @@ export const CONFIG = Object.freeze({
   // Flock (boids). Every unit flies at the same constant speed — only its direction changes.
   swarm: {
     count: START_UNITS,
-    minCount: 0,             // (the Units slider starts at 10; bombers that blew up can take the swarm lower)
+    minCount: 0,             // (bombers that blew up can take the swarm down to nothing)
     maxCount: 100,           // most ships a swarm can have (Units slider and upgrades together)
     speed: 0.05,             // units per frame, identical for all
     perception: 3,           // how far a unit sees its neighbours
@@ -222,6 +228,7 @@ export const CONFIG = Object.freeze({
     // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames
     warp: { window: 150, frames: 40, accel: 1.16, maxSpeed: 4, outward: 0.8, trailFade: 25, width: 0.35,
       color: 0x3a8dff, streakColor: 0xb5ecff, streaks: 6 },
+    groupArrive: 3,          // a group sent to a point (ship bar + click) got there once one of its ships is this close (or has landed)
     aimAngle: 12,            // a ship eats (a laser ship fires) only once it faces its bite within this many degrees
     // a unit that hasn't eaten for `frames` (10 s) while it has a bite stops for `pauseFrames`
     // (0.5 s), then takes another bite — or the same one if there is no other
@@ -233,14 +240,6 @@ export const CONFIG = Object.freeze({
     eaterColor: 0xffd84a,    // eaters are yellow (every player)
     size: [0.14, 0.14, 0.7],
   },
-
-  // Panel sliders (changes apply live)
-  controls: [
-    { id: 'count',  label: 'Units',    min: 10,   max: 100,  step: 10,   decimals: 0 },
-    { id: 'speed',  label: 'Speed',    min: 0.05, max: 0.6,  step: 0.01, decimals: 2 },
-    { id: 'power',  label: 'Power',    min: 0.5,  max: 3,    step: 0.1,  decimals: 1 },
-    { id: 'turn',   label: 'Turning',  min: 0.02, max: 0.3,  step: 0.01, decimals: 2 }, // how fast ships turn their nose (turnSmoothing)
-  ],
 
   // the spawn point: a subspace tunnel. Closed: a small vortex (`closedRadius`); it opens (`openFrames`)
   // to `openRadius` when the ships arrive — they come out over `emergeWindow` frames — and closes

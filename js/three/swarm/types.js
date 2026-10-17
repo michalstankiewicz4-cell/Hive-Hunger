@@ -25,6 +25,14 @@ export const ShipTypes = {
     return i >= a && i < a + this[kind];
   },
 
+  /** `kindOf[i]`: unit i's type as an index in SHIP_KINDS, eaters = SHIP_KINDS.length (once per frame). */
+  fillKinds() {
+    if (!this.kindOf || this.kindOf.length < this.max) this.kindOf = new Uint8Array(this.max);
+    let i = 0;
+    SHIP_KINDS.forEach((k, n) => { for (const end = Math.min(this.count, i + this[k]); i < end; i++) this.kindOf[i] = n; });
+    for (; i < this.count; i++) this.kindOf[i] = SHIP_KINDS.length;
+  },
+
   isStorm(i) { return this.isKind(i, 'storms'); },
   isTug(i) { return this.isKind(i, 'tugs'); },
   isBomber(i) { return this.isKind(i, 'bombers'); },

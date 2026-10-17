@@ -2,6 +2,21 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.45.0] — 2026-10-17
+
+### Added
+- **Ship bar** along the bottom: a thumbnail of every ship type (attack ships, a line, support ships) with how many you have. Click a thumbnail to choose that group — one at a time, eaters at first, it stays chosen. **+** buys one ship of that type, **Shift** + buys 10 — free for now — up to 100 ships in all; a new ship comes as the last of its type, so no other ship changes its type. In multiplayer a guest's purchases go through the host.
+- **Sending groups:** a click on a voxel (the planet, an asteroid or a drifting piece) sends only the chosen group there — their next bites are the voxels nearest to the spot; ships that don't eat (tugs, support, cleaners, boosters) fly there and then carry on as usual; the other groups go on with what they were doing. A click on your tunnel calls only the chosen group home (it stops eating and waits there until sent out again).
+- **Ship editor:** an EN / PL switch in the header (remembered in the browser; the exported file stays in English).
+
+### Changed
+- Clicks into empty space do nothing (before: the swarm flew to the spot beside the planet).
+- You start with **3 eaters** and no other ships (before: 2 of each of the 14 types).
+- Settings → Mouse describes the ship bar and sending groups.
+
+### Removed
+- The settings panel (Units, Speed, Power, Turning, Reset to default) and the level switch; the Ship types panel with its sliders, arrows and locks (replaced by the ship bar). Speed, Power and Turning keep their starting values (upgrades still add to them).
+
 ## [0.44.0] — 2026-10-17
 
 ### Added

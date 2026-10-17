@@ -3,8 +3,9 @@ import { el, button } from './dom.js';
 
 /** What the mouse (and touch) does, and the keys. */
 const MOUSE = [
-  ['Left click / tap', 'send the swarm there'],
-  ['Click the tunnel', 'call the swarm back home'],
+  ['Ship bar (bottom)', 'choose a group of ships; + buys one (Shift: 10)'],
+  ['Click a voxel', 'send the chosen group there'],
+  ['Click the tunnel', 'call the chosen group back home'],
   ['Right button drag / two fingers', 'turn the camera (any way round)'],
   ['Wheel', 'zoom'],
   ['Click the points counter', 'upgrade tree'],

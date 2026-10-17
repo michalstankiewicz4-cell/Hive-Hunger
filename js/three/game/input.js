@@ -76,21 +76,33 @@ export const Input = {
     }, { passive: false });
   },
 
-  /** A tap on the screen: own tunnel → call the swarm back, planet → send the swarm there. */
+  /**
+   * A tap on the screen, for the group chosen in the ship bar (`this.group`): own tunnel → call
+   * that group back, a voxel (the planet or a drifting piece) → send it there. Anywhere else: nothing.
+   */
   onTap(ndc) {
     const me = this.localPlayer;
     if (!me || !this.planet || !this.started) return;
+    const group = this.group;
     this.raycaster.setFromCamera(ndc, this.camera);
     if (me.beacon.hitBy(this.raycaster.ray)) {
-      if (this.role === 'guest') this.net.sendCommand({ kind: 'recall' });
-      else me.recall();
+      if (this.role === 'guest') this.net.sendCommand({ kind: 'recall', group });
+      else me.recall(group);
       return;
     }
     if (!this.planet.alive || me.homeMode === 'jump') return;
     const point = this.pointFromScreen(ndc);
-    this.marker.show(point, this.lastPickHit, this.camera);
-    if (this.role === 'guest') this.net.sendCommand({ kind: 'click', p: point });
-    else me.command(point);
+    if (!this.lastPickHit) return; // empty space: ships can only be sent to voxels
+    this.marker.show(point, true, this.camera);
+    if (this.role === 'guest') this.net.sendCommand({ kind: 'click', p: point, group });
+    else me.command(point, group);
+  },
+
+  /** The ship bar's + : buy `n` ships of type `kind` (a guest asks the host). */
+  buyShips(kind, n) {
+    if (!this.localPlayer) return;
+    if (this.role === 'guest') this.net.sendCommand({ kind: 'buy', group: kind, n });
+    else this.localPlayer.buyShips(kind, n);
   },
 
   /** A setting changed on the local panel. */
@@ -126,11 +138,11 @@ export const Input = {
     this.updateCamera();
   },
 
-  /** World point under the screen point: the first solid voxel, or beside the planet — the plane through its centre. */
+  /** World point under the screen point: the first solid voxel (also of a drifting piece), or beside the planet — the plane through its centre. */
   pointFromScreen(ndc) {
     this.raycaster.setFromCamera(ndc, this.camera);
     const ray = this.raycaster.ray;
-    const hit = this.planet && this.planet.raycastSolid(ray, this.tmp);
+    const hit = this.planet && this.planet.raycastSolid(ray, this.tmp, true);
     this.lastPickHit = Boolean(hit);
     if (!hit) {
       const t = -ray.origin.dot(ray.direction);

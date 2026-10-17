@@ -91,19 +91,27 @@ export const Search = {
     return { x: c.x, y: c.y, z: c.z };
   },
 
-  /** First solid voxel along a ray, or null. */
-  raycastSolid(ray, out) {
-    const R = this.bound;
+  /** First solid voxel along a ray (with `pieces`: also of a drifting piece, whichever is nearer), or null. */
+  raycastSolid(ray, out, pieces = false) {
     const o = ray.origin, d = ray.direction;
-    const b = o.dot(d);
-    const disc = b * b - (o.lengthSq() - R * R);
-    if (disc < 0) return null;
-    const sq = Math.sqrt(disc);
-    const t0 = Math.max(0, -b - sq), t1 = -b + sq;
-    for (let t = t0; t <= t1; t += this.s * 0.4) {
-      out.copy(d).multiplyScalar(t).add(o);
-      if (this.isSolid(out)) return out;
-    }
-    return null;
+    let best = Infinity;
+    // the first t in [t0, t1] (a sphere around `c` of radius R) where `solid` holds
+    const march = (cx, cy, cz, R, solid) => {
+      const ox = o.x - cx, oy = o.y - cy, oz = o.z - cz;
+      const b = ox * d.x + oy * d.y + oz * d.z;
+      const disc = b * b - (ox * ox + oy * oy + oz * oz - R * R);
+      if (disc < 0) return;
+      const sq = Math.sqrt(disc);
+      const t0 = Math.max(0, -b - sq), t1 = Math.min(best, -b + sq);
+      for (let t = t0; t <= t1; t += this.s * 0.4) {
+        out.copy(d).multiplyScalar(t).add(o);
+        if (solid(out)) { best = t; return; }
+      }
+    };
+    march(0, 0, 0, this.bound, (p) => this.isSolid(p));
+    const fr = this.fragments;
+    if (pieces && fr) for (const f of fr.list) if (!f.dead) march(f.pos.x, f.pos.y, f.pos.z, f.radius + this.s, (p) => fr.at(p) >= 0);
+    if (best === Infinity) return null;
+    return out.copy(d).multiplyScalar(best).add(o);
   },
 };

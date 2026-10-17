@@ -100,7 +100,7 @@ export function encodeSnapshot(game, removed) {
   players.forEach((p, n) => {
     const s = p.swarm;
     v.setUint8(o, p.index); o += 1;
-    v.setUint8(o, p.homeMode === 'recall' ? 1 : p.homeMode === 'jump' ? 2 : 0); o += 1;
+    v.setUint8(o, p.anyHome() ? 1 : p.homeMode === 'jump' ? 2 : 0); o += 1;
     v.setUint32(o, p.score, true); o += 4;
     v.setUint32(o, p.planetScore, true); o += 4;
     v.setUint16(o, p.wins, true); o += 2;

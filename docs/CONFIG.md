@@ -1,6 +1,6 @@
 # Configuration (`js/config.js`)
 
-Almost every tunable value is in `js/config.js` (upgrade costs and the lightning's base values are in `js/core/SkillTree.js` — see the last sections). Units: 1 = one unit of the 3D world (a voxel is `planet.voxelSize` = 0.5); speeds and times are **per frame** (about 60 frames per second). Values marked *slider* are the defaults of the settings panel — players change them live.
+Almost every tunable value is in `js/config.js` (upgrade costs and the lightning's base values are in `js/core/SkillTree.js` — see the last sections). Units: 1 = one unit of the 3D world (a voxel is `planet.voxelSize` = 0.5); speeds and times are **per frame** (about 60 frames per second).
 
 The ship values can also be planned in the **ship editor** (`tools/ship-editor.html`): it shows `swarm` and every ship type with the values here, and exports the changes as JSON (each with its path, e.g. `swarm.cutter.reach`, and the old and new value) to be applied to this file.
 
@@ -65,13 +65,13 @@ Default (both `smooth`): the Kuiper Belt (a band of 335 rocks), Earth (sphere 1)
 
 | Value | Default | What it does | More / less |
 | --- | --- | --- | --- |
-| `count` | 28 | *slider Units* (`START_UNITS` = 2 × 14 types) | |
-| `maxCount` | 100 | most units a swarm can have (slider + Brood bonuses together); the slider's own range (10–100) is in `controls` | |
-| `speed` | 0.05 | *slider Speed* — identical constant speed of every unit | |
+| `count` | 3 | ships at the start (`START_UNITS`: 3 eaters); more are bought on the ship bar | |
+| `maxCount` | 100 | most units a swarm can have (bought + Brood bonuses together; the ship bar's + is off at 100) | |
+| `speed` | 0.05 | identical constant speed of every unit (Wings upgrades add to it) | |
 | `perception` | 3 | how far a unit sees neighbours (at least 1.3 × `separationDistance`) | larger = smoother flock, slower |
 | `separationDistance` | 1.5 | distance below which units push each other away | |
 | `turnRate` | 0.07 | how sharply a unit can change direction per frame | higher = twitchier, lower = wide arcs, may miss targets |
-| `turnSmoothing` | 0.12 | *slider Turning* — how quickly a ship turns its nose to its flying direction; a landed ship eats only once its nose faces its bite | lower = slower turning, a longer wait before each bite |
+| `turnSmoothing` | 0.12 | how quickly a ship turns its nose to its flying direction; a landed ship eats only once its nose faces its bite | lower = slower turning, a longer wait before each bite |
 | `aimAngle` | 12 | a ship eats (a laser ship fires) only when its nose is within this many degrees of its bite | |
 | `weights.separation` | 1.8 | keep your distance | |
 | `weights.alignment` | 1.0 | fly like your neighbours | |
@@ -88,7 +88,7 @@ Default (both `smooth`): the Kuiper Belt (a band of 335 rocks), Earth (sphere 1)
 | `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count`, `splasher.count`, `booster.count`, `cutter.count` | 28, 2 each | units at the start and how many of each type — `START_EACH` (2) of every type; `count` = `START_UNITS` = 2 × 14 (the rest, 2, are eaters) | |
+| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count`, `splasher.count`, `booster.count`, `cutter.count` | 3, 0 each | units at the start and how many of each type — `START_EACH` (0) of every type; `count` = `START_UNITS` (3, all eaters) | |
 | `bomber.radius` | 5 | a bomber destroys everything within this (10 voxels) | |
 | `bomber.color`, `bomber.debris` | purple, 300 | colour; most debris pieces thrown by a blast | |
 | `orb.range`, `orb.speed`, `orb.blast` | 5, 0.045, 1 | firing distance (10 voxels), orb speed per frame, burst radius (2 voxels) | |
@@ -129,7 +129,8 @@ Default (both `smooth`): the Kuiper Belt (a band of 335 rocks), Earth (sphere 1)
 | `cutter.reach`, `cutter.damage`, `cutter.maxHalf` | 10, 0.8, 12 | cutting distance (20 voxels); each voxel of the row bitten at this × an eater's rate (as a piercer); the row at most this many voxels each side of the line | |
 | `cutter.afterFrames`, `cutter.farLength` | 60, 400 | once through, the sheet shines on this long (1 s), its far end this far into space | |
 | `cutter.sheetColor`, `edgeColor`, `apex`, `hazeSpeed`, `opacity` | red, light red, 0.12, 1, 0.85 | the sheet's haze and its edge rays; half its width at the ship; how fast the haze drifts; brightness | |
-| `minCount` | 0 | fewest units (the Units slider starts at 10; bombers that blew up can take the swarm lower) | |
+| `minCount` | 0 | fewest units (bombers that blew up can take the swarm down to nothing) | |
+| `groupArrive` | 3 | a group sent to a point (ship bar + click) got there once one of its ships is this close or has landed; after `leader.dwellFrames` it carries on as usual (its next bites still near the point) | |
 | `tug.range` | 5 | a tug's tractor beam reach (10 voxels) from the piece's edge; it lets go beyond 1.6 × this | |
 | `tug.pull` | 0.9 | a towed piece's speed × the swarm speed | |
 | `tug.deliver` | 2 | how close (beyond the piece's radius) to the tunnel a piece counts as home | |
@@ -146,14 +147,10 @@ Default (both `smooth`): the Kuiper Belt (a band of 335 rocks), Earth (sphere 1)
 | `laser.color` | red | laser ship colour | |
 | `laser.width`, `laser.hitSize` | 0.5, 1.4 | width of the glowing beam, size of the glow where it hits | |
 | `retarget.frames`, `retarget.pauseFrames` | 600, 30 | a unit with a bite that has not eaten for 10 s stops for 0.5 s, then takes another bite (the same one if there is no other) | lower = gives up sooner |
-| `biteRadius` | 0.5 | *slider Power* — crater radius per bite | |
+| `biteRadius` | 0.5 | Power — crater radius per bite (Jaws upgrades add to it) | |
 | `spawnSpread` | 4 | size of the cloud new units appear in | |
 | `spawnGap` | 1 | spawn distance from the surface, in planet radii | |
 | `color`, `size` | | `color` is unused (swarm colours come from `PLAYERS` in `js/three/game/players.js`); `size` — unit box size | |
-
-## Settings panel (`controls`)
-
-Slider ranges and steps (`min`, `max`, `step`, `decimals`): Units, Speed, Power, Turning. Defaults come from `swarm` above; "Reset to default" restores them.
 
 ## Spawn tunnel (`portal`)
 
@@ -235,7 +232,7 @@ Slider ranges and steps (`min`, `max`, `step`, `decimals`): Units, Speed, Power,
 
 ## Upgrades and lightning (`js/core/SkillTree.js`)
 
-Every node is bought once and needs a parent (`parents`: any one of them, or every one with `all`); effects add up on top of the sliders. Nodes have a `kind` — `swarm` (diamond), `ship` (hexagon), `prop` (a ship's property, circle) — and a level `depth` 0–5. The ships, their properties, Agility and Swarm sense are `soon` (shown, not for sale yet: their logic comes later). What can be bought:
+Every node is bought once and needs a parent (`parents`: any one of them, or every one with `all`); effects add up on top of the base values. Nodes have a `kind` — `swarm` (diamond), `ship` (hexagon), `prop` (a ship's property, circle) — and a level `depth` 0–5. The ships, their properties, Agility and Swarm sense are `soon` (shown, not for sale yet: their logic comes later). What can be bought:
 
 | Branch | Nodes | Costs (points) | Effect per node |
 | --- | --- | --- | --- |
@@ -268,4 +265,4 @@ Not game rules: each player's own, remembered in the browser (`localStorage`, ke
 
 ## Ship groups (`SHIP_GROUPS` in `config.js`)
 
-How the types are shown in the Ship types panel and the Ship guide: `Attack` (eaters, lasers, storms, orbs, splashers, bombers, drills, piercers, cutters, snipers), then below a line `Support` (tugs, support, cleaners, boosters). Only for showing — the order of the units in the swarm is `SHIP_KINDS`.
+How the types are shown in the ship bar and the Ship guide: `Attack` (eaters, lasers, storms, orbs, splashers, bombers, drills, piercers, cutters, snipers), then below a line `Support` (tugs, support, cleaners, boosters). Only for showing — the order of the units in the swarm is `SHIP_KINDS`.

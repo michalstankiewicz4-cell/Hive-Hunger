@@ -90,6 +90,7 @@ export class Game3D {
 
     this.raycaster = new THREE.Raycaster();
     this.tmp = new THREE.Vector3();
+    this.group = 'eaters'; // the group of ships a click sends (chosen in the ship bar)
     this.debris = new Debris3D(this.scene, this.cfg.debris);
     this.marker = new ClickMarker(this.scene, this.cfg.marker);
     this.lightning = new Lightning3D(this.scene);
