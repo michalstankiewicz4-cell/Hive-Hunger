@@ -121,7 +121,7 @@ export class Player {
       storm: (idx, ownFood, i) => game.stormCell(idx, ownFood, this, this.boostOf(i)),
       pierce: (idx, i) => game.pierceCell(idx, this, i),
       pierceLine: (i, x, y, z, D, E) => game.pierceLine(this, i, x, y, z, D, E),
-      cutLine: (i, x, y, z, D, S, L, R) => game.cutLine(this, i, x, y, z, D, S, L, R),
+      cutLine: (i, x, y, z, D, S, L, R, B) => game.cutLine(this, i, x, y, z, D, S, L, R, B),
       cutPiece: (i, x, y, z, D, S, L, R, id) => game.cutPiece(this, i, x, y, z, D, S, L, R, id),
       pieceOf: (idx) => game.planet.fragments?.fragOf[idx] ?? -1,
       bomb: (i, x, y, z) => game.explode(x, y, z, this),
@@ -203,6 +203,7 @@ export class Player {
     this.swarm.tugHas.fill(0);
     this.swarm.pierceOn.fill(0); // (the line was on the old planet)
     this.swarm.cutOn.fill(0);
+    this.swarm.cutAfter.fill(0);
     this.swarm.tows = [];
     this.swarm.food.fill(-1);
     this.swarm.landed.fill(0);

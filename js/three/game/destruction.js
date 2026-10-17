@@ -89,10 +89,10 @@ export const Destruction = {
    * sheet spread along S[i*3…]: the first solid grid voxel on the line (however far, through the whole
    * planet) and the row across the sheet through it — every solid voxel of the same body on that row
    * (a belt: the same rock; gaps in it don't stop the row), at most `cutter.maxHalf` each side — are each bitten for `cutter.damage` × an eater's rate (claimed
-   * or not; a point each when gone). L / R[i*3…] are set to the row's two ends (for drawing). Nothing
-   * left on the line — it is through — returns false.
+   * or not; a point each when gone). L / R[i*3…] are set to the row's two ends (for drawing). On a belt
+   * only the rock it first hit counts (B[i]: its tag). Nothing left on the line — it is through — returns false.
    */
-  cutLine(player, i, x, y, z, D, S, L, R) {
+  cutLine(player, i, x, y, z, D, S, L, R, B) {
     const pl = this.planet, c = this.cfg.swarm.cutter, i3 = i * 3, s = pl.s;
     const amount = (this.cfg.planet.strength / this.cfg.swarm.eatFrames) * c.damage * player.boostOf(i);
     const p = PIERCE_P.set(x, y, z), step = s * 0.5;
@@ -101,9 +101,11 @@ export const Destruction = {
     for (let k = 0, steps = Math.ceil(reach / step); k < steps; k++) {
       p.x += D[i3] * step; p.y += D[i3 + 1] * step; p.z += D[i3 + 2] * step;
       const n = pl.cellAt(p);
-      if (n >= 0 && pl.hp[n] > 0) { first = n; break; }
+      // (a belt: only the rock it started on — B[i], set by the first hit; through it means through)
+      if (n >= 0 && pl.hp[n] > 0 && (!pl.tags || B[i] < 0 || pl.tags[n] === B[i])) { first = n; break; }
     }
     if (first < 0) return false;
+    if (pl.tags && B[i] < 0) B[i] = pl.tags[first];
     // across the sheet, both ways from the line, half a voxel at a time: every solid voxel of the same
     // body (the same rock of a belt), over gaps too — the sheet covers the whole width of what it hits
     const row = new Set([first]);

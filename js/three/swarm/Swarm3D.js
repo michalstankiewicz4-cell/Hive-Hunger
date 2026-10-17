@@ -90,6 +90,8 @@ export class Swarm3D {
     this.cutL = new Float32Array(this.max * 3);
     this.cutR = new Float32Array(this.max * 3);
     this.cutPiece = new Int32Array(this.max).fill(-1); // a drifting piece's id, when cutting one
+    this.cutBody = new Int32Array(this.max).fill(-1);  // a belt: the rock it is cutting (its tag), so through means through that rock
+    this.cutAfter = new Uint16Array(this.max);         // frames since it got through (the sheet shows on for `cutter.afterFrames`)
     // the last `snipers` units are teal snipers: from any distance they fire an accelerating shot at
     // their bite (Shots.js) that destroys the voxel it hits; snipePhase 1 = stopped and charging,
     // snipeT counts the charge down (or, after a shot, the second it flies on)
@@ -376,13 +378,23 @@ export class Swarm3D {
       // a cutter on its locked line: it cuts the row across it; when the row is gone, the next one deeper,
       // until through — then it flies on
       if (this.cutOn[i]) {
-        if (!this.isCutter(i) || world.holding) { this.cutOn[i] = 0; continue; } // another type now / called back
+        if (!this.isCutter(i) || world.holding) { this.cutOn[i] = 0; this.cutAfter[i] = 0; continue; } // another type now / called back
+        // through: for `afterFrames` (1 s) more the sheet goes on out through the cut and into space
+        if (this.cutAfter[i] > 0) {
+          if (++this.cutAfter[i] > c.cutter.afterFrames) { this.cutOn[i] = 0; this.cutAfter[i] = 0; best[i] = Infinity; stuck[i] = 0; }
+          continue;
+        }
         const hit = this.cutPiece[i] >= 0
           ? world.cutPiece(i, pos[i3], pos[i3 + 1], pos[i3 + 2], this.cutDir, this.cutSide, this.cutL, this.cutR, this.cutPiece[i])
-          : world.cutLine(i, pos[i3], pos[i3 + 1], pos[i3 + 2], this.cutDir, this.cutSide, this.cutL, this.cutR);
+          : world.cutLine(i, pos[i3], pos[i3 + 1], pos[i3 + 2], this.cutDir, this.cutSide, this.cutL, this.cutR, this.cutBody);
         this.hungry[i] = 0;
         dir[i3] = this.cutDir[i3]; dir[i3 + 1] = this.cutDir[i3 + 1]; dir[i3 + 2] = this.cutDir[i3 + 2];
-        if (!hit) { this.cutOn[i] = 0; best[i] = Infinity; stuck[i] = 0; }
+        if (!hit) {
+          // the last row's ends pushed out along the line, far into space (the sheet passes through the cut)
+          const far = c.cutter.farLength, D = this.cutDir, L = this.cutL, R = this.cutR;
+          for (const E of [L, R]) { E[i3] += D[i3] * far; E[i3 + 1] += D[i3 + 1] * far; E[i3 + 2] += D[i3 + 2] * far; }
+          this.cutAfter[i] = 1;
+        }
         continue;
       }
       // a sniper: from anywhere at its bite — stop, charge `sniper.chargeFrames` (5 s) facing it, fire,
@@ -498,6 +510,8 @@ export class Swarm3D {
             this.cutDir[i3] = dx; this.cutDir[i3 + 1] = dy; this.cutDir[i3 + 2] = dz;
             this.cutSide[i3] = sx / sl; this.cutSide[i3 + 1] = sy / sl; this.cutSide[i3 + 2] = sz / sl;
             this.cutOn[i] = 1;
+            this.cutAfter[i] = 0;
+            this.cutBody[i] = -1;
             this.cutPiece[i] = world.isFloating(food[i]) ? world.pieceOf(food[i]) : -1; // (a drifting piece: its whole width too)
             world.release(food[i]);
             food[i] = -1;

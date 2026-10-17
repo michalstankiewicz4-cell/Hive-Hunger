@@ -2,6 +2,14 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.43.2] — 2026-10-17
+
+### Changed
+- **Cutters** keep cutting for 1 s after they get through: the sheet shines on through the cut, far into space (like the piercers' beam), then the cutter flies on.
+
+### Fixed
+- On the Kuiper Belt a cutter that got through its rock went on cutting other rocks far away along the same line; now through means through the rock it started on.
+
 ## [0.43.1] — 2026-10-16
 
 ### Changed

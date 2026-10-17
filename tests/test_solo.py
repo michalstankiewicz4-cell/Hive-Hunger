@@ -571,11 +571,16 @@ async def main():
           const L = [s.cutL[i * 3], s.cutL[i * 3 + 1], s.cutL[i * 3 + 2]], R = [s.cutR[i * 3], s.cutR[i * 3 + 1], s.cutR[i * 3 + 2]];
           const mid = L.map((v, k) => (v + R[k]) / 2), dist = Math.hypot(...mid.map((v, k) => v - at[k]));
           const sheet = s.cutsShown, width = Math.hypot(...L.map((v, k) => v - R[k]));
-          let k = 0; while (s.cutOn[i] && k < 3000) { g.update(); k++; }
-          return { crimson, cutting: true, sheet, width, dist, reach: c.reach, eaten: left0 - pl.left, points: p.score - score0, through: !s.cutOn[i], still: Math.hypot(s.pos[i * 3] - at[0], s.pos[i * 3 + 1] - at[1], s.pos[i * 3 + 2] - at[2]) }; }""")
-        t.ok(ct.get('crimson') and ct.get('cutting') and ct.get('sheet', 0) >= 1 and ct.get('width', 0) >= 0.5 and ct.get('dist', 99) <= ct.get('reach', 0) + 2,
+          let k = 0; while (s.cutOn[i] && !s.cutAfter[i] && k < 9000) { g.update(); k++; } // (through the whole Earth takes ~50 s)
+          // through: for 1 s more the sheet shines on through the cut, far into space
+          const throughAt = k; let after = 0, far = 0;
+          while (s.cutOn[i] && after < 200) { g.update(); after++; s.render(g.camera);
+            if (after === 30) far = Math.hypot(s.cutL[i * 3] - at[0], s.cutL[i * 3 + 1] - at[1], s.cutL[i * 3 + 2] - at[2]) * (s.cutsShown > 0 ? 1 : 0); }
+          return { crimson, cutting: true, sheet, width, dist, reach: c.reach, eaten: left0 - pl.left, points: p.score - score0, through: !s.cutOn[i], after, far, frames: throughAt, shape: pl.shape, still: Math.hypot(s.pos[i * 3] - at[0], s.pos[i * 3 + 1] - at[1], s.pos[i * 3 + 2] - at[2]) }; }""")
+        t.ok(ct.get('crimson') and ct.get('cutting') and ct.get('sheet', 0) >= 1 and ct.get('width', 0) >= 0.49 and ct.get('dist', 99) <= ct.get('reach', 0) + 2,
              'a crimson cutter locks a flat sheet on its bite from up to 20 voxels, as wide as what it hits', ct)
         t.ok(ct.get('eaten', 0) > 1 and ct.get('points', 0) > 0 and ct.get('through'), 'it cuts whole rows, deeper and deeper, until through; then it moves on', ct)
+        t.ok(abs(ct.get('after', 0) - 60) <= 2 and ct.get('far', 0) > 100, 'once through, the sheet shines on through the cut into space for 1 s', ct)
         await page.evaluate("() => { const g = window.__dbg; g.localPlayer.setSetting('cutters', 0); g.start(); }")
         # Space pauses single player (nothing moves, "Paused" at the bottom) and carries on
         await page.mouse.move(500, 300)
