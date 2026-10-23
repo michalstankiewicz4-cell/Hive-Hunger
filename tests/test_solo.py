@@ -280,6 +280,27 @@ async def main():
         await page.click('.shipbar-eaters .shipbar-buy', modifiers=['Shift'])
         ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
         t.ok(ui[0] == 22 and sum(ui) == 31, 'Shift + buys 10', ui)
+        # − sends one away: it jumps to hyperspace like at the end of a planet, then it is gone; no other ship changes its type
+        sl = await page.evaluate(f"""() => {{ const g = window.__dbg, p = g.localPlayer, s = p.swarm, keep = {KEEP};
+          g.stop();
+          const types0 = keep(), n0 = s.count, storms0 = s.storms;
+          document.querySelector('.shipbar-storms .shipbar-sell').click();
+          const shown = +document.querySelector('.shipbar-storms .shipbar-count').textContent;
+          let jumped = 0, f = 0;
+          for (; f < 200 && s.count === n0; f++) {{ g.update(); for (let i = 0; i < s.count; i++) if (s.warpT[i] > 0 && s.leaving[i]) jumped = 1; }}
+          const types1 = keep();
+          // the ships that stayed: none changed its type (positions move between frames, so compare the counts by type)
+          s.fillKinds(); const byType = {{}}; for (let i = 0; i < s.count; i++) byType[s.kindOf[i]] = (byType[s.kindOf[i]] || 0) + 1;
+          const r = {{ n0, n1: s.count, storms0, storms1: s.storms, shown, jumped, frames: f, base: p.base.count, byType }};
+          g.start(); return r; }}""")
+        t.ok(sl['shown'] == sl['storms0'] - 1 and sl['jumped'] and sl['n1'] == sl['n0'] - 1 and sl['storms1'] == sl['storms0'] - 1 and sl['frames'] > 30,
+             '− sends a ship away: it jumps to hyperspace and is then gone (one fewer of that type)', sl)
+        last = await page.evaluate("""() => { const p = window.__dbg.localPlayer, s = p.swarm, n = s.count;
+          let sent = 0; for (const k of ['eaters', 'lasers', 'storms', 'tugs']) sent += p.sellShips(k, 200); return [sent, n]; }""")
+        t.ok(last[0] == last[1] - 1, 'at least one ship stays', last)
+        await page.evaluate("() => { const g = window.__dbg, p = g.localPlayer; for (let k = 0; k < 200; k++) g.update(); }")
+        await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 21); p.setSetting('lasers', 2); p.setSetting('storms', 4); p.setSetting('tugs', 3); }")
+        await page.click('.shipbar-eaters .shipbar-buy', modifiers=['Shift'])
         full = await page.evaluate("""() => { const p = window.__dbg.localPlayer; p.buyShips('lasers', 200);
           const r = [p.swarm.count, p.swarm.lasers, document.querySelector('.shipbar-lasers .shipbar-buy').disabled];
           return new Promise((ok) => setTimeout(() => ok([r[0], r[1], document.querySelector('.shipbar-lasers .shipbar-buy').disabled]), 400)); }""")

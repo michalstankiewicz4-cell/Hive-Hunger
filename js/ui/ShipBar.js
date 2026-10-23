@@ -9,7 +9,8 @@ const TW = 54, TH = 29; // thumbnail size (CSS pixels; the Ship guide's pictures
  * support ships — SHIP_GROUPS), each with how many you have. One group is chosen at a time (eaters
  * at first) and stays chosen: a click on a voxel or a drifting piece sends only that group there,
  * a click on your tunnel calls only that group home. The + on a thumbnail buys one ship of that
- * type (Shift: 10) — free for now — up to `swarm.maxCount` ships in all.
+ * type (Shift: 10) — free for now — up to `swarm.maxCount` ships in all; the − sends one away (Shift: 10):
+ * it jumps to hyperspace and is gone (at least one ship stays).
  */
 export class ShipBar {
   /**
@@ -56,10 +57,15 @@ export class ShipBar {
     buy.title = `Buy a ${name.toLowerCase().replace(/s$/, '')} (Shift: 10) — free for now`;
     buy.setAttribute('aria-label', `Buy ${name}`);
     buy.addEventListener('click', (e) => { this.opts.buy(kind, e.shiftKey ? 10 : 1); this.sync(); });
+    const sell = el('button', 'shipbar-sell', '−');
+    sell.type = 'button';
+    sell.title = `Send one away: it jumps to hyperspace (Shift: 10)`;
+    sell.setAttribute('aria-label', `Send ${name} away`);
+    sell.addEventListener('click', (e) => { this.opts.sell(kind, e.shiftKey ? 10 : 1); this.sync(); });
     const foot = el('div', 'shipbar-foot');
-    foot.append(count, buy);
+    foot.append(sell, count, buy);
     box.append(pick, foot);
-    this.items[kind] = { pick, count, buy };
+    this.items[kind] = { pick, count, buy, sell };
     return box;
   }
 
@@ -74,15 +80,22 @@ export class ShipBar {
       it.pick.setAttribute('aria-pressed', String(kind === chosen));
       it.pick.parentElement.classList.toggle('is-chosen', kind === chosen);
       it.buy.disabled = full;
+      it.sell.disabled = !n || this.opts.total() <= 1; // (at least one ship stays)
     }
   }
 }
 
-/** How many ships of each type swarm `s` has (eaters: the rest). */
+/** How many ships of each type swarm `s` has (eaters: the rest), not counting those sent away (leaving). */
 export function countsOf(s) {
   const c = {};
   let left = s.count;
-  for (const k of SHIP_KINDS) { c[k] = Math.max(0, Math.min(s[k] || 0, left)); left -= c[k]; }
+  let i = 0;
+  for (const k of SHIP_KINDS) {
+    c[k] = Math.max(0, Math.min(s[k] || 0, left));
+    left -= c[k];
+    for (const end = i + c[k]; i < end; i++) if (s.leaving?.[i]) c[k]--;
+  }
   c.eaters = left;
+  for (; i < s.count; i++) if (s.leaving?.[i]) c.eaters--;
   return c;
 }

@@ -128,6 +128,7 @@ export class Swarm3D {
     this.hidden = new Uint8Array(this.max);
     this.warpDelay = new Int16Array(this.max).fill(-1);
     this.warpT = new Int16Array(this.max);
+    this.leaving = new Uint8Array(this.max); // sent away from the ship bar (−): jumps to hyperspace, then removed (Player.sellShips)
     this.warpDir = new Float32Array(this.max * 3);
     this.warpFrom = new Float32Array(this.max * 3);
     this.trails = [];        // hyperspace streaks: { from, to, age, speedAge }

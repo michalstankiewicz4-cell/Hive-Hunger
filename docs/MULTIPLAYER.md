@@ -47,6 +47,7 @@ Control messages are JSON strings; PeerJS runs with `serialization: 'raw'`.
 | guest → host | `{t:'ready', ready}` | I pressed Start (`true`) or Not ready (`false`) |
 | guest → host | `{t:'cmd', kind:'click', p:{x,y,z}, group}` | send my group `group` (one of `GROUP_KINDS`; anything else = eaters) to this voxel (planet frame) |
 | guest → host | `{t:'cmd', kind:'recall', group}` | call my group back to its tunnel |
+| guest → host | `{t:'cmd', kind:'sell', group, n}` | send `n` (1–10) ships of type `group` away: they jump to hyperspace and are gone (at least one stays) |
 | guest → host | `{t:'cmd', kind:'buy', group, n}` | buy `n` (1–10) ships of type `group` (free for now; at most `swarm.maxCount` in all) — the new numbers come back with the snapshots |
 | guest → host | `{t:'set', key, value}` | one setting: `count`, `speed`, `power`, `turn`, or a ship type (`lasers`, `storms`, `tugs`, `bombers`, `orbs`, `supports`, `cleaners`, `drills`, `piercers`, `snipers`, `splashers`, `boosters`, `cutters`) — no longer sent by the game's own screens (kept for the tests) |
 | host → guest | `{t:'ping', ts}` | every `net.pingMs` (2 s); `ts` = host time |

@@ -1,4 +1,4 @@
-import { CONFIG, SHIP_KINDS } from '../../config.js';
+import { CONFIG, SHIP_KINDS, GROUP_KINDS } from '../../config.js';
 import { aroundPlanet } from '../swarm/steering.js';
 
 const THREE = window.THREE;
@@ -107,22 +107,81 @@ export const ShipRoles = {
       // to the end, one type at a time: the dead bomber takes the last place of each type after
       // the bombers and that type's last ship takes its place — which, with one bomber fewer,
       // is the first place of that type (so every ship keeps its type)
-      let end = s.kindStart('bombers') + s.bombers;
-      s.swapUnits(i, end - 1); // the last bomber's place
-      for (const k of SHIP_KINDS.slice(SHIP_KINDS.indexOf('bombers') + 1)) {
+      this.removeUnit(i, 'bombers');
+    }
+    s.dying.length = 0;
+    this.onLost?.();
+  },
+
+  /**
+   * Unit i of type `kind` (GROUP_KINDS) is gone for good: one ship fewer (the base count and that
+   * type's setting go down by one). It is moved to the end of the swarm first — past the rest of
+   * its type and every later type — so the ships of every type keep their places.
+   */
+  removeUnit(i, kind) {
+    const s = this.swarm;
+    if (kind !== 'eaters') {
+      // to the end, one type at a time: it takes the last place of each later type and that type's
+      // last ship takes its place — which, with one fewer of `kind`, is the first place of that type
+      let end = s.kindStart(kind) + s[kind];
+      s.swapUnits(i, end - 1); // the last place of its type
+      for (const k of SHIP_KINDS.slice(SHIP_KINDS.indexOf(kind) + 1)) {
         if (!s[k]) continue;
         s.swapUnits(end - 1, end + s[k] - 1);
         end += s[k];
       }
       s.swapUnits(end - 1, s.count - 1); // the last unit's place (an eater, if any)
-      if (s.food[s.count - 1] >= 0) this.game.planet.release(s.food[s.count - 1]);
-      s.food[s.count - 1] = -1;
-      this.bombers = Math.max(0, this.bombers - 1);
-      this.base.count = Math.max(0, this.base.count - 1);
-      this.applyUpgrades();
+      this[kind] = Math.max(0, this[kind] - 1);
+    } else s.swapUnits(i, s.count - 1);
+    const last = s.count - 1;
+    if (s.food[last] >= 0) this.game.planet.release(s.food[last]);
+    s.food[last] = -1;
+    s.leaving[last] = 0;
+    const t = this.towing.get(last);
+    if (t) this.letGo(last, t);
+    this.base.count = Math.max(0, this.base.count - 1);
+    this.applyUpgrades();
+  },
+
+  /**
+   * The ship bar's − : `n` ships of type `kind` leave — each jumps to hyperspace like at the end of a
+   * planet (the last ones of the type out of the tunnel first) and, once gone, is removed (removeLeft).
+   * At least one ship stays in the swarm. Returns how many were sent.
+   */
+  sellShips(kind, n = 1) {
+    const s = this.swarm;
+    if (this.homeMode === 'jump' || !GROUP_KINDS.includes(kind)) return 0;
+    s.fillKinds();
+    const k = GROUP_KINDS.indexOf(kind);
+    let staying = 0;
+    for (let i = 0; i < s.count; i++) if (!s.leaving[i]) staying++;
+    let sent = 0;
+    for (let i = s.count - 1; i >= 0 && sent < n && staying > 1; i--) {
+      if (s.kindOf[i] !== k || s.leaving[i] || s.hidden[i] || s.warpT[i] > 0) continue;
+      s.leaving[i] = 1;
+      s.warpDelay[i] = 0; // (jumps next frame: stepWarp)
+      if (s.food[i] >= 0) this.game.planet.release(s.food[i]);
+      s.food[i] = -1;
+      s.landed[i] = 0;
+      s.pierceOn[i] = 0; s.cutOn[i] = 0; s.cutAfter[i] = 0; s.drillLeft[i] = 0;
+      const t = this.towing.get(i);
+      if (t) this.letGo(i, t);
+      sent++; staying--;
     }
-    s.dying.length = 0;
-    this.onLost?.();
+    return sent;
+  },
+
+  /** Ships sent away (sellShips) that are gone to hyperspace: removed for good. */
+  removeLeft() {
+    const s = this.swarm;
+    let any = false;
+    for (let i = s.count - 1; i >= 0; i--) {
+      if (!s.leaving[i] || !s.hidden[i]) continue;
+      s.fillKinds();
+      this.removeUnit(i, GROUP_KINDS[s.kindOf[i]]);
+      any = true;
+    }
+    if (any) this.onLost?.();
   },
 
   /**

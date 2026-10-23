@@ -39,6 +39,7 @@ if (!window.THREE) {
     chosen: () => game.group,
     choose: (kind) => { game.group = kind; },
     buy: (kind, n) => game.buyShips(kind, n),
+    sell: (kind, n) => game.sellShips(kind, n),
   });
   setInterval(() => shipBar.sync(), 300); // follows buying, upgrades, bombers lost
 

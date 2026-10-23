@@ -106,6 +106,13 @@ export const Input = {
     else this.localPlayer.buyShips(kind, n);
   },
 
+  /** The ship bar's − : `n` ships of type `kind` jump to hyperspace and are gone (a guest asks the host). */
+  sellShips(kind, n) {
+    if (!this.localPlayer) return;
+    if (this.role === 'guest') this.net.sendCommand({ kind: 'sell', group: kind, n });
+    else this.localPlayer.sellShips(kind, n);
+  },
+
   /** A setting changed on the local panel. */
   setLocalSetting(key, value) {
     if (this.role === 'guest') {

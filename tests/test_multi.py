@@ -138,6 +138,12 @@ async def main():
             await host.wait_for_timeout(1000)
             gb = await host.evaluate("() => { const p = window.__dbg.players[2]; return [p.swarm.cutters, Boolean(p.group('cutters').point), p.group('eaters').point]; }")
             t.ok(gb == [c0 + 1, True, None], 'a guest buys ships and sends a group (only that group) through the host', [gb, gtap])
+            # … and sends one away (it jumps to hyperspace on the host and is gone)
+            await h.fast_forward(host, 200)  # (the new cutter comes out of the tunnel)
+            await guests[1].evaluate("() => window.__dbg.sellShips('cutters', 1)")  # (the paused guest's bar may not show the new cutter yet)
+            await host.wait_for_timeout(1000)
+            await h.fast_forward(host, 200)
+            t.ok(await host.evaluate('() => window.__dbg.players[2].swarm.cutters') == c0, 'a guest sends a ship away through the host')
 
             # play a little on the host, then compare
             await host.evaluate("""() => window.__dbg.activePlayers().forEach(p => {

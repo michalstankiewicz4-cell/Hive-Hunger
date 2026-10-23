@@ -350,6 +350,7 @@ export class Player {
     this.scraps = this.swarm.cleaners && fr ? fr.list.filter((f) => !f.dead && f.count <= maxPiece) : [];
     this.swarm.update(L.pos, this.swarmWorld);
     this.removeDead();
+    this.removeLeft();
     this.updateSupport();
     this.updateLightning();
 

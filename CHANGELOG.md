@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.53.0] — 2026-10-23
+
+### Added
+- **Sending ships away:** a **−** on every thumbnail of the ship bar (**Shift**: 10). The ship jumps to hyperspace like at the end of a planet (a streak, gone) and then it is gone from your swarm; no other ship changes its type; at least one ship stays. In multiplayer a guest's − goes through the host.
+
 ## [0.52.0] — 2026-10-18
 
 ### Added
