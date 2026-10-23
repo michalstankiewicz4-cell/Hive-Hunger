@@ -1,7 +1,7 @@
 // All game parameters in one place (1 unit = 1 in the 3D world).
 // at the start every player has START_UNITS eaters and START_EACH ships of every other type (laser ships,
 // storm ships, tugs, bombers, orb ships, support ships, cleaners, drills, piercers, snipers, splashers,
-// boosters, cutters): 3 eaters, nothing else — more are bought on the ship bar
+// boosters, cutters, siphons): 3 eaters, nothing else — more are bought on the ship bar
 const START_EACH = 0;
 const START_UNITS = 3;
 
@@ -10,14 +10,14 @@ const START_UNITS = 3;
  * laser ships, then storm ships, and so on; the rest are eaters. Each key is also the setting (and
  * the Ship types slider) with how many there are.
  */
-export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters'];
+export const SHIP_KINDS = ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons'];
 /**
  * How the ship types are shown (Ship types panel, Ship guide): attack ships, then — below a line —
  * support ships. (The order of the units in the swarm is SHIP_KINDS above; this is only for showing.)
  */
 export const SHIP_GROUPS = Object.freeze([
   { name: 'Attack', kinds: ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'cutters', 'snipers'] },
-  { name: 'Support', kinds: ['tugs', 'supports', 'cleaners', 'boosters'] },
+  { name: 'Support', kinds: ['tugs', 'supports', 'cleaners', 'boosters', 'siphons'] },
 ]);
 /**
  * Groups of ships you send (the ship bar): every type in SHIP_KINDS order, eaters last — the index is
@@ -138,12 +138,22 @@ export const CONFIG = Object.freeze({
           highland: [156, 160, 168], mountain: [140, 144, 152], snow: [224, 228, 236], ice: [238, 243, 250] } } },
     { body: 'earth', radiusScale: 1, style: 'smooth' },
   ],
+  // liquids let loose in space: an eaten or destroyed voxel of a liquid becomes a droplet (Liquids.js) that
+  // only siphons can take in; no gravity — `damping` per frame, `cohesion` pulls droplets of the same liquid
+  // within `reach` together, `push` keeps them `rest` apart; `speed` when let loose; `size` drawn.
+  // Lava is thicker: it slows down faster and holds together harder
+  liquids: {
+    water: { color: 0x3f7fd0, opacity: 0.75, size: 0.17, speed: 0.02, damping: 0.99, cohesion: 0.0012, reach: 0.9, rest: 0.38, push: 0.02 },
+    lava: { color: 0xff6a20, glow: true, size: 0.17, speed: 0.012, damping: 0.95, cohesion: 0.003, reach: 0.9, rest: 0.38, push: 0.02 },
+  },
   // Dev tools → Test board: 4 balls, 10 voxels across, 6 apart in a square — one of each kind of voxel
-  // in the voxel editor (rock, water, iron, lava; only their colours so far: they are all eaten like rock).
-  // Eaten → the ships jump → it is back; `each` ships of every type (eaters too); nothing saved.
+  // in the voxel editor (rock, water, iron, lava; water and lava are liquids, see `liquids`; iron is eaten
+  // like rock so far). Eaten → the ships jump → it is back; `each` ships of every type (eaters too: 0 —
+  // buy them on the ship bar); nothing saved.
   // Small, so the tunnels and the camera come in (`sizeScale` × Earth's distances)
-  testBoard: { body: 'earth', shape: 'balls', count: 4, size: 10, gap: 6, style: 'smooth', sizeScale: 0.4, each: 2,
-    colors: [[96, 84, 74], [63, 127, 208], [138, 143, 152], [255, 90, 31]] },
+  testBoard: { body: 'earth', shape: 'balls', count: 4, size: 10, gap: 6, style: 'smooth', sizeScale: 0.4, each: 0,
+    colors: [[96, 84, 74], [63, 127, 208], [138, 143, 152], [255, 90, 31]],
+    liquids: { 2: 'water', 4: 'lava' } }, // (ball 2 and ball 4 are liquid: let loose as droplets when eaten — the test board only, for now)
 
   // Flock (boids). Every unit flies at the same constant speed — only its direction changes.
   swarm: {
@@ -253,6 +263,10 @@ export const CONFIG = Object.freeze({
     // through the cut, `farLength` into space, and the cutter flies on
     cutter: { count: START_EACH, reach: 10, damage: 0.8, maxHalf: 12, color: 0xc8102e, sheetColor: 0xff2020, edgeColor: 0xff5a4a,
       apex: 0.12, hazeSpeed: 1, opacity: 0.85, afterFrames: 60, farLength: 400 },
+    // lime siphons: take in only liquid let loose in space (droplets of water and lava, see `liquids`) —
+    // nothing else; they fly to the nearest droplet, draw in every droplet within `range` (`pull` per frame)
+    // and take in those within `take`, a point each; with none about they fly with the swarm
+    siphon: { count: START_EACH, range: 3, pull: 0.006, take: 0.6, color: 0xb6ff3c },
     // planet eaten: every ship jumps to hyperspace after a random wait (0 … `window` frames) and is gone
     // after `frames`, speeding up (× `accel` per frame, at most `maxSpeed`), away from the planet
     // (`outward`), leaving a streak (`width`, colours, `streaks` lines) that fades in `trailFade` frames

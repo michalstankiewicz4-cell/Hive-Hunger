@@ -103,7 +103,7 @@ per player: u8 index | u8 home (0 none, 1 a group called back, 2 jump) | u32 sco
             | u16 bombers (the next `bombers` units are bombers) | u16 orbs (the next `orbs` units are orb ships) | u16 supports | u16 cleaners
             | u16 drills | u16 drilling | drilling × u16 unit (drills drilling now: the guest draws their bits)
             | u16 piercers (their beams are in the beam list with the lasers'; the unit says which) | u16 snipers | u16 splashers | u16 boosters (their fields are drawn from the positions; the +20% is the host's)
-            | u16 cutters | u16 cuts | cuts × (u16 unit | 6 × i16: the two ends of the row being cut)
+            | u16 cutters | u16 cuts | cuts × (u16 unit | 6 × i16: the two ends of the row being cut) | u16 siphons
             | u8 portal (1 = the tunnel is open) | ceil(count / 8) bytes hidden (bit per unit: not out of the tunnel yet / gone to hyperspace)
 u32 removed | removed × u32 voxel index (eaten since the last snapshot)
 ```

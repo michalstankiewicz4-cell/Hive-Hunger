@@ -115,7 +115,7 @@ const PL = {
   'Exported': 'Wyeksportowano', 'Imported': 'Zaimportowano', 'Could not read the file: ': 'Nie udało się odczytać pliku: ',
   'Reset every change?': 'Cofnąć wszystkie zmiany?', 'Everything as at the start': 'Wszystko jak na początku',
 };
-for (const k of SHIP_GROUPS.flatMap((g) => g.kinds)) PL[SHIP_INFO[k][0]] = { Eaters: 'Zjadacze', Lasers: 'Lasery', Storms: 'Burze', Orbs: 'Kule', Splashers: 'Chlapacze', Bombers: 'Bombowce', Drills: 'Wiertła', Piercers: 'Przebijacze', Cutters: 'Tnące', Snipers: 'Snajperzy', Tugs: 'Holowniki', Support: 'Wsparcie', Cleaners: 'Sprzątacze', Boosters: 'Wzmacniacze' }[SHIP_INFO[k][0]];
+for (const k of SHIP_GROUPS.flatMap((g) => g.kinds)) PL[SHIP_INFO[k][0]] = { Eaters: 'Zjadacze', Lasers: 'Lasery', Storms: 'Burze', Orbs: 'Kule', Splashers: 'Chlapacze', Bombers: 'Bombowce', Drills: 'Wiertła', Piercers: 'Przebijacze', Cutters: 'Tnące', Snipers: 'Snajperzy', Tugs: 'Holowniki', Support: 'Wsparcie', Cleaners: 'Sprzątacze', Boosters: 'Wzmacniacze', Siphons: 'Syfony' }[SHIP_INFO[k][0]];
 let LANG = 'en';
 try { if (localStorage.getItem(STORE + '-lang') === 'pl') LANG = 'pl'; } catch { /* storage off */ }
 const T = (s) => (LANG === 'pl' && s && PL[s]) || s;

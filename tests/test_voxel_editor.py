@@ -35,7 +35,7 @@ async def main():
 
         st = await page.evaluate("() => __voxelEditor.state().kinds.map((k) => [k.id, k.strength, k.points, k.ships.length])")
         check('rock (the game today: strength 1, 1 point, every ship), water, iron and lava',
-              [k[0] for k in st] == ['rock', 'water', 'iron', 'lava'] and st[0][1:] == [1, 1, 14], str(st))
+              [k[0] for k in st] == ['rock', 'water', 'iron', 'lava'] and st[0][1:] == [1, 1, 15], str(st))
 
         # edit lava
         await page.click('nav [data-kind=lava]')
@@ -50,7 +50,7 @@ async def main():
         await page.fill('[data-f=wish]', 'Burns ships that land on it')
         lava = await page.evaluate("() => __voxelEditor.state().kinds.find((k) => k.id === 'lava')")
         check('a kind edited: strength, points, ships, behaviour, where, bodies, own words',
-              lava['strength'] == 3 and lava['points'] == 5 and 'eaters' not in lava['ships'] and len(lava['ships']) == 13
+              lava['strength'] == 3 and lava['points'] == 5 and 'eaters' not in lava['ships'] and len(lava['ships']) == 14
               and lava['flags'] == ['flows', 'hurts'] and lava['where'] == ['pools'] and lava['bodies'] == ['earth'] and lava['amount'] == 4
               and lava['wish'] == 'Burns ships that land on it', json.dumps(lava)[:300])
 

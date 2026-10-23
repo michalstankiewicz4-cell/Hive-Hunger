@@ -64,7 +64,11 @@ Default (all `smooth`): the Kuiper Belt (a band of 335 rocks), Pluto (sphere 0.7
 
 ## Test board (`testBoard`)
 
-Dev tools → Test board: `shape: 'balls'` — `count` (4) balls `size` (10) voxels across, `gap` (6) apart in a square, each in its own colour from `colors` (rock, water, iron, lava: the voxel editor's kinds, only their colours so far); `style` like a level; `sizeScale` (0.4): the tunnels and the camera × this (it is small); `each` (2) ships of every type, eaters too. Eaten, it is built again at once; nothing is saved.
+Dev tools → Test board: `shape: 'balls'` — `count` (4) balls `size` (10) voxels across, `gap` (6) apart in a square, each in its own colour from `colors` (rock, water, iron, lava: the voxel editor's kinds); `liquids` — which balls are liquid (`{2: 'water', 4: 'lava'}`, by ball number); `style` like a level; `sizeScale` (0.4): the tunnels and the camera × this (it is small); `each` (0) ships of every type, eaters too. Eaten, it is built again at once; nothing is saved.
+
+## Liquids (`liquids`)
+
+Per liquid (`water`, `lava`): a voxel of it eaten or destroyed becomes a droplet (`Liquids.js`) — no point for it (taken back from whoever got it: single player only, where liquids are), only siphons collect it. No gravity: `speed` when let loose, `damping` per frame (water 0.99, lava 0.95: thicker), `cohesion` pulls droplets of the same liquid within `reach` together (water 0.0012, lava 0.003), `push` keeps them `rest` apart; `size`, `color`, `opacity` (water) or `glow` (lava) drawn.
 
 ## Flock (`swarm`)
 
@@ -93,7 +97,7 @@ Dev tools → Test board: `shape: 'balls'` — `count` (4) balls `size` (10) vox
 | `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count`, `splasher.count`, `booster.count`, `cutter.count` | 3, 0 each | units at the start and how many of each type — `START_EACH` (0) of every type; `count` = `START_UNITS` (3, all eaters) | |
+| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count`, `splasher.count`, `booster.count`, `cutter.count`, `siphon.count` | 3, 0 each | units at the start and how many of each type — `START_EACH` (0) of every type; `count` = `START_UNITS` (3, all eaters) | |
 | `bomber.radius` | 5 | a bomber destroys everything within this (10 voxels) | |
 | `bomber.color`, `bomber.debris` | purple, 300 | colour; most debris pieces thrown by a blast | |
 | `orb.range`, `orb.speed`, `orb.blast` | 5, 0.045, 1 | firing distance (10 voxels), orb speed per frame, burst radius (2 voxels) | |
@@ -126,6 +130,7 @@ Dev tools → Test board: `shape: 'balls'` — `count` (4) balls `size` (10) vox
 | `splasher.size`, `splasher.wobble` | 1.5, 0.08 | the bubble's diameter (3 voxels); how fast its edge wobbles | |
 | `splasher.soakFrames`, `splasher.area` | 180, [3, 3, 2] | how long the block soaks before it is gone (3 s); the block: 3 × 3 across the surface, 2 deep | |
 | `splasher.splash`, `splasher.splashColor` | 10, light blue | debris per voxel at the landing and as voxels go; its colour | |
+| `siphon.range`, `siphon.pull`, `siphon.take`, `siphon.color` | 3, 0.006, 0.6, lime | siphons: draw in droplets of liquid within `range` (6 voxels) by `pull` per frame, take in those within `take` (a point each); hull colour | |
 | `booster.count`, `booster.color` | 2, pink | boosters at the start; hull colour | |
 | `booster.radius`, `booster.boost` | 1.25, 1.2 | the field's radius (5 voxels across); × the Power inside it (crater radius and how hard ships eat; fields don't add up) | |
 | `booster.fieldColors`, `booster.cells`, `booster.line` | deep / light pink, 3, 0.05 | the field's colours; octagons along each of the six sides of the ball; line width (part of a cell) | |

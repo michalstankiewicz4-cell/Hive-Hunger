@@ -142,7 +142,7 @@ const PL = {
   'Linked': 'Połączono', 'Link removed': 'Usunięto połączenie', 'New node': 'Nowy węzeł', 'level': 'poziom', 'cost': 'koszt', 'pts': 'pkt',
   'Hive': 'Ul', 'Units': 'Jednostki', 'Speed': 'Szybkość', 'Power': 'Moc', 'Agility': 'Zwinność', 'Chain lightning': 'Błyskawica łańcuchowa',
   'Eaters': 'Zjadacze', 'Lasers': 'Lasery', 'Tugs': 'Holowniki', 'Cleaners': 'Sprzątacze', 'Storms': 'Burze', 'Support': 'Wsparcie', 'Orbs': 'Kule',
-  'Splashers': 'Chlapacze', 'Bombers': 'Bombowce', 'Drills': 'Wiertła', 'Piercers': 'Przebijacze', 'Snipers': 'Snajperzy', 'Boosters': 'Wzmacniacze', 'Cutters': 'Tnące',
+  'Splashers': 'Chlapacze', 'Bombers': 'Bombowce', 'Drills': 'Wiertła', 'Piercers': 'Przebijacze', 'Snipers': 'Snajperzy', 'Boosters': 'Wzmacniacze', 'Cutters': 'Tnące', 'Siphons': 'Syfony',
 };
 let LANG = 'en';
 try { if (localStorage.getItem(STORE + '-lang') === 'pl') LANG = 'pl'; } catch { /* storage off */ }
@@ -158,7 +158,7 @@ const GAME = NODES.map(fromGame);
 const GAME_BY_ID = Object.fromEntries(GAME.map((n) => [n.id, n]));
 const GAME_BRANCH = Object.fromEntries(Object.entries(BRANCHES).map(([k, b]) => [k, hex(b.color)]));
 
-// 16 darker pastel colours, made from the colours of the 14 ships + Brood (green) and Chain lightning (violet)
+// 16 darker pastel colours, made from the colours of the ships + Chain lightning (violet) (+ Brood's green while there is room)
 function pastel(rgb) {
   let [r, g, b] = rgb.map((v) => v / 255);
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
@@ -174,8 +174,9 @@ function pastel(rgb) {
   return hex([(a + m) * 255, (bb + m) * 255, (c + m) * 255]);
 }
 const shipRgb = (k) => { const c = k === 'eaters' ? CONFIG.swarm.eaterColor : CONFIG.swarm[k.slice(0, -1)].color; return [(c >> 16) & 255, (c >> 8) & 255, c & 255]; };
+// (16 in all: the ships' colours, then Brood's green and the lightning's violet as long as there is room)
 const PALETTE = [...SHIPS.map((k) => ({ name: SHIP_INFO[k][0], color: pastel(shipRgb(k)) })),
-  { name: 'Brood', color: pastel(BRANCHES.units.color) }, { name: 'Chain lightning', color: pastel(BRANCHES.bolt.color) }];
+  { name: 'Chain lightning', color: pastel(BRANCHES.bolt.color) }, { name: 'Brood', color: pastel(BRANCHES.units.color) }].slice(0, 16);
 
 // ---------------------------------------------------------------- state (kept in this browser)
 let state = { nodes: clone(GAME), branchColors: {}, notes: '', nextId: 1 };

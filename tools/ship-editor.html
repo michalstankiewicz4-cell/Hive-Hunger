@@ -131,7 +131,7 @@ const PL = {
     'Ustawienia wspólne dla wszystkich statków: lot w grupie, sterowanie, wychodzenie z zakleszczeń, start i skok w nadprzestrzeń po zjedzeniu planety.',
   // ships (names and the Ship guide's descriptions)
   'Eaters': 'Zjadacze', 'Lasers': 'Lasery', 'Storms': 'Burze', 'Orbs': 'Kule', 'Splashers': 'Chlapacze', 'Bombers': 'Bombowce', 'Drills': 'Wiertła',
-  'Piercers': 'Przebijacze', 'Cutters': 'Tnące', 'Snipers': 'Snajperzy', 'Tugs': 'Holowniki', 'Cleaners': 'Sprzątacze', 'Boosters': 'Wzmacniacze',
+  'Piercers': 'Przebijacze', 'Cutters': 'Tnące', 'Snipers': 'Snajperzy', 'Tugs': 'Holowniki', 'Cleaners': 'Sprzątacze', 'Boosters': 'Wzmacniacze', 'Siphons': 'Syfony',
   'Fly to the nearest voxel, land on it and eat it — a crater as wide as your Power.': 'Lecą do najbliższego voxela, lądują na nim i go zjadają — krater tak szeroki jak Twoja Moc (Power).',
   'Eat from 5 voxels away with a red beam; 10% slower.': 'Jedzą z 5 voxeli czerwonym promieniem; o 10% wolniejsze.',
   'Lightning from laser range that forks into three: the bite and its two nearest voxels.': 'Błyskawica z zasięgu lasera, rozwidlająca się na trzy: cel i dwa najbliższe voxele.',
@@ -145,6 +145,12 @@ const PL = {
   'Catch drifting pieces with a tractor beam and tow them home for 5 × the points.': 'Łapią dryfujące kawałki promieniem ściągającym i holują je do tunelu za 5 × punkty.',
   'Every 3 s a bolt jumps between your own ships, destroying the voxels on its way.': 'Co 3 s błyskawica skacze między Twoimi statkami, niszcząc voxele po drodze.',
   'Eat only drifting pieces of 1–3 voxels.': 'Jedzą tylko dryfujące kawałki z 1–3 voxeli.',
+  'Take in liquid let loose in space — droplets of water and lava, which no other ship can collect — a point each. Nothing else.': 'Zbierają ciecz uwolnioną w kosmosie — krople wody i lawy, których żaden inny statek nie zbierze — punkt za każdą. Nic poza tym.',
+  'Fly to the nearest droplet': 'Leć do najbliższej kropli', 'Liquid let loose in space': 'Ciecz uwolniona w kosmosie',
+  'Draw in and take in droplets': 'Wciągaj i zbieraj krople', 'Within range, a point each': 'W zasięgu range, punkt za każdą',
+  'a droplet is about': 'jest jakaś kropla', 'near droplets': 'przy kroplach', 'Droplets of liquid (nearest)': 'Krople cieczy (najbliższe)',
+  'Draws in droplets from this far (units; 1 voxel = 0.5)': 'Wciąga krople z takiej odległości (jednostki; 1 voxel = 0,5)', 'How hard it draws them in (per frame)': 'Jak mocno je wciąga (na klatkę)',
+  'Takes in droplets this close': 'Zbiera krople tak blisko', 'A group sent somewhere got there this close': 'Grupa wysłana gdzieś dotarła na tę odległość',
   'Fly with the swarm in a gentle pink force field 5 voxels across: your ships inside it get +20% Power: a wider crater, eating harder.': 'Lecą z rojem w delikatnym różowym polu siłowym o średnicy 5 voxeli: Twoje statki w środku dostają +20% Mocy: szerszy krater, mocniejsze jedzenie.',
   // boxes and buttons
   'Play': 'Gra', 'Values that change how it plays. Distances are in game units: 1 voxel = 0.5; time in frames: 60 = 1 s.': 'Wartości, które zmieniają rozgrywkę. Odległości w jednostkach gry: 1 voxel = 0,5; czas w klatkach: 60 = 1 s.',
@@ -250,7 +256,7 @@ function flatten(obj, skip = [], prefix = '') {
   }
   return out;
 }
-const KIND_KEYS = ['laser', 'storm', 'tug', 'bomber', 'orb', 'support', 'cleaner', 'drill', 'piercer', 'sniper', 'splasher', 'booster', 'cutter', 'warp'];
+const KIND_KEYS = ['laser', 'storm', 'tug', 'bomber', 'orb', 'support', 'cleaner', 'drill', 'piercer', 'sniper', 'splasher', 'booster', 'cutter', 'siphon', 'warp'];
 const EATER_KEYS = ['reachDistance', 'landSwapDistance', 'eatFrames', 'biteRadius', 'eaterColor', 'size'];
 
 const SECTIONS = {};   // id → { title, color, desc, values: {path: default}, group }
@@ -275,7 +281,7 @@ const PLAY = new Set(['count', 'minCount', 'maxCount', 'speed', 'perception', 's
   'weights.separation', 'weights.alignment', 'weights.cohesion', 'weights.target', 'weights.feed', 'avoid.minDistance', 'avoid.dipMargin',
   'avoid.altitude', 'avoid.pitDepth', 'stuck.frames', 'stuck.progress', 'stuck.recentContact', 'aimAngle', 'retarget.frames',
   'retarget.pauseFrames', 'spawnSpread', 'spawnGap', 'warp.window', 'warp.frames', 'warp.accel', 'warp.maxSpeed', 'warp.outward',
-  'reachDistance', 'landSwapDistance', 'eatFrames', 'biteRadius',
+  'reachDistance', 'landSwapDistance', 'eatFrames', 'biteRadius', 'groupArrive', 'take',
   'reach', 'speedFactor', 'centre', 'side', 'fork', 'range', 'pull', 'deliver', 'reward', 'radius', 'blast', 'every', 'jumps',
   'jumpRange', 'life', 'maxPiece', 'power', 'emptyFrames', 'maxLength', 'spread', 'pierce', 'damage', 'afterFrames', 'farLength',
   'chargeFrames', 'moveFrames', 'accel', 'soakFrames', 'area', 'boost', 'maxHalf', 'size']);
@@ -308,6 +314,8 @@ const NOTES = {
   radius: 'Radius (units; 1 voxel = 0.5)', 'bomber:radius': 'Blows up everything within this radius', 'booster:radius': 'Force field radius',
   'orb:speed': 'Orb speed', blast: 'Orb destroys everything within this', every: 'Frames between bolts', jumps: 'Most jumps between ships', jumpRange: 'Most distance of one jump', life: 'Frames the bolt lasts',
   maxPiece: 'Eats drifting pieces of at most this many voxels',
+  'siphon:range': 'Draws in droplets from this far (units; 1 voxel = 0.5)', 'siphon:pull': 'How hard it draws them in (per frame)', take: 'Takes in droplets this close',
+  groupArrive: 'A group sent somewhere got there this close',
   'drill:speed': 'Drilling speed', power: '× Power: radius drilled around the bit', emptyFrames: 'Stops after this long in empty space', maxLength: 'Longest tunnel', spread: 'Random aim off the centre',
   pierce: 'Voxels in a row at once', damage: '× an eater\'s eating rate per voxel', afterFrames: 'Frames it goes on after getting through', farLength: 'Beam length into space after getting through',
   chargeFrames: 'Charging time before a shot (frames)', moveFrames: 'Flying time between shots', 'sniper:speed': 'Shot start speed', accel: 'Shot speed-up per voxel',
@@ -341,13 +349,15 @@ const ACTIONS = {
   catchPiece: ['Catch it with a tractor beam', 'Within range'],
   tow: ['Tow it home', 'To the tunnel, reward × its points'],
   eatPiece: ['Eat a small drifting piece', 'At most maxPiece voxels'],
+  findDroplet: ['Fly to the nearest droplet', 'Liquid let loose in space'],
+  takeDroplets: ['Draw in and take in droplets', 'Within range, a point each'],
   chain: ['Fire chain lightning', 'Every `every` frames, jumps between own ships'],
   field: ['Carry a force field', 'Own ships inside get boost × Power'],
   noEat: ['Never eat', ''],
   retarget: ['Take another bite when stuck', 'No eating for retarget.frames'],
   warp: ['Jump to hyperspace', 'When the planet is eaten'],
 };
-const WHEN = ['always', 'has a bite', 'bite in range', 'facing the bite', 'a piece is drifting', 'a small piece is drifting', 'near own ships', 'got through', 'stuck', 'planet eaten', 'nothing else to do'];
+const WHEN = ['always', 'has a bite', 'bite in range', 'facing the bite', 'a piece is drifting', 'a small piece is drifting', 'a droplet is about', 'near droplets', 'near own ships', 'got through', 'stuck', 'planet eaten', 'nothing else to do'];
 
 const Task = (action, when = 'always', value = '') => ({ action, when, value, on: true });
 const BASE_END = [Task('retarget', 'stuck'), Task('warp', 'planet eaten')];
@@ -366,18 +376,20 @@ const DEFAULT_TASKS = {
   support: [Task('noEat'), Task('swarm'), Task('chain', 'near own ships'), Task('warp', 'planet eaten')],
   cleaner: [Task('eatPiece', 'a small piece is drifting'), Task('swarm', 'nothing else to do'), Task('warp', 'planet eaten')],
   booster: [Task('noEat'), Task('swarm'), Task('field'), Task('warp', 'planet eaten')],
+  siphon: [Task('noEat'), Task('findDroplet', 'a droplet is about'), Task('takeDroplets', 'near droplets'), Task('swarm', 'nothing else to do'), Task('warp', 'planet eaten')],
 };
 
 // what a ship goes for, first to last
 const TARGETS = {
   nearest: 'Nearest voxel', swarmTarget: 'Voxels near the swarm target (click)', pieces: 'Drifting pieces (nearest)',
   smallPieces: 'Small drifting pieces (≤ maxPiece)', ownShips: 'Own ships (stays near them)', centre: 'The planet\'s centre (direction)',
+  droplets: 'Droplets of liquid (nearest)',
 };
 const P = (...ids) => ids.map((id) => ({ id, on: true }));
 const DEFAULT_TARGETS = {
   eater: P('nearest'), laser: P('nearest'), storm: P('nearest'), orb: P('nearest'), splasher: P('nearest'), bomber: P('nearest'),
   drill: P('nearest', 'centre'), piercer: P('nearest'), cutter: P('nearest'), sniper: P('nearest'),
-  tug: P('pieces', 'ownShips'), support: P('ownShips'), cleaner: P('smallPieces', 'ownShips'), booster: P('ownShips'),
+  tug: P('pieces', 'ownShips'), support: P('ownShips'), cleaner: P('smallPieces', 'ownShips'), booster: P('ownShips'), siphon: P('droplets', 'ownShips'),
 };
 
 // ---------------------------------------------------------------- state (kept in this browser)

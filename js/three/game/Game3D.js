@@ -9,6 +9,7 @@ import { Orbs } from '../effects/Orbs.js';
 import { Shots } from '../effects/Shots.js';
 import { Bubbles } from '../effects/Bubbles.js';
 import { Zaps } from '../effects/Zaps.js';
+import { Liquids } from '../effects/Liquids.js';
 import { Player } from './Player.js';
 import { PLAYERS } from './players.js';
 import { Input } from './input.js';
@@ -100,6 +101,7 @@ export class Game3D {
     this.bubbles = new Bubbles(this.cfg.swarm.splasher);
     this.soaks = []; // blocks soaking where a splasher's bubble landed (host), see splash()
     this.zaps = new Zaps(this.scene, this.cfg.swarm.support);
+    this.liquids = new Liquids(this.scene, this.cfg.liquids); // droplets of liquid voxels let loose (the test board)
     this.debris.scale = this.orbs.scale = this.effectsScale; // Settings → Graphics → Effects
     settings.onChange((key) => this.applyGraphics(key));
     this.onTreeChange = null; // () => void — the upgrade tree view refreshes
@@ -348,6 +350,7 @@ export class Game3D {
     if (this.soaks) this.soaks.length = 0;
     this.zaps?.clear();
     this.holes?.clear();
+    this.liquids?.clear(); // (droplets belonged to the old planet)
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level), this.cfg.fragments);
     if (this.role === 'host') this.planet.log = [];
     this.fitToPlanet();
@@ -359,6 +362,26 @@ export class Game3D {
     }
     for (const p of this.activePlayers()) p.onNewPlanet();
     this.banner = '';
+  }
+
+  /**
+   * Liquid voxels gone this frame (VoxelPlanet.spills) are let loose as droplets (Liquids). They give
+   * no points: whoever ate or destroyed them got a point the usual way, so it is taken back — single
+   * player only (liquids are on the test board only, for now), where the local player is the only one.
+   */
+  takeSpills() {
+    const sp = this.planet.spills;
+    if (!sp.length) return;
+    const v = this.tmp;
+    for (const [kind, x, y, z] of sp) {
+      v.set(x, y, z);
+      // off outwards, roughly, and a little at random (Liquids.spill)
+      this.liquids.spill(kind, v, { x: x + (Math.random() - 0.5) * 4, y: y + (Math.random() - 0.5) * 4, z: z + (Math.random() - 0.5) * 4 });
+    }
+    const me = this.role === 'solo' ? this.localPlayer : null;
+    if (me) { me.score = Math.max(0, me.score - sp.length); me.planetScore = Math.max(0, me.planetScore - sp.length); }
+    this.spilled = (this.spilled || 0) + sp.length; // (tests)
+    sp.length = 0;
   }
 
   /**
@@ -438,6 +461,9 @@ export class Game3D {
     const players = this.activePlayers();
     // before the start, swarms wait at their tunnels
     if (this.started) for (const p of players) p.update();
+    // liquid voxels that went this frame: droplets, and no points for them (only siphons collect them)
+    this.takeSpills();
+    if (this.started) this.liquids.step(this.planet);
 
     const pl = this.planet;
     // the planet counts as eaten only when its last voxel is gone; then every swarm flies home

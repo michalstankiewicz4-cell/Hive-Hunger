@@ -2,6 +2,15 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.55.0] — 2026-10-23
+
+### Added
+- **Liquids** (the test board, for now): the water and lava balls are liquid. A voxel of them eaten or destroyed floats away as a droplet; there is no gravity — the droplets keep drifting, slow down and gather into floating blobs (lava is thicker: it slows sooner and holds together harder) and bounce off rock. They give no points, and no ordinary ship can collect them.
+- **Siphons** — a new support ship (lime): it does nothing but take in droplets of liquid let loose in space, drawing in every droplet within 6 voxels, a point each. On the ship bar, in the Ship guide and the editors (not in the upgrade tree yet).
+
+### Changed
+- The test board starts with no ships (buy them on the ship bar).
+
 ## [0.54.0] — 2026-10-23
 
 ### Changed

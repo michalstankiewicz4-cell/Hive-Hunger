@@ -1,5 +1,7 @@
 import { BITE, NEIGHBORS, AROUND } from './grid.js';
 
+const SPILL = new window.THREE.Vector3();
+
 /**
  * Eating: bites, claims, chain lightning weakening voxels, removing voxels (from the grid or a
  * drifting piece), shattering what is left.
@@ -113,6 +115,12 @@ export const Eating = {
   eaten(idx) {
     if (this.log) this.log.push(idx);
     this.left--;
+    // a liquid voxel: let loose as a droplet where it was (Game3D.takeSpills; a fragment's voxel: where it just was)
+    const liquid = this.liquidOf && this.tags ? this.liquidOf[this.tags[idx]] : null;
+    if (liquid) {
+      const c = this.cellCenter(idx, SPILL);
+      this.spills.push([liquid, c.x, c.y, c.z]);
+    }
   },
 
   /** A voxel comes loose and joins a fragment: out of the grid, but not eaten. */

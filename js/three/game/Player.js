@@ -345,6 +345,7 @@ export class Player {
     this.swarmWorld.planetRadius = planet.alive ? planet.R : 0;
     this.swarmWorld.holding = this.homeMode === 'jump';
     this.updateTugs();
+    this.updateSiphons();
     // pieces small enough for cleaners
     const fr = planet.fragments, maxPiece = CONFIG.swarm.cleaner.maxPiece;
     this.scraps = this.swarm.cleaners && fr ? fr.list.filter((f) => !f.dead && f.count <= maxPiece) : [];

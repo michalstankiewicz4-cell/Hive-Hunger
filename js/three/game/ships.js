@@ -66,6 +66,30 @@ export const ShipRoles = {
     }
   },
 
+  /**
+   * Siphons: each flies to the nearest droplet of liquid let loose (Game3D.liquids), draws in every
+   * droplet within `siphon.range` and takes in those within `siphon.take` — a point each. Nothing else:
+   * they never eat voxels. With no droplets about (or sent somewhere / called home) they fly with the swarm.
+   */
+  updateSiphons() {
+    const s = this.swarm, L = this.game.liquids, c = CONFIG.swarm.siphon;
+    if (!s.siphons) return;
+    const a = s.kindStart('siphons'), b = Math.min(s.count, a + s.siphons);
+    const sent = this.group('siphons').mode;
+    for (let i = a; i < b; i++) {
+      s.tugHas[i] = 0;
+      if (!L || !L.count || sent || s.hidden[i] || s.warpT[i] > 0 || s.leaving[i]) continue;
+      const i3 = i * 3, x = s.pos[i3], y = s.pos[i3 + 1], z = s.pos[i3 + 2];
+      L.pull(x, y, z, c.range, c.pull);
+      const got = L.take(x, y, z, c.take);
+      if (got) { this.score += got; this.planetScore += got; }
+      const n = L.nearest(x, y, z);
+      if (n < 0) continue;
+      s.tugGoal[i3] = L.pos[n * 3]; s.tugGoal[i3 + 1] = L.pos[n * 3 + 1]; s.tugGoal[i3 + 2] = L.pos[n * 3 + 2];
+      s.tugHas[i] = 1;
+    }
+  },
+
   /** A towed piece reached the beacon: it is gone, and its voxels are worth `tug.reward` × the points. */
   deliver(i, t) {
     const game = this.game, pl = game.planet, fr = pl.fragments, f = t.f;

@@ -27,6 +27,7 @@ export const SHIP_INFO = {
   supports: ['Support', 'Every 3 s a bolt jumps between your own ships, destroying the voxels on its way.'],
   cleaners: ['Cleaners', 'Eat only drifting pieces of 1–3 voxels.'],
   boosters: ['Boosters', 'Fly with the swarm in a gentle pink force field 5 voxels across: your ships inside it get +20% Power: a wider crater, eating harder.'],
+  siphons: ['Siphons', 'Take in liquid let loose in space — droplets of water and lava, which no other ship can collect — a point each. Nothing else.'],
 };
 
 const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
@@ -439,5 +440,20 @@ const PICTURES = {
     const vx = 86 + Math.sin(t * 6) * 3, vy = 24 + t * 6;
     voxel(g, vx, vy, 1 - eat, '#7a6a58');
     ship(g, 20 + (vx - 30) * fly, 34 + (vy - 30) * fly, c, -0.12 * fly);
+  },
+  siphons(g, t, c) {
+    // a floating blob of water droplets drawn in one after another, into the siphon's nose
+    const sx = 30, sy = 34;
+    for (let k = 0; k < 9; k++) {
+      const a = k * 2.4, r = 5 + (k % 3) * 3;
+      const bx = 88 + Math.cos(a) * r, by = 30 + Math.sin(a) * r * 0.8;
+      const go = ease((t * 1.3 - k * 0.09)); // each droplet's turn
+      if (go >= 1) continue;
+      const x = bx + (sx + 7 - bx) * go * go, y = by + (sy - by) * go * go;
+      glowDot(g, x, y, 3.2, 'rgba(90,160,255,0.5)');
+      g.fillStyle = '#5aa0ff';
+      g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fill();
+    }
+    ship(g, sx, sy, c, 0);
   },
 };
