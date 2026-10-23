@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.53.1] — 2026-10-23
+
+### Fixed
+- Sending ships away with Brood bought (its +10 ships on top of yours): once your own ships ran out, a ship sent away stayed in the swarm hidden in the tunnel and showed up as an extra eater that could not be sent away. Now the Brood ships can be sent away too and the swarm always gets smaller by one.
+
 ## [0.53.0] — 2026-10-23
 
 ### Added

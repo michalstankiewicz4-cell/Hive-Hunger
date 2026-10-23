@@ -139,7 +139,10 @@ export const ShipRoles = {
     s.leaving[last] = 0;
     const t = this.towing.get(last);
     if (t) this.letGo(last, t);
-    this.base.count = Math.max(0, this.base.count - 1);
+    // one fewer in all — also when it is one of the Brood upgrades' ships (then the base goes below
+    // zero: the upgrade's ships are fewer) or when the swarm was at its limit with the upgrades on top
+    const bonus = this.tree.effects().count || 0;
+    this.base.count = Math.max(-bonus, Math.min(this.base.count, CONFIG.swarm.maxCount - bonus) - 1);
     this.applyUpgrades();
   },
 

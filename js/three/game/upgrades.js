@@ -31,7 +31,7 @@ export const Upgrades = {
   applyUpgrades() {
     const e = this.tree.effects();
     const s = this.swarm;
-    const count = Math.min(CONFIG.swarm.maxCount, Math.round(this.base.count + e.count));
+    const count = Math.max(0, Math.min(CONFIG.swarm.maxCount, Math.round(this.base.count + e.count)));
     if (count !== s.count) s.setCount(count);
     this.splitKinds();
     s.speed = this.base.speed * (1 + e.speed);

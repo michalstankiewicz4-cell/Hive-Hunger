@@ -298,6 +298,19 @@ async def main():
         last = await page.evaluate("""() => { const p = window.__dbg.localPlayer, s = p.swarm, n = s.count;
           let sent = 0; for (const k of ['eaters', 'lasers', 'storms', 'tugs']) sent += p.sellShips(k, 200); return [sent, n]; }""")
         t.ok(last[0] == last[1] - 1, 'at least one ship stays', last)
+        # with Brood bought (+10 ships on top): sending ships away below that leaves no ship stuck in the tunnel
+        # (before: the base could not go below 0, so the swarm didn't shrink and a hidden "eater" was left)
+        br = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm; g.stop();
+          const run = (n) => { for (let i = 0; i < n; i++) g.update(); };
+          run(200); p.setSetting('count', 6); p.setSetting('lasers', 3); p.setSetting('storms', 0); p.setSetting('tugs', 0);
+          const owned0 = [...p.tree.owned], score0 = p.score, spent0 = p.tree.spent;
+          p.score += 1e5; g.buyUpgrade('units1'); run(300);
+          const st = () => { let hidden = 0; for (let i = 0; i < s.count; i++) hidden += s.hidden[i]; return [s.count, s.lasers, hidden]; };
+          const a = st(); p.sellShips('eaters', 100); run(200); const b = st(); p.sellShips('lasers', 1); run(200); const c = st();
+          p.tree.load({ owned: owned0, spent: spent0 }); p.score = score0; p.setSetting('count', 21); p.setSetting('lasers', 2); p.applyUpgrades(); run(300); g.start();
+          return { a, b, c }; }""")
+        t.ok(br['a'] == [16, 3, 0] and br['b'] == [3, 3, 0] and br['c'] == [2, 2, 0],
+             'with Brood\'s ships on top, sending ships away leaves none stuck in the tunnel (no extra eaters)', br)
         await page.evaluate("() => { const g = window.__dbg, p = g.localPlayer; for (let k = 0; k < 200; k++) g.update(); }")
         await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 21); p.setSetting('lasers', 2); p.setSetting('storms', 4); p.setSetting('tugs', 3); }")
         await page.click('.shipbar-eaters .shipbar-buy', modifiers=['Shift'])
