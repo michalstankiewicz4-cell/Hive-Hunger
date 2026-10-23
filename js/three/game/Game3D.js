@@ -1,4 +1,4 @@
-import { CONFIG, SHIP_KINDS } from '../../config.js';
+import { CONFIG, SHIP_KINDS, kindConfig } from '../../config.js';
 import { VoxelPlanet } from '../planet/VoxelPlanet.js';
 import { Debris3D } from '../effects/Debris3D.js';
 import { Space3D } from '../scene/Space3D.js';
@@ -257,6 +257,40 @@ export class Game3D {
   }
 
   /**
+   * Single player: the test board (Dev tools) — `testBoard` in CONFIG (Earth) again and again: eaten,
+   * the ships jump and it is there again; every player starts with `testBoard.each` ships of every type
+   * (eaters too), no points or upgrades kept, nothing saved, the map gets no ticks. `leaveTestBoard`
+   * puts the ships back as at the start.
+   */
+  startTestBoard() {
+    if (this.role !== 'solo') return false;
+    this.testBoard = true;
+    this.boardsEaten = 0;
+    this.resetProgress();
+    const p = this.localPlayer, each = this.cfg.testBoard.each;
+    p.setSetting('count', each * (SHIP_KINDS.length + 1));
+    for (const k of SHIP_KINDS) p.setSetting(k, each);
+    this.planet.dispose();
+    this.level = 0;
+    this.spawnPlanet();
+    this.returnFrames = 0;
+    p.placeAtSpawn();
+    this.faceAngle(this.cfg.testBoard.view || 0);
+    this.paused = false;
+    this.started = true;
+    return true;
+  }
+
+  leaveTestBoard() {
+    if (!this.testBoard) return;
+    this.testBoard = false;
+    const p = this.localPlayer, S = this.cfg.swarm;
+    p.setSetting('count', S.count);
+    for (const k of SHIP_KINDS) p.setSetting(k, S[kindConfig(k)].count);
+    this.resetProgress();
+  }
+
+  /**
    * Single player: what "Save and exit" keeps — the mission under way (its body, the planet's seed and
    * the voxels eaten so far; drifting pieces go back in place), points and upgrades, the settings
    * panel and the ship types. The swarm starts again from its tunnel when it is loaded.
@@ -356,6 +390,7 @@ export class Game3D {
 
   /** The map body of the planet being played now (and of the next one in multiplayer). */
   get bodyId() {
+    if (this.testBoard) return this.cfg.testBoard.body;
     return this.cfg.levels[this.missionIndex()].body;
   }
 
@@ -365,7 +400,7 @@ export class Game3D {
 
   /** Size and graphics of planet `level` (its mission's entry in CONFIG.levels). Every client builds the same planet from it and the seed. */
   levelLook(level) {
-    const l = this.cfg.levels[this.missionIndex(level)];
+    const l = this.testBoard ? this.cfg.testBoard : this.cfg.levels[this.missionIndex(level)];
     return { ...l, radius: this.cfg.planet.radius * (l.radiusScale || 1), style: l.style || 'cubes' };
   }
 
@@ -425,6 +460,12 @@ export class Game3D {
       if (home && (!this.multiplayer || players.every((p) => p.nextReady))) {
         const done = this.bodyId;
         pl.dispose();
+        // the test board: the same body again at once (a new seed), the ships come out of the tunnel; nothing kept
+        if (this.testBoard) {
+          this.spawnPlanet();
+          this.boardsEaten = (this.boardsEaten || 0) + 1;
+          return;
+        }
         // single player: back to the map (the next mission is ready behind it); multiplayer: the next in order
         if (!this.multiplayer) this.mission = (this.mission + 1) % this.cfg.levels.length;
         this.spawnPlanet();

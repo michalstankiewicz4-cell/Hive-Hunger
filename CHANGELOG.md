@@ -2,6 +2,14 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.52.0] — 2026-10-18
+
+### Added
+- **Dev tools** on the start screen: tiles for the ship editor, the tree editor, the new voxel editor (each opens in a new tab) and the test board.
+- **Test board:** Earth again and again — once eaten, the ships jump and it is back at once (no map); 2 ships of every type; points count but nothing is saved and the map gets no ticks; its Esc menu has no saving; Exit to main menu puts the ships back as at the start.
+- **Voxel editor** (`tools/voxel-editor.html`): plan kinds of voxels — rock (the game today), water, iron, lava and your own: name, colour, glow, see-through, strength, points, which ships eat it, behaviour, where and how much, on which bodies, in your own words. Export / Import, EN / PL. Nothing in the game changes.
+- `tests/test_voxel_editor.py`.
+
 ## [0.51.0] — 2026-10-17
 
 ### Added

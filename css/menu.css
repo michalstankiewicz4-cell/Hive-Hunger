@@ -522,3 +522,27 @@
 .lobby-button.is-danger:hover {
   background: rgba(255, 107, 107, 0.12);
 }
+
+/* Dev tools: the tools as tiles, two per row */
+.menu-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.menu-tools .menu-choice {
+  margin: 0;
+  height: 100%;
+  align-content: start;
+}
+
+@media (max-width: 520px) {
+  .menu-tools {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dev-back {
+  justify-self: start;
+  margin-top: 6px;
+}

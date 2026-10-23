@@ -58,6 +58,7 @@ export class StartScreen {
       choice('Multiplayer · PvP', 'Whoever eats more of the planet wins it (up to 4 players).', () => onCreate('pvp'), !available),
       choice('Ship guide', 'Every ship type: what it does, and its shot.', () => this.showGuide(), false, 'menu-choice menu-extra menu-guide'),
       choice('Settings', 'Mouse, keyboard and graphics.', () => this.showSettings(() => this.showStart(), true), false, 'menu-choice menu-extra menu-settings'),
+      choice('Dev tools', 'Ship editor, tree editor, voxel editor, test board.', () => this.showDevTools(), false, 'menu-choice menu-extra menu-dev'),
     );
     if (!available) this.card.appendChild(el('p', 'menu-note', 'Multiplayer is unavailable: the connection library could not be loaded.'));
     this.card.querySelector('.menu-choice')?.focus();
@@ -75,11 +76,11 @@ export class StartScreen {
       const ok = onSave();
       save.querySelector('.menu-choice-note').textContent = ok ? `Saved ✓ (${new Date().toLocaleTimeString()})` : 'Could not save (this browser keeps nothing).';
     });
+    const test = this.opts.isTestBoard?.(); // (the test board keeps nothing)
     this.card.append(
       this.choice('Resume', 'Back to the game (Esc).', onResume),
-      save,
-      this.choice('Save and exit', 'Keep this game and go to the main menu.', onSaveExit),
-      this.choice('Exit to main menu', 'Leave without saving.', onExit),
+      ...(test ? [] : [save, this.choice('Save and exit', 'Keep this game and go to the main menu.', onSaveExit)]),
+      this.choice('Exit to main menu', test ? 'Leave the test board.' : 'Leave without saving.', onExit),
       this.choice('Settings', 'Mouse, keyboard and graphics.', () => this.showSettings(() => this.showPause()), false, 'menu-choice menu-extra menu-settings'),
     );
     this.card.querySelector('.menu-choice')?.focus();
@@ -122,6 +123,25 @@ export class StartScreen {
     this.open('Ship guide', true);
     this.onSettingsBack = () => this.showStart(); // (Esc goes back the same way as from Settings)
     fillGuide(this.card, () => this.closeSettings());
+  }
+
+  /**
+   * Dev tools (from the start screen): the three editors (they open in a new tab — each exports a file
+   * with the changes) and the test board (Earth over and over, ships of every type, nothing saved).
+   */
+  showDevTools() {
+    this.open('Dev tools', true);
+    this.onSettingsBack = () => this.showStart(); // (Esc goes back)
+    const tool = (label, note, page) => this.choice(label, note, () => window.open(page, '_blank', 'noopener'), false, 'menu-choice menu-tool');
+    const grid = el('div', 'menu-tools');
+    grid.append(
+      tool('Ship editor', 'Values, priorities and tasks of every ship; export a file with the changes.', 'tools/ship-editor.html'),
+      tool('Tree editor', 'The upgrade tree: nodes, links, costs, colours; export a file.', 'tools/tree-editor.html'),
+      tool('Voxel editor', 'Kinds of voxels — water, iron, lava …: what each is like; export a file.', 'tools/voxel-editor.html'),
+      this.choice('Test board', 'Earth again and again, 2 ships of every type, nothing saved.', () => this.opts.onTestBoard?.(), false, 'menu-choice menu-tool menu-test'),
+    );
+    this.card.append(grid, button('Back', () => this.closeSettings(), 'lobby-button is-primary dev-back'));
+    this.card.querySelector('.menu-choice')?.focus();
   }
 
   /** Settings (mouse, keyboard, graphics); Back calls `onBack`. */

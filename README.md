@@ -86,6 +86,14 @@ Browser tests (single player and multiplayer with a local PeerJS server) are in 
 
 [`tools/tree-editor.html`](tools/tree-editor.html) (on the site: `/tools/tree-editor.html`) is a separate page for planning the upgrade tree: move nodes (drag: level and angle), add nodes on any level, connect two nodes (the same two again removes the link), and per node — its name, kind, branch, a ship, **what should be there in your own words**, the text in the game, the cost, whether it needs any or all parents, a colour from a palette of 16 (darker pastel versions of the ships' colours); the branches' colours from the same palette; notes. **Export** saves a JSON file with the whole tree and every change, to talk over and apply to the code. EN / PL.
 
+## Voxel editor
+
+[`tools/voxel-editor.html`](tools/voxel-editor.html) is a separate page for planning kinds of voxels: rock (every voxel in the game today), water, iron, lava and your own — for each its name, colour, glow, see-through, strength, points, which ships can eat it, how it behaves (flows, falls, hurts ships, comes loose, fills holes back in), where it is and how much of it, on which bodies, and in your own words what it should do. **Export** saves a JSON file to talk over; nothing in the game changes. EN / PL.
+
+## Dev tools
+
+**Dev tools** on the start screen: tiles for the ship editor, the tree editor and the voxel editor (each opens in a new tab), and the **Test board** — Earth again and again (eaten: the ships jump and it is back at once), 2 ships of every type, nothing saved and no map ticks; Esc → Exit to main menu puts your ships back as they were at the start.
+
 ## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — versions and what changed
@@ -129,8 +137,9 @@ js/
 img/start.jpg         the start screen picture
 tools/ship-editor.html  the ship editor: plan changes to the ships and export them as JSON
 tools/tree-editor.html  the tree editor: plan the upgrade tree (nodes, links, costs, colours) and export it as JSON
+tools/voxel-editor.html the voxel editor: plan kinds of voxels (water, iron, lava …) and export them as JSON
 docs/                 architecture, multiplayer and configuration docs
-tests/                browser tests (Playwright): solo, multiplayer, levels, upgrade tree, fragments, ship and tree editors and a local PeerJS server
+tests/                browser tests (Playwright): solo, multiplayer, levels, upgrade tree, fragments, ship, tree and voxel editors and a local PeerJS server
 LICENSE               MIT
 ```
 

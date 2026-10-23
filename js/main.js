@@ -152,9 +152,18 @@ if (!window.THREE) {
     },
     onExit: () => {
       soloPlayed = false;
+      game.leaveTestBoard(); // (the test board: the ships as at the start again)
       game.resetProgress();
       menu.showStart();
     },
+    // Dev tools → Test board: Earth over and over, ships of every type, nothing saved (Esc: Exit to main menu)
+    onTestBoard: () => {
+      if (!game.startTestBoard()) return;
+      soloPlayed = true;
+      map.hide();
+      menu.hide();
+    },
+    isTestBoard: () => Boolean(game.testBoard),
     // Settings → Delete save game: the save and the map's ticks
     saves: {
       has: () => savedGame.has() || progress.done.size > 0,
@@ -242,7 +251,7 @@ if (!window.THREE) {
       // single player: M opens the map during a mission (and M closes it again)
       if (e.target instanceof HTMLInputElement && e.target.type === 'text') return;
       if (mapFromGame) closeGameMap();
-      else if (game.started && map.root.hidden) openGameMap();
+      else if (game.started && map.root.hidden && !game.testBoard) openGameMap(); // (not on the test board)
     } else if (e.key === 'Escape') {
       if (tree.isOpen) tree.close();
       else if (mapFromGame) closeGameMap();

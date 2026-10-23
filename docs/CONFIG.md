@@ -62,6 +62,10 @@ The missions that can be played, in the solar system map's order (`js/solar.js`)
 
 Default (all `smooth`): the Kuiper Belt (a band of 335 rocks), Pluto (sphere 0.75; light grey rock, polar caps), Charon (sphere 0.375 — half of Pluto's 0.75; icy, darker grey rock), Neptune (sphere 2 — really 3.9, too many voxels; light blue; 3.7 million voxels, building it takes about a second), Triton (sphere 0.85 — Pluto × 1.14, as in reality; like Pluto, a cooler grey), Earth (sphere 1). The other shapes (`cube`, `pair`, `boxes`, `text`) are no longer missions; the tests build them.
 
+## Test board (`testBoard`)
+
+Dev tools → Test board: `body` (earth), `radiusScale`, `style` like a level; `each` (2) ships of every type, eaters too. Eaten, it is built again at once (a new seed); nothing is saved.
+
 ## Flock (`swarm`)
 
 | Value | Default | What it does | More / less |

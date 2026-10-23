@@ -138,6 +138,9 @@ export const CONFIG = Object.freeze({
           highland: [156, 160, 168], mountain: [140, 144, 152], snow: [224, 228, 236], ice: [238, 243, 250] } } },
     { body: 'earth', radiusScale: 1, style: 'smooth' },
   ],
+  // Dev tools → Test board: this planet again and again (eaten → the ships jump → it is back), `each`
+  // ships of every type (eaters too), nothing saved
+  testBoard: { body: 'earth', radiusScale: 1, style: 'smooth', each: 2 },
 
   // Flock (boids). Every unit flies at the same constant speed — only its direction changes.
   swarm: {

@@ -271,7 +271,7 @@ async def main():
             g.update(); opened = Math.max(opened, p.beacon.openness);
             if (out < 0 && !s.hidden[i]) { const w = p.spawnWorld(); out = Math.hypot(s.pos[i * 3] - w.x, s.pos[i * 3 + 1] - w.y, s.pos[i * 3 + 2] - w.z); }
           }
-          for (let k = 0; k < 80; k++) g.update();
+          for (let k = 0; k < 200 && p.beacon.openness >= 0.05; k++) g.update(); // (it eases shut)
           r.opened = opened; r.out = out; r.closed = p.beacon.openness < 0.05; r.count = s.count - n0;
           p.setSetting('drills', 0); p.setSetting('count', base0); g.start();
           return r; }""")
@@ -785,6 +785,43 @@ async def main():
         ng = await page.evaluate("() => ({ save: localStorage.getItem('hive-hunger-save'), ticks: localStorage.getItem('hive-hunger-progress'), map: !document.getElementById('map').hidden, card: document.querySelector('.map-card-name')?.textContent, score: window.__dbg.localPlayer.score })")
         t.ok(ng['save'] is None and ng['map'] and ng['card'] == 'Kuiper Belt' and ng['score'] == 0 and 'kuiper' not in (ng['ticks'] or ''),
              'New game, Yes: the save and the ticks are gone, the map starts from the Kuiper Belt', ng)
+
+        # Dev tools (start screen): the three editors (new tabs) and the test board
+        await page.click('.map-back')
+        await page.click('.menu-dev')
+        dv = await page.evaluate("() => ({ title: document.getElementById('menu-title').textContent, tools: [...document.querySelectorAll('.menu-tools .menu-choice-label')].map((e) => e.textContent) })")
+        t.ok(dv['title'] == 'Dev tools' and dv['tools'] == ['Ship editor', 'Tree editor', 'Voxel editor', 'Test board'], 'Dev tools: ship, tree and voxel editors, test board', dv)
+        async with page.context.expect_page() as tab:
+            await page.click('.menu-tools .menu-choice >> text=Voxel editor')
+        vt = await tab.value
+        await vt.wait_for_load_state()
+        t.ok(vt.url.endswith('tools/voxel-editor.html'), 'an editor opens in a new tab', vt.url)
+        await vt.close()
+        await page.keyboard.press('Escape')
+        t.ok((await page.text_content('#menu-title')).startswith('Hive Hunger'), 'Esc goes back from Dev tools')
+        await page.click('.menu-dev')
+        await page.click('.menu-test')
+        await page.wait_for_timeout(300)
+        tb = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet;
+          const r = { body: g.bodyId, R: pl.R, started: g.started, count: s.count, each: ['lasers', 'cutters', 'boosters'].map((k) => s[k]),
+            hud: document.querySelector('.hud')?.textContent || '' };
+          g.stop();
+          for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) pl.remove(idx);
+          for (const f of [...(pl.fragments?.list || [])]) for (const c of pl.fragments.cellsOf(f)) pl.remove(c);
+          let f = 0; while (g.boardsEaten < 1 && f < 3000) { g.update(); f++; }
+          r.again = g.boardsEaten; r.alive = g.planet.alive && g.planet !== pl; r.body2 = g.bodyId; r.started2 = g.started;
+          r.map = !document.getElementById('map').hidden; r.save = localStorage.getItem('hive-hunger-save'); r.ticks = localStorage.getItem('hive-hunger-progress');
+          g.start(); return r; }""")
+        t.ok(tb['body'] == 'earth' and tb['started'] and tb['count'] == 28 and tb['each'] == [2, 2, 2] and 'Test board' in tb['hud'],
+             'Test board: Earth with 2 ships of every type', tb)
+        t.ok(tb['again'] == 1 and tb['alive'] and tb['body2'] == 'earth' and tb['started2'] and not tb['map'] and tb['save'] is None and 'earth' not in (tb['ticks'] or ''),
+             'eaten, it is there again at once — no map, nothing saved, no tick', tb)
+        await page.keyboard.press('Escape')
+        pz = await page.evaluate("() => [...document.querySelectorAll('#menu .menu-choice-label')].map((e) => e.textContent)")
+        await page.click('#menu .menu-choice >> text=Exit to main menu')
+        back = await page.evaluate("() => { const g = window.__dbg, s = g.localPlayer.swarm; return [g.testBoard, s.count, s.lasers, g.localPlayer.score]; }")
+        t.ok('Save game' not in pz and 'Save and exit' not in pz and back == [False, 3, 0, 0],
+             'its Esc menu has no saving; Exit to main menu puts the ships back (3 eaters)', [pz, back])
 
         await browser.close()
     return t.done(errors)
