@@ -72,7 +72,7 @@ Per liquid (`water`, `lava`): a voxel of it eaten or destroyed becomes a droplet
 
 ## Gas (`gas`)
 
-Solid gas eaten or destroyed becomes puffs of a cloud (`Gases.js`) — no point for it, only scoops take it in. No gravity: `speed` (0.012) when let loose, `damping` (0.985) per frame, `stir` (0.0006) a slow swirl, `push` (0.0015) apart within `reach` (1.1) so the cloud spreads; `size` (1.2) grows by `grow` (0.006) a frame up to `maxSize` (3); `opacity` (0.45); `colors` — each puff a mix of two of them (lilac, pale blue, pink).
+Solid gas eaten or destroyed becomes puffs of a cloud (`Gases.js`) — no point for it, only scoops take it in. No gravity: `speed` (0.004) when let loose, `damping` (0.96) per frame, `stir` (0.0001) a slow swirl, `push` (0.0005) apart within `reach` (1.1) so the cloud spreads, never faster than `maxSpeed` (0.006 a frame, about a third of a voxel a second — a scoop's pull is not held to it); `size` (1.2) grows by `grow` (0.006) a frame up to `maxSize` (3); `opacity` (0.45); `colors` — each puff a mix of two of them (lilac, pale blue, pink).
 
 ## Flock (`swarm`)
 

@@ -161,7 +161,7 @@ export const CONFIG = Object.freeze({
   // only scoops can take in; no gravity — puffs drift (`speed` when let loose, `damping`), stir (`stir`),
   // push each other apart within `reach` (`push`: the cloud spreads) and swell from `size` to `maxSize`
   // (`grow` per frame); drawn as soft, uneven wisps in `colors` (each puff its own mix), `opacity`
-  gas: { speed: 0.012, damping: 0.985, stir: 0.0006, reach: 1.1, push: 0.0015, size: 1.2, maxSize: 3, grow: 0.006, opacity: 0.45,
+  gas: { speed: 0.004, damping: 0.96, stir: 0.0001, reach: 1.1, push: 0.0005, maxSpeed: 0.006, size: 1.2, maxSize: 3, grow: 0.006, opacity: 0.45,
     colors: [[196, 160, 232], [150, 200, 240], [235, 185, 225]] },
 
   // Flock (boids). Every unit flies at the same constant speed — only its direction changes.

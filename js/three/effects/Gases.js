@@ -6,7 +6,7 @@ const THREE = window.THREE;
  * Gas let loose in space: every voxel of solid gas that is eaten or destroyed becomes a puff of a
  * cloud. There is no gravity: puffs drift off slowly, are stirred about (`stir`, a slow swirl that
  * changes from place to place and over time), push each other apart within `reach` so the cloud
- * spreads, slow down (`damping`), swell from `size` to `maxSize`, and stay out of solid voxels. Only
+ * spreads, slow down (`damping`), never drift faster than `maxSpeed` (unless a scoop draws them in), swell from `size` to `maxSize`, and stay out of solid voxels. Only
  * scoops can take them in (Player.updateScoops: `pull`, `take`, `nearest`).
  *
  * Drawn as soft wisps — points with their own noise pattern, size and colour mix (CONFIG.gas.colors),
@@ -22,6 +22,7 @@ export class Gases {
     this.size = new Float32Array(max);
     this.seed = new Float32Array(max);
     this.col = new Float32Array(max * 3);
+    this.pulled = new Uint8Array(max); // drawn in by a scoop this frame: not held to maxSpeed
     this.count = 0;
     this.taken = 0; // (tests) puffs taken in by scoops
     this.grid = new Map();
@@ -100,6 +101,7 @@ export class Gases {
     this.col.copyWithin(i * 3, j * 3, j * 3 + 3);
     this.size[i] = this.size[j];
     this.seed[i] = this.seed[j];
+    this.pulled[i] = this.pulled[j];
   }
 
   clear() {
@@ -141,6 +143,10 @@ export class Gases {
       V[i3] = (V[i3] + fx) * c.damping;
       V[i3 + 1] = (V[i3 + 1] + fy) * c.damping;
       V[i3 + 2] = (V[i3 + 2] + fz) * c.damping;
+      // a cloud drifts lazily: no faster than maxSpeed, unless a scoop is drawing it in
+      const sp = Math.hypot(V[i3], V[i3 + 1], V[i3 + 2]);
+      if (!this.pulled[i] && sp > c.maxSpeed) { const k = c.maxSpeed / sp; V[i3] *= k; V[i3 + 1] *= k; V[i3 + 2] *= k; }
+      this.pulled[i] = 0;
       if (this.size[i] < c.maxSize) this.size[i] += c.grow;
     }
     const p = { x: 0, y: 0, z: 0 };
@@ -164,6 +170,7 @@ export class Gases {
       if (d > range || d < 1e-6) continue;
       const f = strength * (1 - (d / range) * 0.5);
       V[i3] += (dx / d) * f; V[i3 + 1] += (dy / d) * f; V[i3 + 2] += (dz / d) * f;
+      this.pulled[i] = 1;
     }
   }
 

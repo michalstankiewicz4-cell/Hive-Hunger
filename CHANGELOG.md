@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.57.1] — 2026-10-23
+
+### Changed
+- The gas cloud drifts lazily: it spreads several times slower and no puff goes faster than about a third of a voxel a second (before it flew off like mad). Scoops still draw it in quickly.
+
 ## [0.57.0] — 2026-10-23
 
 ### Added

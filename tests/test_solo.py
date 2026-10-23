@@ -896,7 +896,9 @@ async def main():
           g.update();
           r.gas = { cleared: gasCleared, puffs: G.count, points: p.score - score2, seeds: new Set(Array.from(G.seed.slice(0, G.count)).map((x) => x.toFixed(4))).size,
             sizes: new Set(Array.from(G.size.slice(0, G.count)).map((x) => x.toFixed(3))).size };
-          for (let k = 0; k < 120; k++) g.update();
+          let fastest = 0;
+          for (let k = 0; k < 120; k++) { g.update(); for (let i = 0; i < G.count; i++) fastest = Math.max(fastest, Math.hypot(G.vel[i * 3], G.vel[i * 3 + 1], G.vel[i * 3 + 2])); }
+          r.gas.fastest = +fastest.toFixed(4);
           r.gas.held = G.count; r.gas.liquidNotTaken = L.count;
           // its solid look: the gas ball's surface knows it is gas
           let gasLook = 0; for (const m of pl.surface.meshes.values()) { const a = m.geometry.attributes.liquid; if (a) for (let k = 0; k < a.count; k++) gasLook = Math.max(gasLook, a.getZ(k)); }
@@ -923,6 +925,7 @@ async def main():
         gs = tb['gas']
         t.ok(gs['cleared'] == 30 and gs['puffs'] == 30 and gs['points'] == 0 and gs['held'] == 30 and gs['seeds'] >= 25 and gs['sizes'] > 10 and gs['look'] == 1,
              'solid gas (its own moving look) destroyed: a patchy cloud of puffs, each its own, no points, nobody else takes it in', gs)
+        t.ok(gs['fastest'] <= 0.0061, 'the cloud drifts lazily: no puff faster than gas.maxSpeed (0.006 a frame)', gs)
         t.ok(gs['left'] == 0 and gs['taken'] == 30, 'scoops take the whole cloud in, a point each', gs)
         t.ok(lq['look']['water'] == 1 and lq['look']['lava'] == 1 and lq['look']['seeds'] == 30 and lq['look']['piece'] == 1,
              'water and lava have their own moving look on the balls and on pieces come loose; every droplet a different one', lq['look'])
