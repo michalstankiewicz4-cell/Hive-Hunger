@@ -28,6 +28,7 @@ export const SHIP_INFO = {
   cleaners: ['Cleaners', 'Eat only drifting pieces of 1–3 voxels.'],
   boosters: ['Boosters', 'Fly with the swarm in a gentle pink force field 5 voxels across: your ships inside it get +20% Power: a wider crater, eating harder.'],
   siphons: ['Siphons', 'Take in liquid let loose in space — droplets of water and lava, which no other ship can collect — a point each. Nothing else.'],
+  scoops: ['Scoops', 'Take in gas let loose in space — the puffs of a cloud, which no other ship can collect — a point each. Nothing else.'],
 };
 
 const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
@@ -453,6 +454,23 @@ const PICTURES = {
       glowDot(g, x, y, 3.2, 'rgba(90,160,255,0.5)');
       g.fillStyle = '#5aa0ff';
       g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fill();
+    }
+    ship(g, sx, sy, c, 0);
+  },
+  scoops(g, t, c) {
+    // a patchy cloud of gas; the scoop flies into it and wisps stream into its nose
+    const sx = 26 + t * 30, sy = 32;
+    for (let k = 0; k < 12; k++) {
+      const a = k * 1.9 + t * 0.6, r = 6 + (k % 4) * 4;
+      let x = 86 + Math.cos(a) * r, y = 32 + Math.sin(a) * r * 0.7;
+      const go = ease(t * 1.4 - 0.25 - k * 0.05);
+      x += (sx + 7 - x) * go * go; y += (sy - y) * go * go;
+      if (go >= 1) continue;
+      const tint = ['rgba(196,160,232,', 'rgba(150,200,240,', 'rgba(235,185,225,'][k % 3];
+      const gr = g.createRadialGradient(x, y, 0, x, y, 7 - (k % 3));
+      gr.addColorStop(0, `${tint}0.55)`); gr.addColorStop(1, `${tint}0)`);
+      g.fillStyle = gr;
+      g.beginPath(); g.arc(x, y, 7 - (k % 3), 0, Math.PI * 2); g.fill();
     }
     ship(g, sx, sy, c, 0);
   },

@@ -67,25 +67,31 @@ export const ShipRoles = {
   },
 
   /**
-   * Siphons: each flies to the nearest droplet of liquid let loose (Game3D.liquids), draws in every
-   * droplet within `siphon.range` and takes in those within `siphon.take` — a point each. Nothing else:
-   * they never eat voxels. With no droplets about (or sent somewhere / called home) they fly with the swarm.
+   * Siphons and scoops: each flies to the nearest droplet of liquid (siphons, Game3D.liquids) or puff of
+   * gas (scoops, Game3D.gases) let loose, draws in every one within its `range` and takes in those within
+   * `take` — a point each. Nothing else: they never eat voxels. With none about (or sent somewhere /
+   * called home) they fly with the swarm.
    */
   updateSiphons() {
-    const s = this.swarm, L = this.game.liquids, c = CONFIG.swarm.siphon;
-    if (!s.siphons) return;
-    const a = s.kindStart('siphons'), b = Math.min(s.count, a + s.siphons);
-    const sent = this.group('siphons').mode;
+    this.collect('siphons', this.game.liquids, CONFIG.swarm.siphon);
+    this.collect('scoops', this.game.gases, CONFIG.swarm.scoop);
+  },
+
+  collect(kind, store, c) {
+    const s = this.swarm;
+    if (!s[kind]) return;
+    const a = s.kindStart(kind), b = Math.min(s.count, a + s[kind]);
+    const sent = this.group(kind).mode;
     for (let i = a; i < b; i++) {
       s.tugHas[i] = 0;
-      if (!L || !L.count || sent || s.hidden[i] || s.warpT[i] > 0 || s.leaving[i]) continue;
+      if (!store || !store.count || sent || s.hidden[i] || s.warpT[i] > 0 || s.leaving[i]) continue;
       const i3 = i * 3, x = s.pos[i3], y = s.pos[i3 + 1], z = s.pos[i3 + 2];
-      L.pull(x, y, z, c.range, c.pull);
-      const got = L.take(x, y, z, c.take);
+      store.pull(x, y, z, c.range, c.pull);
+      const got = store.take(x, y, z, c.take);
       if (got) { this.score += got; this.planetScore += got; }
-      const n = L.nearest(x, y, z);
+      const n = store.nearest(x, y, z);
       if (n < 0) continue;
-      s.tugGoal[i3] = L.pos[n * 3]; s.tugGoal[i3 + 1] = L.pos[n * 3 + 1]; s.tugGoal[i3 + 2] = L.pos[n * 3 + 2];
+      s.tugGoal[i3] = store.pos[n * 3]; s.tugGoal[i3 + 1] = store.pos[n * 3 + 1]; s.tugGoal[i3 + 2] = store.pos[n * 3 + 2];
       s.tugHas[i] = 1;
     }
   },

@@ -565,8 +565,8 @@ export class Swarm3D {
         world.release(food[i]);
         food[i] = -1;
       }
-      const tug = this.isTug(i), siphon = this.isSiphon(i);
-      const passive = tug || siphon || this.isSupport(i) || this.isBooster(i); // tugs, siphons, support ships and boosters don't eat
+      const tug = this.isTug(i), siphon = this.isSiphon(i) || this.isScoop(i);
+      const passive = tug || siphon || this.isSupport(i) || this.isBooster(i); // tugs, siphons, scoops, support ships and boosters don't eat
       // a cleaner eats only small drifting pieces (at most `cleaner.maxPiece` voxels)
       const cleaner = this.isCleaner(i);
       // was another type a moment ago (a slider moved): its bite isn't one for it any more
@@ -606,7 +606,7 @@ export class Swarm3D {
         tx = grp.point.x; ty = grp.point.y; tz = grp.point.z;
         targetWeight = w.feed;
       }
-      // a tug flies to its piece (or, towing it, ahead of it towards home); a siphon to the nearest droplet
+      // a tug flies to its piece (or, towing it, ahead of it towards home); a siphon / scoop to the nearest droplet / puff
       if ((tug || siphon) && this.tugHas[i]) {
         tx = this.tugGoal[i3]; ty = this.tugGoal[i3 + 1]; tz = this.tugGoal[i3 + 2];
         targetWeight = w.feed;

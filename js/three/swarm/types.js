@@ -46,6 +46,7 @@ export const ShipTypes = {
   isBooster(i) { return this.isKind(i, 'boosters'); },
   isCutter(i) { return this.isKind(i, 'cutters'); },
   isSiphon(i) { return this.isKind(i, 'siphons'); },
+  isScoop(i) { return this.isKind(i, 'scoops'); },
 
   /** Every unit in its type's colour (set again only when the split or the count changed). */
   updateColors() {

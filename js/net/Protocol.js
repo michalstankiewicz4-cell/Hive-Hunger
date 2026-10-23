@@ -14,7 +14,7 @@
  *               | u16 supports (the next `supports` units are support ships) | u16 cleaners (then the cleaners)
  *               | u16 drills (then the drills) | u16 drilling | drilling × u16 unit (drills drilling now)
  *               | u16 piercers (then the piercers; their beams are in the beam list) | u16 snipers (then the snipers) | u16 splashers | u16 boosters
- *               | u16 cutters | u16 cuts | cuts × (u16 unit | 6 × i16: the ends of the row being cut) | u16 siphons
+ *               | u16 cutters | u16 cuts | cuts × (u16 unit | 6 × i16: the ends of the row being cut) | u16 siphons | u16 scoops
  *               | u8 portal (1: the tunnel is open / opening) | ceil(count / 8) × u8 hidden ships (bit per unit)
  *   u32 removed | removed × u32 voxel index
  *
@@ -83,7 +83,7 @@ export function encodeSnapshot(game, removed) {
   const drilling = players.map((p) => p.swarm.drillList());
   const cuts = players.map((p) => p.swarm.cutList());
   players.forEach((p, n) => {
-    size += 1 + 1 + 4 + 4 + 2 + 2 + p.swarm.count * 9 + 2 + 2 + beams[n].length * 8 + 2 + 2 + 2 + 2 + p.swarm.tows.length * 6 + 2 + 2 + 2 + 2 + 2 + 2 + drilling[n].length * 2 + 2 + 2 + 2 + 2 + 2 + 2 + cuts[n].length * 14 + 2 + 1 + Math.ceil(p.swarm.count / 8);
+    size += 1 + 1 + 4 + 4 + 2 + 2 + p.swarm.count * 9 + 2 + 2 + beams[n].length * 8 + 2 + 2 + 2 + 2 + p.swarm.tows.length * 6 + 2 + 2 + 2 + 2 + 2 + 2 + drilling[n].length * 2 + 2 + 2 + 2 + 2 + 2 + 2 + cuts[n].length * 14 + 2 + 2 + 1 + Math.ceil(p.swarm.count / 8);
     for (const b of bolts[n]) size += 2 + 1 + 6 + b[4].length * 2;
   });
   const i16 = (x) => Math.max(-32767, Math.min(32767, Math.round(x * POS_SCALE)));
@@ -145,6 +145,7 @@ export function encodeSnapshot(game, removed) {
       for (const c of ends) { v.setInt16(o, i16(c), true); o += 2; }
     }
     v.setUint16(o, Math.min(s.siphons, Math.max(0, s.count - s.kindStart('siphons'))), true); o += 2;
+    v.setUint16(o, Math.min(s.scoops, Math.max(0, s.count - s.kindStart('scoops'))), true); o += 2;
     v.setUint8(o, p.beacon.wantOpen ? 1 : 0); o += 1;
     for (let b = 0; b < Math.ceil(s.count / 8); b++) {
       let byte = 0;
@@ -223,9 +224,10 @@ export function decodeSnapshot(buf) {
       cuts.push([i, ...e]);
     }
     const siphons = v.getUint16(o, true); o += 2;
+    const scoops = v.getUint16(o, true); o += 2;
     const portal = v.getUint8(o) === 1; o += 1;
     const hidden = new Uint8Array(buf, o, Math.ceil(count / 8)).slice(); o += Math.ceil(count / 8);
-    players.push({ portal, hidden, index, home, score, planetScore, wins, count, pos, dir, lasers, beams, storms, bolts, tugs, tows, bombers, orbs, supports, cleaners, drills, drilling, piercers, snipers, splashers, boosters, cutters, cuts, siphons });
+    players.push({ portal, hidden, index, home, score, planetScore, wins, count, pos, dir, lasers, beams, storms, bolts, tugs, tows, bombers, orbs, supports, cleaners, drills, drilling, piercers, snipers, splashers, boosters, cutters, cuts, siphons, scoops });
   }
   const nr = v.getUint32(o, true); o += 4;
   const removed = new Uint32Array(nr);

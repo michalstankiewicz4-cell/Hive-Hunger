@@ -64,11 +64,15 @@ Default (all `smooth`): the Kuiper Belt (a band of 335 rocks), Pluto (sphere 0.7
 
 ## Test board (`testBoard`)
 
-Dev tools → Test board: `shape: 'balls'` — `count` (4) balls `size` (10) voxels across, `gap` (6) apart in a square, each in its own colour from `colors` (rock, water, iron, lava: the voxel editor's kinds); `liquids` — which balls are liquid (`{2: 'water', 4: 'lava'}`, by ball number); `style` like a level; `sizeScale` (0.4): the tunnels and the camera × this (it is small); `each` (0) ships of every type, eaters too. Eaten, it is built again at once; nothing is saved.
+Dev tools → Test board: `shape: 'balls'` — balls `size` (10) voxels across, `gap` (6) apart, in `rows` (ball numbers per row, each row centred: `[[1, 2], [3, 5, 4]]` — rock, water / iron, gas, lava), each in its own colour from `colors` (rock, water, iron, lava, gas: the voxel editor's kinds); `liquids` — which balls are liquid or gas (`{2: 'water', 4: 'lava', 5: 'gas'}`, by ball number); `style` like a level; `sizeScale` (0.4): the tunnels and the camera × this (it is small); `each` (0) ships of every type, eaters too. Eaten, it is built again at once; nothing is saved.
 
 ## Liquids (`liquids`)
 
 Per liquid (`water`, `lava`): a voxel of it eaten or destroyed becomes a droplet (`Liquids.js`) — no point for it (taken back from whoever got it: single player only, where liquids are), only siphons collect it. No gravity: `speed` when let loose, `damping` per frame (water 0.99, lava 0.95: thicker), `cohesion` pulls droplets of the same liquid within `reach` together (water 0.0012, lava 0.003), `push` keeps them `rest` apart; `size`, `color`, `opacity` (water) or `glow` (lava) drawn.
+
+## Gas (`gas`)
+
+Solid gas eaten or destroyed becomes puffs of a cloud (`Gases.js`) — no point for it, only scoops take it in. No gravity: `speed` (0.012) when let loose, `damping` (0.985) per frame, `stir` (0.0006) a slow swirl, `push` (0.0015) apart within `reach` (1.1) so the cloud spreads; `size` (1.2) grows by `grow` (0.006) a frame up to `maxSize` (3); `opacity` (0.45); `colors` — each puff a mix of two of them (lilac, pale blue, pink).
 
 ## Flock (`swarm`)
 
@@ -97,7 +101,7 @@ Per liquid (`water`, `lava`): a voxel of it eaten or destroyed becomes a droplet
 | `reachDistance` | 0.8 | a unit within `reachDistance` + its speed of its bite lands on it | lower = scraps get circled longer |
 | `landSwapDistance` | 1.5 | it may land on a free voxel this close to its bite instead (nearest mode) | |
 | `eatFrames` | 25 | frames a unit sits on its bite before eating it | lower = faster eating |
-| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count`, `splasher.count`, `booster.count`, `cutter.count`, `siphon.count` | 3, 0 each | units at the start and how many of each type — `START_EACH` (0) of every type; `count` = `START_UNITS` (3, all eaters) | |
+| `count`, `laser.count`, `storm.count`, `tug.count`, `bomber.count`, `orb.count`, `support.count`, `cleaner.count`, `drill.count`, `piercer.count`, `sniper.count`, `splasher.count`, `booster.count`, `cutter.count`, `siphon.count`, `scoop.count` | 3, 0 each | units at the start and how many of each type — `START_EACH` (0) of every type; `count` = `START_UNITS` (3, all eaters) | |
 | `bomber.radius` | 5 | a bomber destroys everything within this (10 voxels) | |
 | `bomber.color`, `bomber.debris` | purple, 300 | colour; most debris pieces thrown by a blast | |
 | `orb.range`, `orb.speed`, `orb.blast` | 5, 0.045, 1 | firing distance (10 voxels), orb speed per frame, burst radius (2 voxels) | |
@@ -131,6 +135,7 @@ Per liquid (`water`, `lava`): a voxel of it eaten or destroyed becomes a droplet
 | `splasher.soakFrames`, `splasher.area` | 180, [3, 3, 2] | how long the block soaks before it is gone (3 s); the block: 3 × 3 across the surface, 2 deep | |
 | `splasher.splash`, `splasher.splashColor` | 10, light blue | debris per voxel at the landing and as voxels go; its colour | |
 | `siphon.range`, `siphon.pull`, `siphon.take`, `siphon.color` | 3, 0.006, 0.6, lime | siphons: draw in droplets of liquid within `range` (6 voxels) by `pull` per frame, take in those within `take` (a point each); hull colour | |
+| `scoop.range`, `scoop.pull`, `scoop.take`, `scoop.color` | 4, 0.004, 0.9, light lilac | scoops: draw in puffs of gas within `range` by `pull` per frame, take in those within `take` (a point each); hull colour | |
 | `booster.count`, `booster.color` | 2, pink | boosters at the start; hull colour | |
 | `booster.radius`, `booster.boost` | 1.25, 1.2 | the field's radius (5 voxels across); × the Power inside it (crater radius and how hard ships eat; fields don't add up) | |
 | `booster.fieldColors`, `booster.cells`, `booster.line` | deep / light pink, 3, 0.05 | the field's colours; octagons along each of the six sides of the ball; line width (part of a cell) | |

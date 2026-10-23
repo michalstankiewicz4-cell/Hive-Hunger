@@ -98,7 +98,7 @@ const hex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0'
 const PL = {
   'Hive Hunger — Voxel editor': 'Hive Hunger — edytor voxeli', 'Import…': 'Importuj…', 'Reset all': 'Resetuj wszystko', 'Export': 'Eksportuj',
   'game': 'gra', 'no changes': 'bez zmian', 'change': 'zmiana', 'changes': 'zmian', 'new': 'nowy', 'changed': 'zmieniony', 'as planned at first': 'jak na początku',
-  'Rock': 'Skała', 'Water': 'Woda', 'Iron': 'Żelazo', 'Lava': 'Lawa', 'New kind': 'Nowy rodzaj', '+ Add a kind': '+ Dodaj rodzaj',
+  'Rock': 'Skała', 'Water': 'Woda', 'Iron': 'Żelazo', 'Lava': 'Lawa', 'Gas': 'Gaz', 'New kind': 'Nowy rodzaj', '+ Add a kind': '+ Dodaj rodzaj',
   'Every voxel in the game today: the planets\' rock and terrain.': 'Każdy voxel w grze dziś: skała i teren planet.',
   'Not in the game yet — fill in what it should be like.': 'Jeszcze nie ma w grze — wpisz, jaki ma być.',
   'Look': 'Wygląd', 'Name': 'Nazwa', 'Colour': 'Kolor', 'Glow (0 = none, 1 = bright)': 'Świecenie (0 = brak, 1 = mocne)', 'See-through (0 = solid, 1 = clear)': 'Przezroczystość (0 = pełny, 1 = przezroczysty)',
@@ -115,7 +115,7 @@ const PL = {
   'Exported': 'Wyeksportowano', 'Imported': 'Zaimportowano', 'Could not read the file: ': 'Nie udało się odczytać pliku: ',
   'Reset every change?': 'Cofnąć wszystkie zmiany?', 'Everything as at the start': 'Wszystko jak na początku',
 };
-for (const k of SHIP_GROUPS.flatMap((g) => g.kinds)) PL[SHIP_INFO[k][0]] = { Eaters: 'Zjadacze', Lasers: 'Lasery', Storms: 'Burze', Orbs: 'Kule', Splashers: 'Chlapacze', Bombers: 'Bombowce', Drills: 'Wiertła', Piercers: 'Przebijacze', Cutters: 'Tnące', Snipers: 'Snajperzy', Tugs: 'Holowniki', Support: 'Wsparcie', Cleaners: 'Sprzątacze', Boosters: 'Wzmacniacze', Siphons: 'Syfony' }[SHIP_INFO[k][0]];
+for (const k of SHIP_GROUPS.flatMap((g) => g.kinds)) PL[SHIP_INFO[k][0]] = { Eaters: 'Zjadacze', Lasers: 'Lasery', Storms: 'Burze', Orbs: 'Kule', Splashers: 'Chlapacze', Bombers: 'Bombowce', Drills: 'Wiertła', Piercers: 'Przebijacze', Cutters: 'Tnące', Snipers: 'Snajperzy', Tugs: 'Holowniki', Support: 'Wsparcie', Cleaners: 'Sprzątacze', Boosters: 'Wzmacniacze', Siphons: 'Syfony', Scoops: 'Czerpaki' }[SHIP_INFO[k][0]];
 let LANG = 'en';
 try { if (localStorage.getItem(STORE + '-lang') === 'pl') LANG = 'pl'; } catch { /* storage off */ }
 const T = (s) => (LANG === 'pl' && s && PL[s]) || s;
@@ -137,6 +137,7 @@ const START = [
   kind('water', 'Water', '#3f7fd0', { where: [], amount: 0, bodies: [], flags: [] }),
   kind('iron', 'Iron', '#8a8f98', { where: [], amount: 0, bodies: [], flags: [] }),
   kind('lava', 'Lava', '#ff5a1f', { where: [], amount: 0, bodies: [], flags: [] }),
+  kind('gas', 'Gas', '#c4a0e8', { where: [], amount: 0, bodies: [], flags: [] }),
 ];
 const START_BY_ID = Object.fromEntries(START.map((k) => [k.id, k]));
 

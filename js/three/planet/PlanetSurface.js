@@ -92,7 +92,7 @@ export class PlanetSurface {
     g.setAttribute('position', new THREE.Float32BufferAttribute(out.pos, 3));
     g.setAttribute('normal', new THREE.Float32BufferAttribute(out.nrm, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(out.col, 3));
-    if (this.planet.liquidOf) g.setAttribute('liquid', new THREE.Float32BufferAttribute(out.liq, 2)); // (water, lava) — see look.js
+    if (this.planet.liquidOf) g.setAttribute('liquid', new THREE.Float32BufferAttribute(out.liq, 3)); // (water, lava, gas) — see liquidShader.js
     if (out.idx.length) g.setIndex(out.idx);
     g.computeBoundingSphere();
     const mesh = new THREE.Mesh(g, this.material);
@@ -197,14 +197,14 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
     // colour: the solid voxels around, darker the weaker they are
     let gx = 0, gy = 0, gz = 0;
     col[0] = col[1] = col[2] = 0;
-    let solids = 0, water = 0, lava = 0;
+    let solids = 0, water = 0, lava = 0, gas = 0;
     for (let c = 0; c < 8; c++) {
       const a = CX[c], b = CY[c], d = CZ[c];
       const w = 1 - 2 * corner[c];
       gx += w * (a ? 1 : -1); gy += w * (b ? 1 : -1); gz += w * (d ? 1 : -1);
       if (corner[c] > 0) {
         const vi = ((ck + d) * NY + (cj + b)) * NX + (ci + a), o = planet.colorOffset(vi);
-        if (liquidOf) { const lq = liquidOf[planet.tags[vi]]; if (lq === 'water') water++; else if (lq === 'lava') lava++; }
+        if (liquidOf) { const lq = liquidOf[planet.tags[vi]]; if (lq === 'water') water++; else if (lq === 'lava') lava++; else if (lq === 'gas') gas++; }
         const dark = 0.35 + 0.65 * (corner[c] - 0.5) * 2;
         col[0] += (colors[o] / 255) * dark; col[1] += (colors[o + 1] / 255) * dark; col[2] += (colors[o + 2] / 255) * dark;
         solids++;
@@ -229,7 +229,7 @@ function buildSmooth(planet, x0, y0, z0, size, out) {
     out.pos.push(wx, wy, wz);
     out.nrm.push(gx / gl, gy / gl, gz / gl);
     out.col.push(col[0] / solids, col[1] / solids, col[2] / solids);
-    if (liquidOf) out.liq.push(water / solids, lava / solids);
+    if (liquidOf) out.liq.push(water / solids, lava / solids, gas / solids);
     vert[kk] = v;
     return v;
   };
@@ -316,7 +316,7 @@ function buildWedges(planet, x0, y0, z0, size, out) {
         out.pos.push(p[o][0], p[o][1], p[o][2]);
         out.nrm.push(flip ? -nx : nx, flip ? -ny : ny, flip ? -nz : nz);
         out.col.push(color[0], color[1], color[2]);
-        if (planet.liquidOf) out.liq.push(0, 0); // (no moving look on the wedges)
+        if (planet.liquidOf) out.liq.push(0, 0, 0); // (no moving look on the wedges)
       }
     }
   };

@@ -94,8 +94,8 @@ async def main():
           attack: [...document.querySelectorAll('.guide-section:nth-of-type(1) .guide-ship')].map((e) => e.dataset.kind),
           support: [...document.querySelectorAll('.guide-section:nth-of-type(2) .guide-ship')].map((e) => e.dataset.kind),
           fits: document.querySelector('.menu-card').getBoundingClientRect().height <= window.innerHeight })""")
-        t.ok(gd['sections'] == ['Attack', 'Support'] and len(gd['attack']) == 10 and gd['support'] == ['tugs', 'supports', 'cleaners', 'boosters', 'siphons'] and gd['fits'],
-             'Ship guide: 15 ships, attack and support apart, on one screen', gd)
+        t.ok(gd['sections'] == ['Attack', 'Support'] and len(gd['attack']) == 10 and gd['support'] == ['tugs', 'supports', 'cleaners', 'boosters', 'siphons', 'scoops'] and gd['fits'],
+             'Ship guide: 16 ships, attack and support apart, on one screen', gd)
         await page.set_viewport_size({'width': 1000, 'height': 480})
         gs = await page.evaluate("""() => { const s = document.querySelector('.guide-scroll'), b = document.querySelector('.guide-back'), t = document.getElementById('menu-title');
           s.scrollTop = 99999; const r = b.getBoundingClientRect(), tr = t.getBoundingClientRect();
@@ -114,14 +114,32 @@ async def main():
         await page.keyboard.press('Escape')
         t.ok((await page.text_content('#menu-title')).startswith('Hive Hunger'), 'Esc goes back from the Ship guide')
         order = await page.evaluate("() => [...document.querySelectorAll('#ships .shipbar-item, #ships .shipbar-sep')].map((e) => e.classList.contains('shipbar-sep') ? '|' : e.className.match(/shipbar-(\\w+)/g)[1].slice(8))")
-        t.ok(order == ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'cutters', 'snipers', '|', 'tugs', 'supports', 'cleaners', 'boosters', 'siphons'],
+        t.ok(order == ['eaters', 'lasers', 'storms', 'orbs', 'splashers', 'bombers', 'drills', 'piercers', 'cutters', 'snipers', '|', 'tugs', 'supports', 'cleaners', 'boosters', 'siphons', 'scoops'],
              'the ship bar in the guide\'s order: attack ships, a line, support ships', order)
+        BAR = "() => { const t = document.querySelector('.shipbar-track'), l = document.querySelector('.shipbar-left'), r = document.querySelector('.shipbar-right'), b = document.getElementById('ships').getBoundingClientRect(); return { shown: !l.hidden && !r.hidden, left: l.disabled, right: r.disabled, x: Math.round(t.scrollLeft), inside: b.left >= 0 && b.right <= innerWidth }; }"
+        await page.set_viewport_size({'width': 560, 'height': 640})
+        await page.wait_for_timeout(100)
+        narrow = await page.evaluate(BAR)
+        await page.evaluate("() => document.querySelector('.shipbar-right').click()")
+        await page.wait_for_timeout(600)
+        moved = await page.evaluate(BAR)
+        for _ in range(8):
+            await page.evaluate("() => document.querySelector('.shipbar-right').click()")
+            await page.wait_for_timeout(400)
+        end = await page.evaluate(BAR)
+        await page.set_viewport_size({'width': 1800, 'height': 640})
+        await page.wait_for_timeout(100)
+        wide = await page.evaluate(BAR)
+        await page.set_viewport_size({'width': 1000, 'height': 640})
+        t.ok(narrow['shown'] and narrow['left'] and not narrow['right'] and narrow['x'] == 0 and narrow['inside'] and moved['x'] > 0 and not moved['left']
+             and end['right'] and not end['left'] and not wide['shown'],
+             'ship bar too wide for the screen: ◀ ▶ scroll it (greyed at the ends); hidden when all ships fit', [narrow, moved, end, wide])
         await page.click('.menu-settings')
         await page.click('.settings-buttons button >> nth=0')  # Reset settings
         rs = await page.evaluate("() => ({ ratio: window.__dbg.renderer.getPixelRatio(), aa: window.__dbg.renderer.getContextAttributes().antialias, fps: document.getElementById('fps').hidden })")
         await page.click('.settings-buttons .is-primary')  # Back
         t.ok(rs['aa'] and rs['fps'] and rs['ratio'] == 1, 'Reset settings restores them (native resolution, smooth edges, no FPS counter)', rs)
-        start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
+        start_ships = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons', 'scoops'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
         title = await page.text_content('#menu-title')
         version = await page.inner_text('#version')
         t.ok(title.startswith('Hive Hunger') and title.endswith(version) and version.startswith('v0.'), 'start screen shows the version next to the title', title)
@@ -241,12 +259,12 @@ async def main():
         t.ok((await page.evaluate('() => [window.__dbg.level, window.__dbg.planet.shape]')) == [1, 'belt'], 'back to level 1 (the Kuiper Belt)')
 
         # the ship bar (bottom): 2 of each at the start, how many shown by each thumbnail
-        t.ok(start_ships == [3] + [0] * 14, 'at the start: 3 eaters, no other ships', start_ships)
+        t.ok(start_ships == [3] + [0] * 15, 'at the start: 3 eaters, no other ships', start_ships)
         # (no bombers for the next checks: they would blow up meanwhile)
         await page.evaluate("() => { const p = window.__dbg.localPlayer; p.setSetting('count', 20); p.setSetting('bombers', 0); p.setSetting('orbs', 0); p.setSetting('supports', 0); p.setSetting('cleaners', 0); p.setSetting('drills', 0); p.setSetting('piercers', 0); p.setSetting('snipers', 0); p.setSetting('splashers', 0); p.setSetting('boosters', 0); p.setSetting('cutters', 0); p.setSetting('storms', 3); p.setSetting('tugs', 3); p.setSetting('lasers', 2); }")
         await page.wait_for_timeout(400)
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
-        t.ok(ui == [12, 2, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'the thumbnails show how many ships of each type', ui)
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons', 'scoops'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
+        t.ok(ui == [12, 2, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'the thumbnails show how many ships of each type', ui)
         await page.evaluate('(n) => window.__dbg.jumpToLevel(n)', EARTH)
         await page.evaluate("() => window.__dbg.localPlayer.setSetting('speed', 0.3)")
         await h.fast_forward(page, 300)
@@ -255,9 +273,9 @@ async def main():
           for (let i = 0; i < s.count; i++) m[s.pos[i * 3].toFixed(4) + ',' + s.pos[i * 3 + 1].toFixed(4)] = s.kindOf[i]; return m; }"""
         types0, types1 = await page.evaluate(f"""() => {{ const keep = {KEEP}; const a = keep();
           document.querySelector('.shipbar-storms .shipbar-buy').click(); return [a, keep()]; }}""")
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons', 'scoops'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
         same = all(types1.get(k) == v for k, v in types0.items())
-        t.ok(ui == [12, 2, 4, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] and len(types1) == len(types0) + 1 and same,
+        t.ok(ui == [12, 2, 4, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] and len(types1) == len(types0) + 1 and same,
              '+ buys one ship of that type (free); every other ship keeps its type', ui)
         # a ship bought comes out of the tunnel like ships arriving: it opens, the ship flies out, it closes
         tun = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm;
@@ -278,7 +296,7 @@ async def main():
         t.ok(tun['hidden'] == 1 and tun['others'] == 1 and tun['phase'] == 'opening' and tun['opened'] > 0.85 and 0 <= tun['out'] < 6 and tun['closed'] and tun['count'] == 1,
              'a ship bought waits in the tunnel, the tunnel opens, the ship flies out of it and the tunnel closes', tun)
         await page.click('.shipbar-eaters .shipbar-buy', modifiers=['Shift'])
-        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
+        ui = await page.evaluate("""() => ['eaters', 'lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons', 'scoops'].map((k) => +document.querySelector('.shipbar-' + k + ' .shipbar-count').textContent)""")
         t.ok(ui[0] == 22 and sum(ui) == 31, 'Shift + buys 10', ui)
         # − sends one away: it jumps to hyperspace like at the end of a planet, then it is gone; no other ship changes its type
         sl = await page.evaluate(f"""() => {{ const g = window.__dbg, p = g.localPlayer, s = p.swarm, keep = {KEEP};
@@ -871,6 +889,23 @@ async def main():
           let lf = 0; for (; lf < 4000 && L.count > 0; lf++) g.update();
           r.liquid.left = L.count; r.liquid.taken = p.score - score1; r.liquid.frames = lf;
           p.sellShips('siphons', 3); for (let k = 0; k < 120; k++) g.update();
+          // solid gas destroyed: a patchy cloud (puffs of their own size, colour and pattern), no points, only scoops take it in
+          const G = g.gases, score2 = p.score;
+          let gasCleared = 0;
+          for (let idx = 0; idx < pl.hp.length && gasCleared < 30; idx++) if (pl.hp[idx] > 0 && pl.tags[idx] === 5) { pl.cellCenter(idx, v); gasCleared += g.clearCell(v.x, v.y, v.z, p); }
+          g.update();
+          r.gas = { cleared: gasCleared, puffs: G.count, points: p.score - score2, seeds: new Set(Array.from(G.seed.slice(0, G.count)).map((x) => x.toFixed(4))).size,
+            sizes: new Set(Array.from(G.size.slice(0, G.count)).map((x) => x.toFixed(3))).size };
+          for (let k = 0; k < 120; k++) g.update();
+          r.gas.held = G.count; r.gas.liquidNotTaken = L.count;
+          // its solid look: the gas ball's surface knows it is gas
+          let gasLook = 0; for (const m of pl.surface.meshes.values()) { const a = m.geometry.attributes.liquid; if (a) for (let k = 0; k < a.count; k++) gasLook = Math.max(gasLook, a.getZ(k)); }
+          r.gas.look = gasLook;
+          p.buyShips('scoops', 3);
+          const score3 = p.score;
+          let gf = 0; for (; gf < 6000 && G.count > 0; gf++) g.update();
+          r.gas.left = G.count; r.gas.taken = p.score - score3;
+          p.sellShips('scoops', 3); for (let k = 0; k < 120; k++) g.update();
           g.stop();
           for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) pl.remove(idx);
           for (const f of [...(pl.fragments?.list || [])]) for (const c of pl.fragments.cellsOf(f)) pl.remove(c);
@@ -878,13 +913,17 @@ async def main():
           r.again = g.boardsEaten; r.alive = g.planet.alive && g.planet !== pl; r.body2 = g.planet.shape; r.started2 = g.started;
           r.map = !document.getElementById('map').hidden; r.save = localStorage.getItem('hive-hunger-save'); r.ticks = localStorage.getItem('hive-hunger-progress');
           g.start(); return r; }""")
-        t.ok(tb['shape'] == 'balls' and tb['balls'] == [10, 10, 10, 10] and tb['colours'] == 4 and tb['started'] and tb['count'] == 0
+        t.ok(tb['shape'] == 'balls' and tb['balls'] == [10, 10, 10, 10, 10] and tb['colours'] == 5 and tb['started'] and tb['count'] == 0
              and tb['each'] == [0, 0, 0] and 'Test board' in tb['hud'],
-             'Test board: 4 balls 10 voxels across, each in its own colour (rock, water, iron, lava), no ships at the start', tb)
+             'Test board: 5 balls 10 voxels across, each in its own colour (rock, water, iron, gas, lava), no ships at the start', tb)
         lq = tb['liquid']
         t.ok(lq['cleared'] == 30 and lq['drops'] == 30 and lq['points'] == 0 and lq['held'] == 30,
              'water and lava destroyed: droplets floating in space, no points for them, nobody else takes them in', lq)
         t.ok(lq['left'] == 0 and lq['taken'] == 30, 'siphons take them all in, a point each', lq)
+        gs = tb['gas']
+        t.ok(gs['cleared'] == 30 and gs['puffs'] == 30 and gs['points'] == 0 and gs['held'] == 30 and gs['seeds'] >= 25 and gs['sizes'] > 10 and gs['look'] == 1,
+             'solid gas (its own moving look) destroyed: a patchy cloud of puffs, each its own, no points, nobody else takes it in', gs)
+        t.ok(gs['left'] == 0 and gs['taken'] == 30, 'scoops take the whole cloud in, a point each', gs)
         t.ok(lq['look']['water'] == 1 and lq['look']['lava'] == 1 and lq['look']['seeds'] == 30 and lq['look']['piece'] == 1,
              'water and lava have their own moving look on the balls and on pieces come loose; every droplet a different one', lq['look'])
         t.ok(tb['again'] == 1 and tb['alive'] and tb['body2'] == 'balls' and tb['started2'] and not tb['map'] and tb['save'] is None and 'earth' not in (tb['ticks'] or ''),

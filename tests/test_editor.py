@@ -33,7 +33,7 @@ async def main():
         await page.wait_for_function('window.__editor !== undefined')
 
         nav = await page.eval_on_selector_all('nav button[data-sec]', 'bs => bs.map(b => b.dataset.sec)')
-        check('the whole swarm, eaters and 14 ship types', len(nav) == 16 and nav[0] == 'swarm' and 'cutter' in nav, str(nav))
+        check('the whole swarm, eaters and 15 ship types', len(nav) == 17 and nav[0] == 'swarm' and 'cutter' in nav, str(nav))
         v = await page.evaluate("() => ({ reach: __editor.sections.laser.values.reach, w: __editor.sections.swarm.values['weights.separation'] })")
         check('values read from the game', v['reach'] == 2.5 and v['w'] == 1.8, str(v))
 

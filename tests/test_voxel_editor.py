@@ -34,8 +34,8 @@ async def main():
         await page.wait_for_function('window.__voxelEditor !== undefined')
 
         st = await page.evaluate("() => __voxelEditor.state().kinds.map((k) => [k.id, k.strength, k.points, k.ships.length])")
-        check('rock (the game today: strength 1, 1 point, every ship), water, iron and lava',
-              [k[0] for k in st] == ['rock', 'water', 'iron', 'lava'] and st[0][1:] == [1, 1, 15], str(st))
+        check('rock (the game today: strength 1, 1 point, every ship), water, iron, lava and gas',
+              [k[0] for k in st] == ['rock', 'water', 'iron', 'lava', 'gas'] and st[0][1:] == [1, 1, 16], str(st))
 
         # edit lava
         await page.click('nav [data-kind=lava]')
@@ -50,7 +50,7 @@ async def main():
         await page.fill('[data-f=wish]', 'Burns ships that land on it')
         lava = await page.evaluate("() => __voxelEditor.state().kinds.find((k) => k.id === 'lava')")
         check('a kind edited: strength, points, ships, behaviour, where, bodies, own words',
-              lava['strength'] == 3 and lava['points'] == 5 and 'eaters' not in lava['ships'] and len(lava['ships']) == 14
+              lava['strength'] == 3 and lava['points'] == 5 and 'eaters' not in lava['ships'] and len(lava['ships']) == 15
               and lava['flags'] == ['flows', 'hurts'] and lava['where'] == ['pools'] and lava['bodies'] == ['earth'] and lava['amount'] == 4
               and lava['wish'] == 'Burns ships that land on it', json.dumps(lava)[:300])
 
@@ -64,13 +64,13 @@ async def main():
         await page.click('nav [data-kind=rock]')
         await page.click('main .danger')
         ids = await page.evaluate("() => __voxelEditor.state().kinds.map((k) => k.id + ':' + k.name)")
-        check('a kind added, one deleted; rock stays', ids == ['rock:Rock', 'water:Water', 'lava:Lava', 'kind1:Gold'], str(ids))
+        check('a kind added, one deleted; rock stays', ids == ['rock:Rock', 'water:Water', 'lava:Lava', 'gas:Gas', 'kind1:Gold'], str(ids))
         await page.wait_for_timeout(400)
 
         await page.reload()
         await page.wait_for_function('window.__voxelEditor !== undefined')
         kept = await page.evaluate("() => __voxelEditor.state().kinds.map((k) => k.id)")
-        check('kept after a reload', kept == ['rock', 'water', 'lava', 'kind1'], str(kept))
+        check('kept after a reload', kept == ['rock', 'water', 'lava', 'gas', 'kind1'], str(kept))
 
         async with page.expect_download() as dl:
             await page.click('#export')
@@ -80,7 +80,7 @@ async def main():
         fields = {(c['id'], c['field']) for c in ch['changed']}
         check('export: added, removed, changed fields and every kind',
               ch['added'] == ['kind1'] and ch['removed'] == ['iron'] and ('lava', 'strength') in fields and ('lava', 'wish') in fields
-              and len(data['kinds']) == 4 and data['version'], json.dumps(ch)[:300])
+              and len(data['kinds']) == 5 and data['version'], json.dumps(ch)[:300])
 
         # every text has a Polish one (body names stay as they are); the switch
         bodies = await page.evaluate("async () => (await import('../js/solar.js')).SOLAR.map((b) => b.name)")
@@ -104,7 +104,7 @@ async def main():
         await page.set_input_files('#file', path)
         await page.wait_for_timeout(500)
         back = await page.evaluate("() => __voxelEditor.state().kinds.map((k) => k.id)")
-        check('import brings it all back', back == ['rock', 'water', 'lava', 'kind1'], str(back))
+        check('import brings it all back', back == ['rock', 'water', 'lava', 'gas', 'kind1'], str(back))
 
         check('no page errors', not errors, str(errors[:3]))
         await browser.close()

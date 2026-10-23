@@ -149,7 +149,7 @@ async def main():
             await host.evaluate("""() => window.__dbg.activePlayers().forEach(p => {
               p.setSetting('count', 100); p.setSetting('speed', 0.5); p.setSetting('power', 2);
               // 2 ships of every type (players start with eaters only)
-              ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons'].forEach((k) => p.setSetting(k, 2)); })""")
+              ['lasers', 'storms', 'tugs', 'bombers', 'orbs', 'supports', 'cleaners', 'drills', 'piercers', 'snipers', 'splashers', 'boosters', 'cutters', 'siphons', 'scoops'].forEach((k) => p.setSetting(k, 2)); })""")
             await h.fast_forward(host, 1200)
             await host.wait_for_timeout(1500)
             for g in guests:  # let paused guests apply the queued snapshots

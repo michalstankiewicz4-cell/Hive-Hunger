@@ -2,7 +2,7 @@ import { CONFIG, SHIP_KINDS, SHIP_GROUPS } from '../config.js';
 import { el } from './dom.js';
 import { SHIP_INFO, paintShip } from './ShipGuide.js';
 
-const TW = 54, TH = 29; // thumbnail size (CSS pixels; the Ship guide's pictures, smaller)
+const TW = 48, TH = 26; // thumbnail size (CSS pixels; the Ship guide's pictures, smaller)
 
 /**
  * The ship bar along the bottom of the screen: a thumbnail of every ship type (attack ships, a line,
@@ -10,7 +10,8 @@ const TW = 54, TH = 29; // thumbnail size (CSS pixels; the Ship guide's pictures
  * at first) and stays chosen: a click on a voxel or a drifting piece sends only that group there,
  * a click on your tunnel calls only that group home. The + on a thumbnail buys one ship of that
  * type (Shift: 10) — free for now — up to `swarm.maxCount` ships in all; the − sends one away (Shift: 10):
- * it jumps to hyperspace and is gone (at least one ship stays).
+ * it jumps to hyperspace and is gone (at least one ship stays). When not all thumbnails fit on the
+ * screen, ◀ ▶ at the ends of the bar scroll it (so does a swipe over it).
  */
 export class ShipBar {
   /**
@@ -22,15 +23,43 @@ export class ShipBar {
     this.opts = opts;
     this.items = {};
     root.setAttribute('role', 'toolbar');
+    // the thumbnails scroll inside a track; ◀ ▶ at the ends move it when not all fit on the screen
+    const track = (this.track = el('div', 'shipbar-track'));
+    this.left = this.arrow('◀', 'shipbar-left', -1);
+    this.right = this.arrow('▶', 'shipbar-right', 1);
+    root.append(this.left, track, this.right);
     SHIP_GROUPS.forEach((group, n) => {
       if (n > 0) {
         const line = el('div', 'shipbar-sep');
         line.setAttribute('role', 'separator');
-        root.appendChild(line);
+        track.appendChild(line);
       }
-      for (const kind of group.kinds) root.appendChild(this.item(kind));
+      for (const kind of group.kinds) track.appendChild(this.item(kind));
     });
+    track.addEventListener('scroll', () => this.fit(), { passive: true });
+    window.addEventListener('resize', () => this.fit());
     this.sync();
+    this.fit();
+  }
+
+  /** A scroll button: moves the track by most of what is visible, `dir` −1 left, +1 right. */
+  arrow(text, cls, dir) {
+    const b = el('button', `shipbar-scroll ${cls}`, text);
+    b.type = 'button';
+    b.title = dir < 0 ? 'Scroll the ships left' : 'Scroll the ships right';
+    b.setAttribute('aria-label', b.title);
+    b.addEventListener('click', () => {
+      this.track.scrollBy({ left: dir * Math.max(60, this.track.clientWidth * 0.8), behavior: 'smooth' });
+    });
+    return b;
+  }
+
+  /** The arrows show only when the ships do not all fit, and grey out at the ends. */
+  fit() {
+    const t = this.track, over = t.scrollWidth - t.clientWidth > 1;
+    this.left.hidden = this.right.hidden = !over;
+    this.left.disabled = t.scrollLeft <= 1;
+    this.right.disabled = t.scrollLeft >= t.scrollWidth - t.clientWidth - 1;
   }
 
   item(kind) {

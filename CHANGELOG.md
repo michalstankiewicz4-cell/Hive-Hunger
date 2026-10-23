@@ -2,6 +2,16 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.57.0] — 2026-10-23
+
+### Added
+- **Solid gas** (the test board): a fifth ball, next to iron, of solid gas — soft marbled bands of lilac, pale blue and pink slowly swirling past each other, faintly glowing; pieces of it that come loose look the same. Eaten or destroyed, it turns into a gas cloud — not one flat blob but wisps, each its own size, colour mix and torn pattern, churning, swelling and spreading slowly, swirled about, no gravity. No points for it, and no ordinary ship can collect it.
+- **Scoops** — a new support ship (light lilac): it does nothing but take in gas let loose in space, drawing in every puff within 4 voxels, a point each. On the ship bar, in the Ship guide and the editors (not in the upgrade tree yet); the voxel editor has gas as a kind of voxel.
+- **Scrolling the ship bar:** when not all the ships fit on the screen, ◀ ▶ at the ends of the bar scroll it (greyed at the ends; hidden when everything fits).
+
+### Changed
+- The test board's balls are in two rows: rock and water, then iron, gas and lava. The ship bar's thumbnails are a little smaller.
+
 ## [0.56.1] — 2026-10-23
 
 ### Changed
