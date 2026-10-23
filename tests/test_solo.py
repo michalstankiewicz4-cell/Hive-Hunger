@@ -922,7 +922,12 @@ async def main():
           g.stop();
           for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) pl.remove(idx);
           for (const f of [...(pl.fragments?.list || [])]) for (const c of pl.fragments.cellsOf(f)) pl.remove(c);
-          let f = 0; while (g.boardsEaten < 1 && f < 3000) { g.update(); f++; }
+          // every voxel gone, but droplets and gas still float: not over yet — siphons and scoops take them in first
+          for (let k = 0; k < 600; k++) g.update();
+          r.waiting = { over: g.boardsEaten, left: pl.left, drops: L.count, puffs: G.count, alive: pl.alive };
+          p.buyShips('siphons', 8); p.buyShips('scoops', 8);
+          let f = 0; while (g.boardsEaten < 1 && f < 40000) { g.update(); f++; }
+          r.waiting.frames = f;
           r.again = g.boardsEaten; r.alive = g.planet.alive && g.planet !== pl; r.body2 = g.planet.shape; r.started2 = g.started;
           r.map = !document.getElementById('map').hidden; r.save = localStorage.getItem('hive-hunger-save'); r.ticks = localStorage.getItem('hive-hunger-progress');
           g.start(); return r; }""")
@@ -942,6 +947,9 @@ async def main():
              'water and lava have their own moving look on the balls and on pieces come loose; every droplet a different one', lq['look'])
         t.ok(tb['again'] == 1 and tb['alive'] and tb['body2'] == 'balls' and tb['started2'] and not tb['map'] and tb['save'] is None and 'earth' not in (tb['ticks'] or ''),
              'eaten, it is there again at once — no map, nothing saved, no tick', tb)
+        wt = tb['waiting']
+        t.ok(wt['over'] == 0 and wt['left'] == 0 and wt['drops'] > 0 and wt['puffs'] > 0 and wt['alive'] and tb['again'] == 1,
+             'every voxel gone but droplets and gas still in space: not over until siphons and scoops have taken them all in', wt)
         await page.keyboard.press('Escape')
         pz = await page.evaluate("() => [...document.querySelectorAll('#menu .menu-choice-label')].map((e) => e.textContent)")
         await page.click('#menu .menu-choice >> text=Exit to main menu')

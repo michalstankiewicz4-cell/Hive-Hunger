@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.59.0] — 2026-10-24
+
+### Changed
+- **A planet (and the test board) is done only when everything of it is gone** — its last voxel eaten *and* every droplet of liquid and puff of gas in space taken in by siphons and scoops. Before, the board ended with droplets and gas still floating, and they simply vanished.
+
 ## [0.58.0] — 2026-10-24
 
 ### Changed

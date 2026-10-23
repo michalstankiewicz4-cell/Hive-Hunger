@@ -475,8 +475,9 @@ export class Game3D {
     if (this.started) { this.liquids.step(this.planet); this.gases.step(this.planet); }
 
     const pl = this.planet;
-    // the planet counts as eaten only when its last voxel is gone; then every swarm flies home
-    if (this.started && pl.alive && pl.left <= 0) {
+    // the planet counts as eaten only when its last voxel is gone and nothing of it is left in space
+    // (droplets of liquid, puffs of gas: siphons and scoops must take them in first); then every swarm flies home
+    if (this.started && pl.alive && pl.left <= 0 && !this.liquids.count && !this.gases.count) {
       pl.shatter((idx, color) => this.debris.emit(pl.cellCenter(idx, this.tmp), color, this.cfg.debris.perCellOnFinish));
       for (const p of players) p.jumpOut(); // off to hyperspace, one after another
       this.returnFrames = 0;

@@ -133,7 +133,7 @@ stateDiagram-v2
     Playing --> StartScreen: Leave room / host left / connection lost
     state Playing {
         [*] --> Eating
-        Eating --> Jumping: last voxel eaten (multiplayer: summary)
+        Eating --> Jumping: last voxel eaten, no droplets or gas left (multiplayer: summary)
         Jumping --> Arriving: every ship gone to hyperspace (multiplayer: + everyone pressed Next planet) → next planet
         Arriving --> Eating: the tunnel opens, the ships come out, it closes
     }
@@ -187,7 +187,7 @@ Until the match has started (`game.started`: Single player chosen, or every play
    - update the leader: stay while free voxels are near, otherwise drift to the nearest free voxel; follow a click or the tunnel when told to;
    - update the swarm (`Swarm3D.update`).
 3. Drifting pieces move and turn (`Fragments.step`); voxels eaten this frame are checked for splits, and every part smaller than the rest comes loose (host: sent to the guests).
-4. If the planet's last voxel is gone: every swarm flies home; when all have gathered (or after a timeout) the next planet appears.
+4. If the planet's last voxel is gone and no droplet of liquid or puff of gas is left in space (`liquids.count`, `gases.count`): every swarm flies home; when all have gathered (or after a timeout) the next planet appears.
 5. Host only: every `net.snapshotEvery` frames, send a snapshot to the guests (every `fragments.syncEvery` frames also where the pieces are).
 
 ## The swarm (`Swarm3D.update`)
