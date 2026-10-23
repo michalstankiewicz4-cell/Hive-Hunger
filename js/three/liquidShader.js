@@ -7,6 +7,30 @@
  */
 export const LIQUID_TIME = { value: 0 };
 
+/**
+ * Gives a surface material (Lambert, vertex colours) the moving lava and water looks where its
+ * geometry's `liquid` attribute says so (water, lava: 0 … 1 per vertex — PlanetSurface). Call it from
+ * the material's onBeforeCompile with the shader.
+ */
+export function addLiquidLook(shader) {
+  shader.uniforms.uTime = LIQUID_TIME;
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', '#include <common>\nattribute vec2 liquid;\nvarying vec2 vLiquid;\nvarying vec3 vSpot;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLiquid = liquid;\nvSpot = position;');
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>\nuniform float uTime;\nvarying vec2 vLiquid;\nvarying vec3 vSpot;\n${LIQUID_GLSL}`)
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      if (vLiquid.y > 0.01) {
+        vec3 lava = lavaColor(vSpot * 1.4, uTime);
+        diffuseColor.rgb = mix(diffuseColor.rgb, lava * 0.35, vLiquid.y);
+        totalEmissiveRadiance += lava * vLiquid.y * 0.85;
+      }
+      if (vLiquid.x > 0.01) {
+        diffuseColor.rgb *= mix(1.0, waterShade(vSpot * 1.8, uTime), vLiquid.x);
+        totalEmissiveRadiance += vec3(0.25, 0.45, 0.7) * waterGlint(vSpot * 1.8, uTime) * vLiquid.x;
+      }`);
+}
+
 /** GLSL: value noise and fbm in 3D, lava and water colours. */
 export const LIQUID_GLSL = /* glsl */ `
 float lqHash(vec3 p) {

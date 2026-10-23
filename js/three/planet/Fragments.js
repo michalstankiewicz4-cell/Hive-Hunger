@@ -1,4 +1,5 @@
 import { PlanetSurface } from './PlanetSurface.js';
+import { addLiquidLook } from '../liquidShader.js';
 import { NEIGHBORS } from './grid.js';
 
 const THREE = window.THREE;
@@ -35,6 +36,8 @@ export class Fragments {
     this.nextId = 1;
     this.onCreate = null;        // (fragment) => void — the host sends it to the guests
     this.material = new THREE.MeshLambertMaterial({ vertexColors: true });
+    // pieces of lava and water move like the rest of them (liquidShader.js)
+    if (planet.liquidOf) this.material.onBeforeCompile = (shader) => addLiquidLook(shader);
     // scratch for the flood fill
     this.mark = new Int32Array(planet.hp.length);
     this.stamp = 0;
@@ -261,6 +264,9 @@ export class Fragments {
       colors: pl.colors,
       colorOffset: (li) => pl.colorOffset(local.orig[li]),
       scene: null,
+      // liquid voxels (lava, water): the piece's surface gets their moving look too (its own tag table)
+      liquidOf: pl.liquidOf && pl.tags ? pl.liquidOf : null,
+      tags: pl.liquidOf && pl.tags ? new Uint16Array(M * M * M) : null,
     };
     let radius = 0;
     // out of the static grid or the fragment it was part of (not eaten)
@@ -272,6 +278,7 @@ export class Fragments {
       pl.voxelColor(c); // cache the colour
       local.hp[li] = strength[n];
       local.orig[li] = c;
+      if (local.tags) local.tags[li] = pl.tags[c];
       this.fragOf[c] = id;
       pl.gridCenter(c, v);
       radius = Math.max(radius, v.distanceTo(pivot));

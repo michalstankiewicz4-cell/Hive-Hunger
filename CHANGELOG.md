@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.56.1] — 2026-10-23
+
+### Changed
+- Pieces of lava and water that come loose and drift move like the balls (churning, glowing lava; rippling water) — before they were plain.
+
 ## [0.56.0] — 2026-10-23
 
 ### Added

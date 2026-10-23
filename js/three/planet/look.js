@@ -1,5 +1,5 @@
 import { terrainColor, mix } from '../../utils/terrain.js';
-import { LIQUID_TIME, LIQUID_GLSL } from '../liquidShader.js';
+import { addLiquidLook } from '../liquidShader.js';
 
 const THREE = window.THREE;
 
@@ -42,23 +42,7 @@ export const Look = {
         `vec3 sphereNormal = normalize(position + 1e-4);
          vec3 objectNormal = normalize(mix(vec3(normal), sphereNormal, ${this.shading}));`,
       );
-      if (!liquids) return;
-      shader.uniforms.uTime = LIQUID_TIME;
-      shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute vec2 liquid;\nvarying vec2 vLiquid;\nvarying vec3 vSpot;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLiquid = liquid;\nvSpot = position;');
-      shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', `#include <common>\nuniform float uTime;\nvarying vec2 vLiquid;\nvarying vec3 vSpot;\n${LIQUID_GLSL}`)
-        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-          if (vLiquid.y > 0.01) {
-            vec3 lava = lavaColor(vSpot * 1.4, uTime);
-            diffuseColor.rgb = mix(diffuseColor.rgb, lava * 0.35, vLiquid.y);
-            totalEmissiveRadiance += lava * vLiquid.y * 0.85;
-          }
-          if (vLiquid.x > 0.01) {
-            diffuseColor.rgb *= mix(1.0, waterShade(vSpot * 1.8, uTime), vLiquid.x);
-            totalEmissiveRadiance += vec3(0.25, 0.45, 0.7) * waterGlint(vSpot * 1.8, uTime) * vLiquid.x;
-          }`);
+      if (liquids) addLiquidLook(shader);
     };
     return material;
   },

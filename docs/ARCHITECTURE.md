@@ -80,7 +80,7 @@ tools/
 | `Bubbles.js` | Splashers' bubbles of liquid: flight to the target (following a moving piece), wobble phase; `lenses()` gives the lens pass their positions and sizes |
 | `BlackHoles.js` | Black holes after bomber blasts: strength over time, pulling and swallowing debris and pieces, the lensing render pass (also the splashers' bubbles: irregular, wobbling drops that magnify and flip the view inside, with a blue tint, a rim and a highlight; up to 16; hidden behind the planet) |
 | `Debris3D.js` | Debris point cloud |
-| `liquidShader.js` (js/three) | The moving looks of lava and water (GLSL: 3D value noise, fbm, `lavaColor`, `waterShade`, `waterGlint`) and `LIQUID_TIME`, the clock Game3D moves on each frame (not while paused); used by the planet's surface material (look.js, with the `liquid` vertex attribute from PlanetSurface) and the droplets (Liquids.js, an `aSeed` per drop) |
+| `liquidShader.js` (js/three) | The moving looks of lava and water (GLSL: 3D value noise, fbm, `lavaColor`, `waterShade`, `waterGlint`) and `LIQUID_TIME`, the clock Game3D moves on each frame (not while paused); used by the planet's surface material and the drifting pieces' material (`addLiquidLook`; look.js, Fragments.js, with the `liquid` vertex attribute from PlanetSurface) and the droplets (Liquids.js, an `aSeed` per drop) |
 | `Liquids.js` | Droplets of liquid voxels let loose (water, lava): no gravity, damping, cohesion between droplets of the same liquid within `reach`, a push closer than `rest`, a soft bounce off solid voxels (spatial hash); `pull` / `take` / `nearest` for siphons; one instanced mesh per liquid |
 | **`js/three/scene/`** | |
 | `Space3D.js` | Sky sphere with nebulae + star layers (one group, turned by the spin) |
