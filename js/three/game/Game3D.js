@@ -10,6 +10,7 @@ import { Shots } from '../effects/Shots.js';
 import { Bubbles } from '../effects/Bubbles.js';
 import { Zaps } from '../effects/Zaps.js';
 import { Liquids } from '../effects/Liquids.js';
+import { LIQUID_TIME } from '../liquidShader.js';
 import { Player } from './Player.js';
 import { PLAYERS } from './players.js';
 import { Input } from './input.js';
@@ -442,6 +443,7 @@ export class Game3D {
       return;
     }
     this.frameNo++;
+    LIQUID_TIME.value += 1 / 60; // (lava and water keep moving; they stand still while paused)
     if (this.role === 'guest') this.updateGuest();
     else this.updateSim();
 

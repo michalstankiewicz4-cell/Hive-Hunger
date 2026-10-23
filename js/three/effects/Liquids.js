@@ -1,3 +1,5 @@
+import { LIQUID_TIME, LIQUID_GLSL } from '../liquidShader.js';
+
 const THREE = window.THREE;
 
 /**
@@ -9,7 +11,8 @@ const THREE = window.THREE;
  * solid voxels. Ordinary ships can't take them in — only siphons can (Player.updateSiphons, which
  * calls `pull` and `take`).
  *
- * Drawn as small spheres, one instanced mesh per kind (water see-through blue, lava glowing).
+ * Drawn as small spheres, one instanced mesh per kind (water see-through blue, lava glowing), each
+ * droplet with its own `seed`: the moving lava and water looks (liquidShader.js) differ from drop to drop.
  */
 export class Liquids {
   /** @param {object} cfg CONFIG.liquids: per kind { color, glow, opacity, size, damping, cohesion, reach, rest, push, speed } */
@@ -20,6 +23,7 @@ export class Liquids {
     this.pos = new Float32Array(max * 3);
     this.vel = new Float32Array(max * 3);
     this.kind = new Uint8Array(max);
+    this.seed = new Float32Array(max);
     this.count = 0;
     this.taken = 0; // (tests) droplets taken in by siphons
     this.cell = Math.max(...this.kinds.map((k) => cfg[k].reach));
@@ -29,7 +33,24 @@ export class Liquids {
       const mat = c.glow
         ? new THREE.MeshBasicMaterial({ color: c.color })
         : new THREE.MeshPhongMaterial({ color: c.color, transparent: true, opacity: c.opacity ?? 0.8, shininess: 80, specular: 0x99bbff });
-      const mesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(c.size, 1), mat, max);
+      const geo = new THREE.IcosahedronGeometry(c.size, 2);
+      geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(new Float32Array(max), 1).setUsage(THREE.DynamicDrawUsage));
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.uTime = LIQUID_TIME;
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nattribute float aSeed;\nvarying float vSeed;\nvarying vec3 vLocal;')
+          .replace('#include <begin_vertex>', `#include <begin_vertex>\nvSeed = aSeed;\nvLocal = position / ${c.size.toFixed(3)};`);
+        shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\nuniform float uTime;\nvarying float vSeed;\nvarying vec3 vLocal;\n${LIQUID_GLSL}`);
+        shader.fragmentShader = c.glow
+          // lava: its own churning crust and veins on every drop
+          ? shader.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );',
+            'vec4 diffuseColor = vec4( lavaColor(vLocal * 0.9 + vec3(vSeed * 37.0), uTime + vSeed * 10.0) * 1.35, opacity );')
+          // water: rippling brightness and a glint, different on every drop
+          : shader.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+            diffuseColor.rgb *= waterShade(vLocal * 1.6 + vec3(vSeed * 37.0), uTime + vSeed * 10.0);
+            totalEmissiveRadiance += vec3(0.25, 0.45, 0.7) * waterGlint(vLocal * 1.6 + vec3(vSeed * 37.0), uTime + vSeed * 10.0);`);
+      };
+      const mesh = new THREE.InstancedMesh(geo, mat, max);
       mesh.count = 0;
       mesh.frustumCulled = false;
       scene.add(mesh);
@@ -49,6 +70,7 @@ export class Liquids {
     this.vel[i3 + 1] = (dir.y / l) * c.speed + (Math.random() - 0.5) * c.speed;
     this.vel[i3 + 2] = (dir.z / l) * c.speed + (Math.random() - 0.5) * c.speed;
     this.kind[i] = k;
+    this.seed[i] = Math.random();
   }
 
   /** Droplet i is gone (the last one takes its place). */
@@ -58,6 +80,7 @@ export class Liquids {
       this.pos.copyWithin(i * 3, j * 3, j * 3 + 3);
       this.vel.copyWithin(i * 3, j * 3, j * 3 + 3);
       this.kind[i] = this.kind[j];
+      this.seed[i] = this.seed[j];
     }
   }
 
@@ -158,11 +181,13 @@ export class Liquids {
     for (let i = 0; i < this.count; i++) {
       const k = this.kind[i], mesh = this.meshes[k];
       this.m.makeTranslation(this.pos[i * 3], this.pos[i * 3 + 1], this.pos[i * 3 + 2]);
+      mesh.geometry.attributes.aSeed.array[counts[k]] = this.seed[i];
       mesh.setMatrixAt(counts[k]++, this.m);
     }
     this.meshes.forEach((mesh, k) => {
       mesh.count = counts[k];
       mesh.instanceMatrix.needsUpdate = true;
+      mesh.geometry.attributes.aSeed.needsUpdate = true;
     });
   }
 }

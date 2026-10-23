@@ -854,6 +854,11 @@ async def main():
             pl.cellCenter(idx, v); cleared += g.clearCell(v.x, v.y, v.z, p); }
           g.update();
           r.liquid = { cleared, drops: L.count, points: p.score - score0, kinds: new Set(Array.from(L.kind.slice(0, L.count))).size };
+          // their moving looks: the surface knows where water and lava are, every drop has its own seed, the clock runs
+          pl.surface.sync(true);
+          let water = 0, lava = 0;
+          for (const m of pl.surface.meshes.values()) { const a = m.geometry.attributes.liquid; if (a) for (let k = 0; k < a.count; k++) { water = Math.max(water, a.getX(k)); lava = Math.max(lava, a.getY(k)); } }
+          r.liquid.look = { water, lava, seeds: new Set(Array.from(L.seed.slice(0, L.count)).map((x) => x.toFixed(4))).size };
           for (let f = 0; f < 120; f++) g.update();
           r.liquid.held = L.count; // (they float about: nobody takes them in)
           p.buyShips('siphons', 3);
@@ -875,6 +880,8 @@ async def main():
         t.ok(lq['cleared'] == 30 and lq['drops'] == 30 and lq['points'] == 0 and lq['held'] == 30,
              'water and lava destroyed: droplets floating in space, no points for them, nobody else takes them in', lq)
         t.ok(lq['left'] == 0 and lq['taken'] == 30, 'siphons take them all in, a point each', lq)
+        t.ok(lq['look']['water'] == 1 and lq['look']['lava'] == 1 and lq['look']['seeds'] == 30,
+             'water and lava have their own moving look on the balls; every droplet a different one', lq['look'])
         t.ok(tb['again'] == 1 and tb['alive'] and tb['body2'] == 'balls' and tb['started2'] and not tb['map'] and tb['save'] is None and 'earth' not in (tb['ticks'] or ''),
              'eaten, it is there again at once — no map, nothing saved, no tick', tb)
         await page.keyboard.press('Escape')

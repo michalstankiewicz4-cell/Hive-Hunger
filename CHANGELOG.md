@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.56.0] — 2026-10-23
+
+### Added
+- **Moving lava and water:** lava churns — a dark crust cracked by glowing orange veins, slowly flowing — and glows; water ripples and glints here and there. On the balls of the test board and on every droplet, each droplet with its own pattern (no two alike). They stand still while the game is paused.
+
 ## [0.55.0] — 2026-10-23
 
 ### Added
