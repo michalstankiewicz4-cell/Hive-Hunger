@@ -10,7 +10,7 @@ const TW = 48, TH = 26; // thumbnail size (CSS pixels; the Ship guide's pictures
  * at first) and stays chosen: a click on a voxel or a drifting piece sends only that group there,
  * a click on your tunnel calls only that group home. The + on a thumbnail buys one ship of that
  * type (Shift: 10) — free for now — up to `swarm.maxCount` ships in all; the − sends one away (Shift: 10):
- * it jumps to hyperspace and is gone (at least one ship stays). When not all thumbnails fit on the
+ * it jumps to hyperspace and is gone (every ship can go, the last one too; one still in the tunnel is gone at once). When not all thumbnails fit on the
  * screen, ◀ ▶ at the ends of the bar scroll it (so does a swipe over it).
  */
 export class ShipBar {
@@ -109,7 +109,7 @@ export class ShipBar {
       it.pick.setAttribute('aria-pressed', String(kind === chosen));
       it.pick.parentElement.classList.toggle('is-chosen', kind === chosen);
       it.buy.disabled = full;
-      it.sell.disabled = !n || this.opts.total() <= 1; // (at least one ship stays)
+      it.sell.disabled = !n;
     }
   }
 }

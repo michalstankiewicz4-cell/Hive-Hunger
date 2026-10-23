@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.58.0] — 2026-10-24
+
+### Changed
+- **− on the ship bar sends any ship away, the last one too** — before, at least one ship had to stay (on the test board, where you start with none, one ship bought could not be sent away).
+- A ship still in the tunnel (just bought, not out yet) can be sent away too: it is gone at once and never comes out.
+
 ## [0.57.1] — 2026-10-23
 
 ### Changed

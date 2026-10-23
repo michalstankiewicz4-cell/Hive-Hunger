@@ -178,19 +178,19 @@ export const ShipRoles = {
 
   /**
    * The ship bar's − : `n` ships of type `kind` leave — each jumps to hyperspace like at the end of a
-   * planet (the last ones of the type out of the tunnel first) and, once gone, is removed (removeLeft).
-   * At least one ship stays in the swarm. Returns how many were sent.
+   * planet and, once gone, is removed (removeLeft); one still in the tunnel (bought, not out yet) is
+   * gone at once. Every ship can go, the last one too. Returns how many were sent.
    */
   sellShips(kind, n = 1) {
     const s = this.swarm;
     if (this.homeMode === 'jump' || !GROUP_KINDS.includes(kind)) return 0;
     s.fillKinds();
     const k = GROUP_KINDS.indexOf(kind);
-    let staying = 0;
-    for (let i = 0; i < s.count; i++) if (!s.leaving[i]) staying++;
     let sent = 0;
-    for (let i = s.count - 1; i >= 0 && sent < n && staying > 1; i--) {
-      if (s.kindOf[i] !== k || s.leaving[i] || s.hidden[i] || s.warpT[i] > 0) continue;
+    // every ship can go, the last one too; one still in the tunnel (bought, not out yet) is simply
+    // gone at once (leaving + hidden: removeLeft takes it next frame, it never comes out)
+    for (let i = s.count - 1; i >= 0 && sent < n; i--) {
+      if (s.kindOf[i] !== k || s.leaving[i] || s.warpT[i] > 0) continue;
       s.leaving[i] = 1;
       s.warpDelay[i] = 0; // (jumps next frame: stepWarp)
       if (s.food[i] >= 0) this.game.planet.release(s.food[i]);
@@ -199,7 +199,7 @@ export const ShipRoles = {
       s.pierceOn[i] = 0; s.cutOn[i] = 0; s.cutAfter[i] = 0; s.drillLeft[i] = 0;
       const t = this.towing.get(i);
       if (t) this.letGo(i, t);
-      sent++; staying--;
+      sent++;
     }
     return sent;
   },

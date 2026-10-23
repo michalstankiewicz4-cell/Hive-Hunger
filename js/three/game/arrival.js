@@ -31,7 +31,7 @@ export const Arrival = {
     const p = new THREE.Vector3(), out = portal.outward(new THREE.Vector3());
     let waiting = false;
     for (let i = 0; i < s.count; i++) {
-      if (!s.hidden[i] || s.warpT[i] > 0) continue;
+      if (!s.hidden[i] || s.warpT[i] > 0 || s.leaving[i]) continue; // (sent away from the tunnel: never comes out)
       if ((a.delays[i] ?? 0) > a.t) { waiting = true; continue; }
       s.hidden[i] = 0;
       portal.exitPoint(p);

@@ -313,9 +313,20 @@ async def main():
           g.start(); return r; }}""")
         t.ok(sl['shown'] == sl['storms0'] - 1 and sl['jumped'] and sl['n1'] == sl['n0'] - 1 and sl['storms1'] == sl['storms0'] - 1 and sl['frames'] > 30,
              '− sends a ship away: it jumps to hyperspace and is then gone (one fewer of that type)', sl)
-        last = await page.evaluate("""() => { const p = window.__dbg.localPlayer, s = p.swarm, n = s.count;
-          let sent = 0; for (const k of ['eaters', 'lasers', 'storms', 'tugs']) sent += p.sellShips(k, 200); return [sent, n]; }""")
-        t.ok(last[0] == last[1] - 1, 'at least one ship stays', last)
+        last = await page.evaluate("""async () => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, n = s.count; g.stop();
+          const wait = () => new Promise((r) => setTimeout(r, 400)); // (the bar follows every 300 ms)
+          let sent = 0; for (const k of ['eaters', 'lasers', 'storms', 'tugs']) sent += p.sellShips(k, 200);
+          for (let f = 0; f < 300 && s.count; f++) g.update();
+          await wait();
+          const off = [...document.querySelectorAll('.shipbar-sell')].every((b) => b.disabled);
+          // a ship just bought, still in the tunnel: − takes it at once, it never comes out
+          p.buyShips('lasers', 1); const inTunnel = s.hidden[0] === 1 && s.count === 1;
+          await wait(); const canSell = !document.querySelector('.shipbar-lasers .shipbar-sell').disabled;
+          p.sellShips('lasers', 1); g.update(); const gone = s.count;
+          let out = 0; for (let f = 0; f < 300; f++) { g.update(); out += s.count; }
+          g.start(); return [sent, n, s.count, off, inTunnel, canSell, gone, out]; }""")
+        t.ok(last[0] == last[1] and last[2] == 0 and last[3], 'every ship can be sent away, the last one too (then − is off everywhere)', last)
+        t.ok(last[4] and last[5] and last[6] == 0 and last[7] == 0, 'a ship still in the tunnel can be sent away: gone at once, it never comes out', last)
         # with Brood bought (+10 ships on top): sending ships away below that leaves no ship stuck in the tunnel
         # (before: the base could not go below 0, so the swarm didn't shrink and a hidden "eater" was left)
         br = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm; g.stop();
