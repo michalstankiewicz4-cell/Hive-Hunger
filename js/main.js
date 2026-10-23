@@ -157,7 +157,7 @@ if (!window.THREE) {
       game.resetProgress();
       menu.showStart();
     },
-    // Dev tools → Test board: Earth over and over, ships of every type, nothing saved (Esc: Exit to main menu)
+    // Dev tools → Test board: 4 balls over and over, ships of every type, nothing saved (Esc: Exit to main menu)
     onTestBoard: () => {
       if (!game.startTestBoard()) return;
       soloPlayed = true;

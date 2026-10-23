@@ -64,7 +64,7 @@ Default (all `smooth`): the Kuiper Belt (a band of 335 rocks), Pluto (sphere 0.7
 
 ## Test board (`testBoard`)
 
-Dev tools → Test board: `body` (earth), `radiusScale`, `style` like a level; `each` (2) ships of every type, eaters too. Eaten, it is built again at once (a new seed); nothing is saved.
+Dev tools → Test board: `shape: 'balls'` — `count` (4) balls `size` (10) voxels across, `gap` (6) apart in a square, each in its own colour from `colors` (rock, water, iron, lava: the voxel editor's kinds, only their colours so far); `style` like a level; `sizeScale` (0.4): the tunnels and the camera × this (it is small); `each` (2) ships of every type, eaters too. Eaten, it is built again at once; nothing is saved.
 
 ## Flock (`swarm`)
 

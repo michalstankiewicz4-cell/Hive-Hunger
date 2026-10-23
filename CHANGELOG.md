@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.54.0] — 2026-10-23
+
+### Changed
+- **Test board:** instead of Earth, 4 balls 10 voxels across, one of each kind of voxel from the voxel editor — rock, water, iron, lava (only their colours so far; they are all eaten like rock until their kinds are built). The tunnel and the camera come closer to them.
+
 ## [0.53.1] — 2026-10-23
 
 ### Fixed

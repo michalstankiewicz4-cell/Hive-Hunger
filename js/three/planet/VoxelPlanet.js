@@ -61,6 +61,7 @@ export class VoxelPlanet {
     this.surfaceKind = shape.surface;
     this.tagColors = shape.colors;
     this.rocks = shape.rocks || 0;      // a belt: how many asteroids
+    this.sizeScale = look.sizeScale ?? null; // the tunnels and camera × this (else from the size, see Game3D.fitToPlanet)
     this.parts = shape.parts || null; // several objects (each with its own terrain)
     this.fill = shape.fill;            // which voxels the planet started with (for eatenRuns)
     this.alive = true;

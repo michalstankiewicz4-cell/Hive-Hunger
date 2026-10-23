@@ -127,7 +127,7 @@ export class StartScreen {
 
   /**
    * Dev tools (from the start screen): the three editors (they open in a new tab — each exports a file
-   * with the changes) and the test board (Earth over and over, ships of every type, nothing saved).
+   * with the changes) and the test board (4 balls over and over, ships of every type, nothing saved).
    */
   showDevTools() {
     this.open('Dev tools', true);
@@ -138,7 +138,7 @@ export class StartScreen {
       tool('Ship editor', 'Values, priorities and tasks of every ship; export a file with the changes.', 'tools/ship-editor.html'),
       tool('Tree editor', 'The upgrade tree: nodes, links, costs, colours; export a file.', 'tools/tree-editor.html'),
       tool('Voxel editor', 'Kinds of voxels — water, iron, lava …: what each is like; export a file.', 'tools/voxel-editor.html'),
-      this.choice('Test board', 'Earth again and again, 2 ships of every type, nothing saved.', () => this.opts.onTestBoard?.(), false, 'menu-choice menu-tool menu-test'),
+      this.choice('Test board', '4 balls (rock, water, iron, lava) again and again, 2 ships of every type, nothing saved.', () => this.opts.onTestBoard?.(), false, 'menu-choice menu-tool menu-test'),
     );
     this.card.append(grid, button('Back', () => this.closeSettings(), 'lobby-button is-primary dev-back'));
     this.card.querySelector('.menu-choice')?.focus();

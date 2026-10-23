@@ -838,17 +838,26 @@ async def main():
         await page.wait_for_timeout(300)
         tb = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, pl = g.planet;
           const r = { body: g.bodyId, R: pl.R, started: g.started, count: s.count, each: ['lasers', 'cutters', 'boosters'].map((k) => s[k]),
-            hud: document.querySelector('.hud')?.textContent || '' };
+            hud: document.querySelector('.hud')?.textContent || '', shape: pl.shape };
+          // the balls: 4, each 10 voxels across, each in its own colour
+          const ext = new Map();
+          for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) {
+            const t = pl.tags[idx], [i, j, k] = pl.coords(idx), e = ext.get(t) || { i0: 1e9, i1: -1, n: 0 };
+            e.i0 = Math.min(e.i0, i); e.i1 = Math.max(e.i1, i); e.n++; ext.set(t, e);
+          }
+          r.balls = [...ext.values()].map((e) => e.i1 - e.i0 + 1);
+          r.colours = new Set([...ext.keys()].map((t) => pl.tagColors[t].join(','))).size;
           g.stop();
           for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) pl.remove(idx);
           for (const f of [...(pl.fragments?.list || [])]) for (const c of pl.fragments.cellsOf(f)) pl.remove(c);
           let f = 0; while (g.boardsEaten < 1 && f < 3000) { g.update(); f++; }
-          r.again = g.boardsEaten; r.alive = g.planet.alive && g.planet !== pl; r.body2 = g.bodyId; r.started2 = g.started;
+          r.again = g.boardsEaten; r.alive = g.planet.alive && g.planet !== pl; r.body2 = g.planet.shape; r.started2 = g.started;
           r.map = !document.getElementById('map').hidden; r.save = localStorage.getItem('hive-hunger-save'); r.ticks = localStorage.getItem('hive-hunger-progress');
           g.start(); return r; }""")
-        t.ok(tb['body'] == 'earth' and tb['started'] and tb['count'] == 28 and tb['each'] == [2, 2, 2] and 'Test board' in tb['hud'],
-             'Test board: Earth with 2 ships of every type', tb)
-        t.ok(tb['again'] == 1 and tb['alive'] and tb['body2'] == 'earth' and tb['started2'] and not tb['map'] and tb['save'] is None and 'earth' not in (tb['ticks'] or ''),
+        t.ok(tb['shape'] == 'balls' and tb['balls'] == [10, 10, 10, 10] and tb['colours'] == 4 and tb['started'] and tb['count'] == 28
+             and tb['each'] == [2, 2, 2] and 'Test board' in tb['hud'],
+             'Test board: 4 balls 10 voxels across, each in its own colour (rock, water, iron, lava), 2 ships of every type', tb)
+        t.ok(tb['again'] == 1 and tb['alive'] and tb['body2'] == 'balls' and tb['started2'] and not tb['map'] and tb['save'] is None and 'earth' not in (tb['ticks'] or ''),
              'eaten, it is there again at once — no map, nothing saved, no tick', tb)
         await page.keyboard.press('Escape')
         pz = await page.evaluate("() => [...document.querySelectorAll('#menu .menu-choice-label')].map((e) => e.textContent)")

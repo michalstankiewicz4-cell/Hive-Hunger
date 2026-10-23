@@ -21,6 +21,7 @@ export function buildShape(look, s) {
   if (shape === 'pair') return pair(look.radius, look.gap ?? 10, s);
   if (shape === 'boxes') return boxes(look.max ?? 4, look.gap ?? 5, s);
   if (shape === 'belt') return belt(look, s);
+  if (shape === 'balls') return balls(look, s);
   return sphere(look.radius, s);
 }
 
@@ -175,6 +176,35 @@ function belt(look, s) {
   });
   return {
     dims: [NX, NY, NZ], half: (NX * s) / 2, radius: 2 * s, bound: (Math.hypot(L, W) / 2 + maxSize) * s, surface: 'none', colors, rocks: rocks.length,
+    fill: (i, j, k) => tags[(k * NY + j) * NX + i],
+  };
+}
+
+/**
+ * Balls `size` voxels across, `gap` voxels apart, in a square facing the starting camera (2 × 2 for 4;
+ * rows of `ceil(√count)`), each in its own colour from `colors` (the test board: a ball of every kind
+ * of voxel). They don't touch, so none of them comes loose from the others.
+ */
+function balls(look, s) {
+  const n = look.count ?? 4, D = look.size ?? 10, gap = look.gap ?? 6, cols = Math.ceil(Math.sqrt(n)), rows = Math.ceil(n / cols);
+  const pad = 3, W = cols * D + (cols - 1) * gap, H = rows * D + (rows - 1) * gap;
+  const NX = (W + 2 * pad + 1) & ~1, NY = (H + 2 * pad + 1) & ~1, NZ = (D + 2 * pad + 1) & ~1;
+  const tags = new Uint8Array(NX * NY * NZ);
+  const palette = look.colors || [[150, 140, 130]];
+  const colors = [null];
+  const r = D / 2;
+  for (let b = 0; b < n; b++) {
+    colors.push(palette[b % palette.length]);
+    const col = b % cols, row = Math.floor(b / cols);
+    // centres (voxel units from the grid's corner); the first ball top left as the camera sees it
+    const cx = (NX - W) / 2 + col * (D + gap) + r, cy = NY - ((NY - H) / 2 + row * (D + gap) + r), cz = NZ / 2;
+    for (let k = 0; k < NZ; k++) for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+      const x = i + 0.5 - cx, y = j + 0.5 - cy, z = k + 0.5 - cz;
+      if (x * x + y * y + z * z <= r * r) tags[(k * NY + j) * NX + i] = b + 1;
+    }
+  }
+  return {
+    dims: [NX, NY, NZ], half: (NX * s) / 2, radius: 2 * s, bound: (Math.hypot(W, H, D) / 2 + 1) * s, surface: 'none', colors,
     fill: (i, j, k) => tags[(k * NY + j) * NX + i],
   };
 }

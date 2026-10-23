@@ -368,7 +368,7 @@ export class Game3D {
    */
   fitToPlanet() {
     const pl = this.planet;
-    const scale = pl.shape === 'sphere' ? Math.max(1, pl.R / this.cfg.planet.radius) : 1;
+    const scale = pl.sizeScale ?? (pl.shape === 'sphere' ? Math.max(1, pl.R / this.cfg.planet.radius) : 1);
     const was = this.sizeScale || 1;
     this.sizeScale = scale;
     if (scale !== was) {

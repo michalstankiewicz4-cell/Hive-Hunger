@@ -41,7 +41,7 @@ export const HudText = {
       : null;
     const now = performance.now();
     this.notices = this.notices.filter((n) => n.until > now);
-    this.hud.update({ level: this.level, body: `${this.testBoard ? 'Test board · ' : ''}${bodyById(this.bodyId)?.name || ''}`, eaten, hint, mode: this.mode, scores, banner: this.banner,
+    this.hud.update({ level: this.level, body: this.testBoard ? 'Test board' : bodyById(this.bodyId)?.name, eaten, hint, mode: this.mode, scores, banner: this.banner,
       points: me ? me.points : null,
       notices: this.notices.map((n) => n.text) });
   },

@@ -92,7 +92,7 @@ Browser tests (single player and multiplayer with a local PeerJS server) are in 
 
 ## Dev tools
 
-**Dev tools** on the start screen: tiles for the ship editor, the tree editor and the voxel editor (each opens in a new tab), and the **Test board** — Earth again and again (eaten: the ships jump and it is back at once), 2 ships of every type, nothing saved and no map ticks; Esc → Exit to main menu puts your ships back as they were at the start.
+**Dev tools** on the start screen: tiles for the ship editor, the tree editor and the voxel editor (each opens in a new tab), and the **Test board** — 4 balls 10 voxels across, one of each kind of voxel from the voxel editor (rock, water, iron, lava — only their colours so far), again and again (eaten: the ships jump and they are back at once), 2 ships of every type, nothing saved and no map ticks; Esc → Exit to main menu puts your ships back as they were at the start.
 
 ## Documentation
 
