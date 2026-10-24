@@ -1,4 +1,5 @@
 import { LIQUID_TIME, LIQUID_GLSL } from '../liquidShader.js';
+import { Grid3D } from './Grid3D.js';
 
 const THREE = window.THREE;
 
@@ -27,20 +28,23 @@ export class Liquids {
     this.count = 0;
     this.taken = 0; // (tests) droplets taken in by siphons
     this.cell = Math.max(...this.kinds.map((k) => cfg[k].reach));
-    this.grid = new Map();
+    this.grid = new Grid3D(max, this.cell / 2, 2);
+    this.force = new Float32Array(max * 3); // (per frame: apart / together, and how many pull together)
+    this.pullF = new Float32Array(max * 3);
+    this.together = new Uint16Array(max);
     this.meshes = this.kinds.map((k) => {
       const c = cfg[k];
       const mat = c.glow
         ? new THREE.MeshBasicMaterial({ color: c.color })
         : new THREE.MeshPhongMaterial({ color: c.color, transparent: true, opacity: c.opacity ?? 0.8, shininess: 80, specular: 0x99bbff });
-      const geo = new THREE.IcosahedronGeometry(c.size, 2);
+      const geo = new THREE.IcosahedronGeometry(c.size, 1); // (small on screen: 80 faces are enough)
       geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(new Float32Array(max), 1).setUsage(THREE.DynamicDrawUsage));
       mat.onBeforeCompile = (shader) => {
         shader.uniforms.uTime = LIQUID_TIME;
         shader.vertexShader = shader.vertexShader
           .replace('#include <common>', '#include <common>\nattribute float aSeed;\nvarying float vSeed;\nvarying vec3 vLocal;')
           .replace('#include <begin_vertex>', `#include <begin_vertex>\nvSeed = aSeed;\nvLocal = position / ${c.size.toFixed(3)};`);
-        shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\nuniform float uTime;\nvarying float vSeed;\nvarying vec3 vLocal;\n${LIQUID_GLSL}`);
+        shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\nuniform float uTime;\nvarying float vSeed;\nvarying vec3 vLocal;\n#define LQ_OCTAVES 2\n${LIQUID_GLSL}`);
         shader.fragmentShader = c.glow
           // lava: its own churning crust and veins on every drop
           ? shader.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );',
@@ -91,34 +95,39 @@ export class Liquids {
 
   /** One frame: neighbours pull and push, everything slows down and moves; solid voxels of `planet` stop them. */
   step(planet) {
-    const n = this.count, P = this.pos, V = this.vel, h = this.cell, grid = this.grid;
+    const n = this.count, P = this.pos, V = this.vel, grid = this.grid, found = grid.found, K = this.kind;
     if (!n) { this.draw(); return; }
-    grid.clear();
-    const key = (x, y, z) => `${Math.floor(x / h)},${Math.floor(y / h)},${Math.floor(z / h)}`;
+    grid.build(P, n);
+    const cfgs = this.kinds.map((k) => this.cfg[k]), F = this.force, G = this.pullF, T = this.together;
+    F.fill(0, 0, n * 3); G.fill(0, 0, n * 3); T.fill(0, 0, n);
+    // every pair once: closer than `rest` apart, further (within `reach`, the same liquid) together
     for (let i = 0; i < n; i++) {
-      const kk = key(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
-      let list = grid.get(kk);
-      if (!list) grid.set(kk, (list = []));
-      list.push(i);
-    }
-    for (let i = 0; i < n; i++) {
-      const i3 = i * 3, c = this.cfg[this.kinds[this.kind[i]]];
+      const i3 = i * 3, c = cfgs[K[i]], reach2 = c.reach * c.reach;
       const x = P[i3], y = P[i3 + 1], z = P[i3 + 2];
-      const gx = Math.floor(x / h), gy = Math.floor(y / h), gz = Math.floor(z / h);
-      let fx = 0, fy = 0, fz = 0;
-      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let d = -1; d <= 1; d++) {
-        const list = grid.get(`${gx + a},${gy + b},${gz + d}`);
-        if (!list) continue;
-        for (const j of list) {
-          if (j === i) continue;
-          const dx = P[j * 3] - x, dy = P[j * 3 + 1] - y, dz = P[j * 3 + 2] - z;
-          const dd = Math.hypot(dx, dy, dz);
-          if (dd > c.reach || dd < 1e-6) continue;
-          // closer than `rest`: apart; further: together (only with its own liquid)
-          const f = dd < c.rest ? -c.push * (c.rest - dd) : (this.kind[j] === this.kind[i] ? c.cohesion * (dd - c.rest) : 0);
-          fx += (dx / dd) * f; fy += (dy / dd) * f; fz += (dz / dd) * f;
+      const m = grid.near(i);
+      for (let q = 0; q < m; q++) {
+        const j = found[q], j3 = j * 3;
+        const dx = P[j3] - x, dy = P[j3 + 1] - y, dz = P[j3 + 2] - z;
+        const d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 > reach2 || d2 < 1e-12) continue;
+        const dd = Math.sqrt(d2), ux = dx / dd, uy = dy / dd, uz = dz / dd;
+        if (dd < c.rest) {
+          const f = c.push * (c.rest - dd);
+          F[i3] -= ux * f; F[i3 + 1] -= uy * f; F[i3 + 2] -= uz * f;
+          F[j3] += ux * f; F[j3 + 1] += uy * f; F[j3 + 2] += uz * f;
+        } else if (K[j] === K[i]) {
+          const f = c.cohesion * (dd - c.rest);
+          G[i3] += ux * f; G[i3 + 1] += uy * f; G[i3 + 2] += uz * f; T[i]++;
+          G[j3] -= ux * f; G[j3 + 1] -= uy * f; G[j3 + 2] -= uz * f; T[j]++;
         }
       }
+    }
+    for (let i = 0; i < n; i++) {
+      const i3 = i * 3, c = cfgs[K[i]];
+      // the pull together counts as if from at most `crowd` neighbours: a blob keeps its droplets apart
+      // (before, hundreds pulling at once squeezed a blob into a point — slow, every droplet near every other)
+      const k = T[i] > c.crowd ? c.crowd / T[i] : 1;
+      const fx = F[i3] + G[i3] * k, fy = F[i3 + 1] + G[i3 + 1] * k, fz = F[i3 + 2] + G[i3 + 2] * k;
       V[i3] = (V[i3] + fx) * c.damping;
       V[i3 + 1] = (V[i3 + 1] + fy) * c.damping;
       V[i3 + 2] = (V[i3 + 2] + fz) * c.damping;

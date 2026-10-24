@@ -2,6 +2,13 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.59.1] — 2026-10-24
+
+### Changed
+- **Faster with liquids and gas let loose:** the droplets and gas puffs find their neighbours without building text keys every frame (a grid in typed arrays) and work out each pair once — the liquids' physics takes about a third of the time it did (water: a fifth).
+- A blob pulls together as if from at most 8 neighbours (`crowd`), so it no longer squeezes hundreds of droplets into one point (that was what made every droplet near every other one, and slow); blobs are a little looser.
+- Lighter shaders: the moving looks use 3 layers of noise instead of 4 on the balls and the gas wisps, 2 on the droplets (tiny on screen), and the droplets have 80 faces instead of 320.
+
 ## [0.59.0] — 2026-10-24
 
 ### Changed

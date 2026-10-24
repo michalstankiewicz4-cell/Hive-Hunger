@@ -126,7 +126,7 @@ js/
                         a guest's copy, hyperspace, laser and storm beams, tractor beams; steering
   three/planet/         VoxelPlanet and its parts (look, eating, search, runs, grid), its smooth surface,
                         drifting pieces (Fragments), level shapes (the belt of asteroids too)
-  three/effects/        lightning, support ships' bolts, orbs, black holes, debris
+  three/effects/        lightning, support ships' bolts, orbs, black holes, debris, droplets and gas (and their grid)
   three/scene/          sky, the subspace tunnel at the spawn point, click marker
   three/textures.js     glow and gradient textures shared by the effects
   net/                  multiplayer host and guest over PeerJS, binary messages

@@ -68,7 +68,7 @@ Dev tools → Test board: `shape: 'balls'` — balls `size` (10) voxels across, 
 
 ## Liquids (`liquids`)
 
-Per liquid (`water`, `lava`): a voxel of it eaten or destroyed becomes a droplet (`Liquids.js`) — no point for it (taken back from whoever got it: single player only, where liquids are), only siphons collect it. No gravity: `speed` when let loose, `damping` per frame (water 0.99, lava 0.95: thicker), `cohesion` pulls droplets of the same liquid within `reach` together (water 0.0012, lava 0.003), `push` keeps them `rest` apart; `size`, `color`, `opacity` (water) or `glow` (lava) drawn.
+Per liquid (`water`, `lava`): a voxel of it eaten or destroyed becomes a droplet (`Liquids.js`) — no point for it (taken back from whoever got it: single player only, where liquids are), only siphons collect it. No gravity: `speed` when let loose, `damping` per frame (water 0.99, lava 0.95: thicker), `cohesion` pulls droplets of the same liquid within `reach` together (water 0.0012, lava 0.003), `push` keeps them `rest` apart; the pull together counts as if from at most `crowd` (8) neighbours, so a blob keeps its droplets apart (and stays fast); `size`, `color`, `opacity` (water) or `glow` (lava) drawn.
 
 ## Gas (`gas`)
 

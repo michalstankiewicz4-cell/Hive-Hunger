@@ -143,8 +143,8 @@ export const CONFIG = Object.freeze({
   // within `reach` together, `push` keeps them `rest` apart; `speed` when let loose; `size` drawn.
   // Lava is thicker: it slows down faster and holds together harder
   liquids: {
-    water: { color: 0x3f7fd0, opacity: 0.75, size: 0.17, speed: 0.02, damping: 0.99, cohesion: 0.0012, reach: 0.9, rest: 0.38, push: 0.02 },
-    lava: { color: 0xff6a20, glow: true, size: 0.17, speed: 0.012, damping: 0.95, cohesion: 0.003, reach: 0.9, rest: 0.38, push: 0.02 },
+    water: { color: 0x3f7fd0, opacity: 0.75, size: 0.17, speed: 0.02, damping: 0.99, cohesion: 0.0012, reach: 0.9, rest: 0.38, push: 0.02, crowd: 8 },
+    lava: { color: 0xff6a20, glow: true, size: 0.17, speed: 0.012, damping: 0.95, cohesion: 0.003, reach: 0.9, rest: 0.38, push: 0.02, crowd: 8 },
   },
   // Dev tools → Test board: 5 balls, 10 voxels across, 6 apart — one of each kind of voxel
   // in the voxel editor (rock, water, iron, lava, gas; water and lava are liquids, see `liquids`; gas, see `gas`; iron is eaten

@@ -36,8 +36,15 @@ export function addLiquidLook(shader) {
       }`);
 }
 
-/** GLSL: value noise and fbm in 3D, lava and water colours. */
+/**
+ * GLSL: value noise and fbm in 3D, lava, water and gas colours. The fbm has LQ_OCTAVES layers of noise (3; a
+ * shader may #define its own before this: the droplets 2 — small on screen —, the gas wisps 3): each layer
+ * costs every pixel of liquid 8 hashes per noise.
+ */
 export const LIQUID_GLSL = /* glsl */ `
+#ifndef LQ_OCTAVES
+#define LQ_OCTAVES 3
+#endif
 float lqHash(vec3 p) {
   p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
   p *= 17.0;
@@ -51,7 +58,7 @@ float lqNoise(vec3 x) {
 }
 float lqFbm(vec3 p) {
   float v = 0.0, a = 0.5;
-  for (int k = 0; k < 4; k++) { v += a * lqNoise(p); p = p * 2.03 + vec3(1.7, 9.2, 3.1); a *= 0.5; }
+  for (int k = 0; k < LQ_OCTAVES; k++) { v += a * lqNoise(p); p = p * 2.03 + vec3(1.7, 9.2, 3.1); a *= 0.5; }
   return v;
 }
 // lava: dark crust cracked by glowing orange veins, slowly churning

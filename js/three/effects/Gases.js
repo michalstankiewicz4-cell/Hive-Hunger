@@ -1,4 +1,5 @@
 import { LIQUID_TIME, LIQUID_GLSL } from '../liquidShader.js';
+import { Grid3D } from './Grid3D.js';
 
 const THREE = window.THREE;
 
@@ -25,7 +26,8 @@ export class Gases {
     this.pulled = new Uint8Array(max); // drawn in by a scoop this frame: not held to maxSpeed
     this.count = 0;
     this.taken = 0; // (tests) puffs taken in by scoops
-    this.grid = new Map();
+    this.grid = new Grid3D(max, cfg.reach);
+    this.force = new Float32Array(max * 3); // (per frame: pushed apart)
 
     const g = new THREE.BufferGeometry();
     this.aPos = new THREE.BufferAttribute(new Float32Array(max * 3), 3).setUsage(THREE.DynamicDrawUsage);
@@ -55,6 +57,7 @@ export class Gases {
       fragmentShader: /* glsl */ `
         uniform float uTime; uniform float uOpacity;
         varying float vSeed; varying vec3 vColor;
+        #define LQ_OCTAVES 3
         ${LIQUID_GLSL}
         void main() {
           vec2 uv = gl_PointCoord * 2.0 - 1.0;
@@ -111,31 +114,27 @@ export class Gases {
 
   /** One frame: the cloud spreads, swirls and slows down; solid voxels of `planet` stop the puffs. */
   step(planet) {
-    const n = this.count, P = this.pos, V = this.vel, c = this.cfg, h = c.reach, grid = this.grid;
+    const n = this.count, P = this.pos, V = this.vel, c = this.cfg, h = c.reach, h2 = h * h, grid = this.grid, found = grid.found;
     if (!n) { this.draw(); return; }
     const t = LIQUID_TIME.value;
-    grid.clear();
+    grid.build(P, n);
+    const F = this.force;
+    F.fill(0, 0, n * 3);
+    // every pair once, pushed apart: the cloud spreads
     for (let i = 0; i < n; i++) {
-      const kk = `${Math.floor(P[i * 3] / h)},${Math.floor(P[i * 3 + 1] / h)},${Math.floor(P[i * 3 + 2] / h)}`;
-      let list = grid.get(kk);
-      if (!list) grid.set(kk, (list = []));
-      list.push(i);
+      const i3 = i * 3, x = P[i3], y = P[i3 + 1], z = P[i3 + 2];
+      const m = grid.near(i);
+      for (let q = 0; q < m; q++) {
+        const j3 = found[q] * 3, dx = x - P[j3], dy = y - P[j3 + 1], dz = z - P[j3 + 2], d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 > h2 || d2 < 1e-12) continue;
+        const dd = Math.sqrt(d2), f = c.push * (1 - dd / h) / dd;
+        F[i3] += dx * f; F[i3 + 1] += dy * f; F[i3 + 2] += dz * f;
+        F[j3] -= dx * f; F[j3 + 1] -= dy * f; F[j3 + 2] -= dz * f;
+      }
     }
     for (let i = 0; i < n; i++) {
       const i3 = i * 3, x = P[i3], y = P[i3 + 1], z = P[i3 + 2];
-      const gx = Math.floor(x / h), gy = Math.floor(y / h), gz = Math.floor(z / h);
-      let fx = 0, fy = 0, fz = 0;
-      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let d = -1; d <= 1; d++) {
-        const list = grid.get(`${gx + a},${gy + b},${gz + d}`);
-        if (!list) continue;
-        for (const j of list) {
-          if (j === i) continue;
-          const dx = x - P[j * 3], dy = y - P[j * 3 + 1], dz = z - P[j * 3 + 2], dd = Math.hypot(dx, dy, dz);
-          if (dd > h || dd < 1e-6) continue;
-          const f = c.push * (1 - dd / h); // apart: the cloud spreads
-          fx += (dx / dd) * f; fy += (dy / dd) * f; fz += (dz / dd) * f;
-        }
-      }
+      let fx = F[i3], fy = F[i3 + 1], fz = F[i3 + 2];
       // a slow swirl that differs from place to place and drifts with time
       fx += c.stir * Math.sin(y * 1.3 + t * 0.7 + this.seed[i] * 6);
       fy += c.stir * Math.sin(z * 1.1 + t * 0.9);
