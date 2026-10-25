@@ -221,9 +221,9 @@ export class SolarMap {
     const sc = (this.aboardScene = new THREE.Scene());
     sc.background = new THREE.Color(0x05060c);
     sc.add(stars());
-    sc.add(new THREE.AmbientLight(0xffffff, 0.1)); // (dim: the ship's own lights should show)
-    sc.add(new THREE.HemisphereLight(0xbfd8ff, 0x1a1408, 0.12));
-    const sun = new THREE.DirectionalLight(0xfff2d8, 0.45);
+    sc.add(new THREE.AmbientLight(0xffffff, 0.06)); // (dim: the ship's own lights should show)
+    sc.add(new THREE.HemisphereLight(0xbfd8ff, 0x1a1408, 0.07));
+    const sun = new THREE.DirectionalLight(0xfff2d8, 0.3);
     sun.position.set(-0.6, 0.9, 0.45);
     sc.add(sun);
     const fill = new THREE.DirectionalLight(0xcfe0ff, 0.35); // (from low on the other side: the hull's sides and underside not black)
