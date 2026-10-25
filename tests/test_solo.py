@@ -168,9 +168,10 @@ async def main():
           const p = it.mesh.position.clone().project(m.camera);
           const tags = new Set(); for (let i = 0; i < v.hp.length; i++) if (v.hp[i]) tags.add(v.tags[i]); for (const l of v.lights) tags.add(l.tags ?? 0);
           return { r: Math.hypot(it.mesh.position.x, it.mesh.position.z), belt: kb.orbit + kb.width, screen: [p.x, p.y], NX: v.NX, earth: CONFIG.planet.radius * 2,
-            hives: v.hives, comb: v.comb, lights: v.lights.length, kinds: [...new Set(v.lights.map((l) => l.kind))].sort(), tags: [...tags].filter(Boolean).sort((a, b) => a - b), tris: m.carrier.triangles }; }""")
+            hives: v.hives, comb: v.comb, combCells: v.combCells, honey: v.lights.filter((l) => l.kind === 'cell' && l.cell >= 200).length, lights: v.lights.length, kinds: [...new Set(v.lights.map((l) => l.kind))].sort(), tags: [...tags].filter(Boolean).sort((a, b) => a - b), tris: m.carrier.triangles }; }""")
         t.ok(hc['r'] > hc['belt'] and hc['screen'][0] > 0.3 and hc['screen'][1] > 0.3,
              'the Hive Carrier waits beyond the Kuiper Belt, at the top right', hc)
+        t.ok(hc['combCells'] > 150 and hc['honey'] > 50, 'no runway: the deck overgrown with honeycomb (capped, glowing with honey, open)', hc)
         t.ok(hc['NX'] == 5 * hc['earth'] and hc['hives'] == 18 and hc['comb'] > 300 and hc['kinds'] == ['bridge', 'cell', 'hangar', 'nozzle', 'vent', 'window'] and hc['tags'] == list(range(1, 10)) and hc['tris'] > 20000,
              'the carrier: 5 × Earth long, honeycomb modules along both sides and round the hangar\'s mouth, windows, vents, nozzles; every voxel in a module', hc)
         await page.click('.map-label >> text=Hive Carrier', force=True)

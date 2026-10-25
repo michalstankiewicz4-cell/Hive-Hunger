@@ -39,6 +39,8 @@ export const CARRIER_SIZE = Object.freeze({ NX: 240, NY: 64, NZ: 72 });
 // (the greys close enough that the smooth surface's blending between voxels doesn't smear them)
 const LIGHTP = [168, 172, 178], MIDP = [128, 132, 140], DARKP = [92, 95, 102], ANTH = [62, 64, 70];
 const YEL = [228, 174, 40], GOLD = [198, 138, 26], GOLD_LINE = [104, 66, 12], ORANGE = [214, 112, 32];
+// the honeycomb grown over the deck: wax, older wax (darker, lower down), light caps, dark honey inside
+const WAX = [214, 156, 44], WAX_OLD = [166, 108, 28], CAP = [240, 206, 122], HONEY_DARK = [120, 66, 12];
 const DECK = [40, 42, 47], WHITE = [212, 216, 222], GLASS = [34, 44, 58];
 const LIGHT = {
   cell: [255, 178, 44], window: [150, 205, 255], bridge: [120, 190, 255], vent: [110, 200, 255],
@@ -192,24 +194,12 @@ export function buildCarrierVoxels() {
     if (hash(x, 1, side) < 0.12) { const z = outerZ(x, 37, side); if (z !== null && tags[id(x, 37, z)] === TAG.hull) paint(x, 37, z, ORANGE); }
   }
 
-  // --- the flight deck: dark, yellow lines, white pads, the edge built up in blocks -------
+  // --- the flight deck: dark (no runway: honeycomb grows over it, see below), the edge in blocks ---
   for (let x = X0 + 4; x < XE; x++) for (let z = 0; z < NZ; z++) {
     const y = TOP - 1;
     if (!solid(x, y, z)) continue;
-    const dz = Math.abs(z - zc);
-    let c = jitter(DECK, x, y, z);
-    if (Math.abs(dz - 24.5) < 0.6 && x > 40 && x < XB) c = YEL;
-    else if (dz < 0.6 && x % 12 < 7 && x > 40) c = YEL;
-    else if (dz > 27.5) c = camo(x, y, z);
-    set(x, y, z, c, TAG.deck);
+    set(x, y, z, Math.abs(z - zc) > 27.5 ? camo(x, y, z) : jitter(DECK, x, y, z), TAG.deck);
   }
-  const pads = [140, 170, 200].map((x) => ({ x, z: zc + 12 }));
-  for (const p of pads) for (let x = p.x - 6; x <= p.x + 6; x++) for (let z = Math.floor(p.z - 6); z <= p.z + 6; z++) {
-    const r = Math.hypot(x - p.x, z - p.z);
-    if ((r >= 4 && r < 5.2) || (Math.abs(x - p.x) < 0.6 && r < 3) || (Math.abs(z - p.z) < 0.6 && Math.abs(x - p.x) < 2.6 && r < 3)) paint(x, TOP - 1, z, WHITE);
-  }
-  // chevrons towards the bow
-  for (let k = 0; k < 3; k++) for (let t = 0; t < 7; t++) for (const s of [-1, 1]) paint(206 + k * 4 + t * 0.5 | 0, TOP - 1, Math.round(zc + s * (t + 0.5)), WHITE);
   for (let x = X0 + 4; x < XB; x++) for (let z = 0; z < NZ; z++) {
     if (Math.abs(z - zc) < 28.5 || !solid(x, TOP - 1, z)) continue;
     if (hash(Math.floor(x / 4), 9, z) < 0.55) set(x, TOP, z, camo(x, TOP, z), TAG.hull);
@@ -250,6 +240,43 @@ export function buildCarrierVoxels() {
   for (const [mx, mz, top] of masts) for (let y = 60; y <= top; y++) set(mx, y, Math.round(mz), y === top ? ORANGE : LIGHTP, TAG.sensors);
   for (let x = 84; x <= 90; x++) set(x, 61, Math.round(tz), LIGHTP, TAG.sensors);
 
+  // --- the deck overgrown: honeycomb grown over it like wax in a wild hive — patches of different
+  // heights flowing into each other, bare deck between them; cells capped with light wax, filled with
+  // glowing honey, or open and dark; older wax darker at the bottom
+  const blobs = [];
+  for (let k = 0; k < 18; k++) blobs.push({ x: 40 + hash(k, 1, 21) * 186, z: zc + (hash(k, 2, 21) - 0.5) * 46, r: 7 + hash(k, 3, 21) * 15, h: 2 + hash(k, 4, 21) * 6, k });
+  const growth = (x, z) => {
+    let g = 0;
+    for (const b of blobs) {
+      const dx = x - b.x, dz = z - b.z, a = Math.atan2(dz, dx);
+      // a wobbly outline, not a circle
+      const r = b.r * (1 + 0.22 * Math.sin(a * 3 + b.k) + 0.12 * Math.sin(a * 5 + b.k * 2));
+      const t = 1 - (dx * dx + dz * dz) / (r * r);
+      if (t > 0) g = Math.max(g, b.h * Math.sqrt(t));
+    }
+    return g;
+  };
+  let combCells = 0;
+  const seen = new Set();
+  for (let x = X0 + 6; x < XB + 8; x++) for (let z = 0; z < NZ; z++) {
+    if (Math.abs(z - zc) > 27 || !solid(x, TOP - 1, z) || solid(x, TOP, z)) continue; // (not under the tower or a ship)
+    const c = hexCell(x - X0, z - zc, 2.3, false), key = c.i * 1000 + c.j;
+    const H = Math.floor(growth(x, z) + (hash(c.i, c.j, 41) - 0.5) * 1.4);
+    if (H < 1) continue;
+    if (!seen.has(key)) { seen.add(key); combCells++; }
+    const wall = c.d > 0.6, kind = hash(c.i, c.j, 43);
+    for (let y = TOP; y < TOP + H; y++) {
+      const old = y < TOP + Math.min(2, H - 1);
+      if (wall) { set(x, y, z, jitter(old ? WAX_OLD : WAX, x, y, z), TAG.deck); continue; }
+      if (H === 1) break; // (a thin crust: only the walls have grown)
+      const top = y === TOP + H - 1;
+      if (!top) { set(x, y, z, HONEY_DARK, TAG.deck); continue; }
+      if (kind < 0.4) set(x, y, z, jitter(CAP, x, y, z), TAG.deck);                        // capped
+      else if (kind < 0.7) light(x, y, z, 'cell', TAG.deck, { cell: 200 + (key & 63) });    // honey, glowing
+      else { clear(x, y, z); if (H > 2) clear(x, y - 1, z); }                              // open, dark inside
+    }
+  }
+
   // --- the refinery: three tanks under the keel ---------------------------------------
   const tanks = [{ dz: -9, col: [70, 120, 190] }, { dz: 0, col: [190, 90, 40] }, { dz: 9, col: [170, 140, 205] }];
   for (const t of tanks) for (let x = 78; x <= 152; x++) for (let y = 1; y < BOT + 1; y++) for (let z = 0; z < NZ; z++) {
@@ -267,7 +294,7 @@ export function buildCarrierVoxels() {
     { x: 86, y: 63.5, z: tz, color: [255, 70, 60], period: 1.2 },
   ];
 
-  return { NX, NY, NZ, hp, colors, tags, lights: [...lightAt.values()], beacons, nozzles, hives: hives.length, comb };
+  return { NX, NY, NZ, hp, colors, tags, lights: [...lightAt.values()], beacons, nozzles, hives: hives.length, comb, combCells };
 
   /** The outermost solid voxel on the port (−1) or starboard (+1) side at (x, y), or null. */
   function outerZ(x, y, side) {

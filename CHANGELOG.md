@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.63.0] — 2026-10-25
+
+### Changed
+- **The Hive Carrier's deck overgrown with honeycomb** instead of the runway: patches of natural, wild-hive comb with wobbly edges and different heights, flowing into each other over the dark deck (bare deck between them); cells capped with light wax, filled with glowing, pulsing honey, or open and dark; older wax darker at the bottom. The tower and the parked ships stay; the comb grows round them.
+
 ## [0.62.0] — 2026-10-25
 
 ### Changed
