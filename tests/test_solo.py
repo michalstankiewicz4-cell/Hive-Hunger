@@ -168,11 +168,11 @@ async def main():
           const p = it.mesh.position.clone().project(m.camera);
           const tags = new Set(); for (let i = 0; i < v.hp.length; i++) if (v.hp[i]) tags.add(v.tags[i]); for (const l of v.lights) tags.add(l.tags ?? 0);
           return { r: Math.hypot(it.mesh.position.x, it.mesh.position.z), belt: kb.orbit + kb.width, screen: [p.x, p.y], NX: v.NX, earth: CONFIG.planet.radius * 2,
-            cells: v.cells, lights: v.lights.length, kinds: [...new Set(v.lights.map((l) => l.kind))].sort(), tags: [...tags].filter(Boolean).sort((a, b) => a - b), tris: m.carrier.triangles }; }""")
+            hives: v.hives, comb: v.comb, lights: v.lights.length, kinds: [...new Set(v.lights.map((l) => l.kind))].sort(), tags: [...tags].filter(Boolean).sort((a, b) => a - b), tris: m.carrier.triangles }; }""")
         t.ok(hc['r'] > hc['belt'] and hc['screen'][0] > 0.3 and hc['screen'][1] > 0.3,
              'the Hive Carrier waits beyond the Kuiper Belt, at the top right', hc)
-        t.ok(hc['NX'] == 5 * hc['earth'] and hc['cells'] >= 40 and hc['kinds'] == ['bridge', 'cell', 'nozzle', 'vent', 'window'] and hc['tags'] == [1, 2, 3, 4, 5, 6, 7] and hc['tris'] > 20000,
-             'the carrier: 5 × Earth long, a honeycomb of lit launch cells, windows, vents, nozzles; every voxel in a module', hc)
+        t.ok(hc['NX'] == 5 * hc['earth'] and hc['hives'] == 18 and hc['comb'] > 300 and hc['kinds'] == ['bridge', 'cell', 'hangar', 'nozzle', 'vent', 'window'] and hc['tags'] == list(range(1, 10)) and hc['tris'] > 20000,
+             'the carrier: 5 × Earth long, honeycomb modules along both sides and round the hangar\'s mouth, windows, vents, nozzles; every voxel in a module', hc)
         await page.click('.map-label >> text=Hive Carrier', force=True)
         cc = await page.evaluate("() => [document.querySelector('.map-card-name').textContent, document.querySelector('.map-card-status').textContent, document.querySelector('.map-start').textContent]")
         t.ok(cc == ['Hive Carrier', 'All systems operational', 'Go aboard'], 'its card: what it is, all systems operational, Go aboard', cc)
@@ -182,7 +182,7 @@ async def main():
           modules: [...document.querySelectorAll('.carrier-module')].map((e) => [e.querySelector('.carrier-module-name').textContent, e.querySelector('.carrier-module-state').textContent]),
           labels: document.querySelector('.map-labels').hidden, started: window.__dbg.started })""")
         t.ok(ab['aboard'] and ab['title'] == 'Hive Carrier' and ab['labels'] and not ab['started']
-             and [m[0] for m in ab['modules']] == ['Hull', 'Bridge', 'Reactor', 'Engines', 'Launch hive', 'Refinery', 'Sensor array'] and all(m[1] == 'Operational ✓' for m in ab['modules']),
+             and [m[0] for m in ab['modules']] == ['Hull', 'Bridge', 'Reactor', 'Engines', 'Flight deck', 'Hangar bay', 'Hive modules', 'Refinery', 'Sensor array'] and all(m[1] == 'Operational ✓' for m in ab['modules']),
              'Go aboard: the carrier full size and its modules, all operational', ab)
         await page.keyboard.press('Escape')
         back = await page.evaluate("() => [window.__map.aboard, !document.getElementById('map').hidden, document.querySelector('.map-title').textContent, document.querySelector('.map-card-name').textContent]")

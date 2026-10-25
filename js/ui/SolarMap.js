@@ -177,7 +177,12 @@ export class SolarMap {
       this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     }
     this.resize();
-    this.ensureCarrier();
+    // the carrier only in single player (where it is visited instead of a mission): the multiplayer
+    // map keeps to the missions — and stays light for every player's browser
+    this.carrierShown = this.state.mode === 'solo';
+    if (this.carrierShown) this.ensureCarrier();
+    const ci = this.carrierItem;
+    ci.mesh.visible = ci.orbitLine.visible = this.carrierShown;
     this.leaveCarrier();
     this.select(this.state.playing || this.state.next || this.state.current, false);
     if (!this.visible) {
@@ -221,6 +226,9 @@ export class SolarMap {
     const sun = new THREE.DirectionalLight(0xfff2d8, 0.95);
     sun.position.set(-0.6, 0.9, 0.45);
     sc.add(sun);
+    const fill = new THREE.DirectionalLight(0xcfe0ff, 0.35); // (from low on the other side: the hull's sides and underside not black)
+    fill.position.set(0.5, -0.35, -0.8);
+    sc.add(fill);
     this.aboardCamera = new THREE.PerspectiveCamera(40, 1, 1, 4000);
   }
 
@@ -355,7 +363,7 @@ export class SolarMap {
       else p.copy(item.mesh.position).add(new THREE.Vector3(0, (b.size || 0) + 0.5, 0));
       p.project(this.camera);
       const moonFar = b.type === 'moon' && (this.shownDist ?? this.view.dist) > 60 && this.selected !== b.id && this.selected !== b.parent && this.focus !== b.parent;
-      const off = p.z > 1 || Math.abs(p.x) > 1.1 || Math.abs(p.y) > 1.1 || moonFar;
+      const off = p.z > 1 || Math.abs(p.x) > 1.1 || Math.abs(p.y) > 1.1 || moonFar || (b.type === 'carrier' && !this.carrierShown);
       label.hidden = off;
       if (off) continue;
       label.style.transform = `translate(${((p.x + 1) / 2) * w}px, ${((1 - p.y) / 2) * h}px) translate(-50%, -100%)`;
@@ -415,7 +423,7 @@ export class SolarMap {
   pick(x, y) {
     const ndc = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.camera);
-    const hits = this.raycaster.intersectObjects([...this.items.values()].map((i) => i.hit).filter(Boolean));
+    const hits = this.raycaster.intersectObjects([...this.items.values()].filter((i) => i.body.type !== 'carrier' || this.carrierShown).map((i) => i.hit).filter(Boolean));
     if (hits.length) return this.choose(hits[0].object.userData.id);
     // the belts: where the ray meets the orbit plane
     const ray = this.raycaster.ray;

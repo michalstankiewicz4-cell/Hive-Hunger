@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.62.0] — 2026-10-25
+
+### Changed
+- **The Hive Carrier rebuilt** after the owner's reference picture: the same length (240 voxels), thicker (64 high, 72 wide) and far more detailed — a heavy, boxy hull in a patchwork of light grey, grey, dark grey and anthracite with yellow touches; a long dark **flight deck** with yellow lines, white pads, chevrons and four ships parked on it; a stepped **command tower** with blue window bands and antennas; a row of nine big yellow **honeycomb modules** along each side (small cells, some glowing, each module pulsing on its own); a blunt bow with the **hangar bay**'s mouth framed in honeycomb and a lit hall inside; at the stern a wider **engine block** with four great nozzles in two pairs glowing blue; windows blue-white now. Nine modules (flight deck, hangar bay and hive modules new; the launch cells moved from the deck to the sides).
+- The carrier is only on the single-player map (the multiplayer map keeps to the missions — three players' browsers drawing it made the room's connections drop in tests).
+
 ## [0.61.0] — 2026-10-25
 
 ### Added

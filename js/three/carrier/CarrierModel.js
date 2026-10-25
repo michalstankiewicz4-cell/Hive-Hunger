@@ -63,7 +63,7 @@ export class CarrierModel {
     const m = new THREE.Matrix4();
     L.forEach((l, i) => {
       phase[i] = l.cell !== undefined ? l.cell * 2.39996 : Math.random() * 6.28; // (a launch cell's floor pulses as one)
-      speed[i] = l.kind === 'cell' ? 1.1 : l.kind === 'nozzle' ? 3.5 : l.kind === 'vent' ? 2.2 : 0.4;
+      speed[i] = l.kind === 'cell' ? 1.1 : l.kind === 'nozzle' ? 3.5 : l.kind === 'vent' ? 2.2 : l.kind === 'hangar' ? 0.6 : 0.4;
       m.makeTranslation((l.x + 0.5) * f - O.NX / 2, (l.y + 0.5) * f - O.NY / 2, (l.z + 0.5) * f - O.NZ / 2).toArray(matrices, i * 16);
       colors.set(l.color.map((c) => c / 255), i * 3);
     });
