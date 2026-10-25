@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats planets made of voxels — mission by mission across the solar system, from the Kuiper Belt in to the Sun — alone (with a saved game), or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.63.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.64.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -16,7 +16,7 @@ When eating cuts a piece off — a part no longer connected to the rest — it c
 
 ## Hive Carrier
 
-Beyond the Kuiper Belt on the solar system map waits the **Hive Carrier**, your mothership (its bow to the left and a little down) — a heavy voxel carrier five times as long as Earth is wide. Click it (instead of a mission): its card shows it from above, and **Go aboard** shows it full size (drag to turn, wheel to zoom; **Back** or **Esc** to the map) with its modules — hull, bridge, reactor, engines, flight deck, hangar bay, hive modules, refinery, sensor array — all operational for now (later they will be repaired one by one). A patchwork of greys with yellow touches; a dark flight deck overgrown with honeycomb like a wild hive — patches of different heights flowing into each other, cells capped with light wax, glowing with honey or open and dark — with a few ships parked between them; a stepped command tower with blue windows and antennas; nine big yellow honeycomb modules along each side, their small cells glowing; the bow's hangar mouth framed in honeycomb with a lit hall inside; four great blue nozzles in two pairs at the stern; tanks for water, lava and gas under the keel; blinking running lights. It is only on the single-player map: during a mission (and in multiplayer) it is not seen.
+Beyond the Kuiper Belt on the solar system map waits the **Hive Carrier**, your mothership (its bow to the left and a little down) — a heavy voxel carrier five times as long as Earth is wide. Click it (instead of a mission): its card shows it from above, and **Go aboard** shows it full size (drag to turn, wheel to zoom; **Back** or **Esc** to the map) with its modules — hull, bridge, reactor, engines, flight deck, hangar bay, hive modules, refinery, sensor array — all operational for now (later they will be repaired one by one). A patchwork of greys with yellow touches; a dark flight deck overgrown with honeycomb like a wild hive — patches of different heights flowing into each other, cells capped with light wax, glowing with honey or open and dark — with a few ships parked between them; a stepped command tower with blue windows and antennas; nine big yellow honeycomb modules along each side, their small cells glowing; the bow's hangar mouth framed in honeycomb with a lit hall inside; four great blue nozzles in two pairs at the stern; its lights light up the hull round them — rows of windows go out now and then and the hull there darkens, honey breathes, nozzles pulse; tanks for water, lava and gas under the keel; blinking running lights. It is only on the single-player map: during a mission (and in multiplayer) it is not seen.
 
 ## Points and upgrades
 

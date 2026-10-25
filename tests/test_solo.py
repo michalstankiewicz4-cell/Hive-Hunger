@@ -182,6 +182,16 @@ async def main():
         ab = await page.evaluate("""() => ({ aboard: window.__map.aboard, title: document.querySelector('.map-title').textContent,
           modules: [...document.querySelectorAll('.carrier-module')].map((e) => [e.querySelector('.carrier-module-name').textContent, e.querySelector('.carrier-module-state').textContent]),
           labels: document.querySelector('.map-labels').hidden, started: window.__dbg.started })""")
+        lt = await page.evaluate("""() => { const m = window.__map, c = m.carrier, d = c.detail(1), G = c.groups.value, kinds = c.groupKinds;
+          const lit = d.hull.reduce((n, g) => { const A = g.attributes.aLitA.array; for (let i = 0; i < A.length; i += 4) if (A[i] + A[i + 1] + A[i + 2] > 0) n++; return n; }, 0);
+          // over a minute: some rows of windows go out (and the hull round them darkens with them), and come back
+          const w = kinds.map((k, i) => (k === 'window' ? i : -1)).filter((i) => i >= 0), offs = new Set(), ons = new Set();
+          for (let t = 0; t < 60; t += 0.25) { c.update(t, [m.big]); for (const i of w) { if (G[i] < 0.05) offs.add(i); if (G[i] > 0.95) ons.add(i); } }
+          const real = m.big.userData.real.map((r) => kinds[r.group]).sort();
+          return { groups: kinds.length, lit, sources: d.baked.sources, windows: w.length, wentOut: offs.size, cameBack: [...offs].filter((i) => ons.has(i)).length, real, finite: [...G].every(Number.isFinite) }; }""")
+        t.ok(lt['groups'] <= 64 and lt['lit'] > 5000 and lt['finite'] and lt['real'] == ['bridge', 'cell', 'cell', 'hangar', 'nozzle', 'nozzle'],
+             'the carrier\'s light on its hull: glowing voxels in groups, their light worked out once on the hull; a few real lights aboard', lt)
+        t.ok(lt['wentOut'] > 0 and lt['cameBack'] > 0, 'rows of windows go out now and then (the hull round them darkens) and come back', lt)
         t.ok(ab['aboard'] and ab['title'] == 'Hive Carrier' and ab['labels'] and not ab['started']
              and [m[0] for m in ab['modules']] == ['Hull', 'Bridge', 'Reactor', 'Engines', 'Flight deck', 'Hangar bay', 'Hive modules', 'Refinery', 'Sensor array'] and all(m[1] == 'Operational ✓' for m in ab['modules']),
              'Go aboard: the carrier full size and its modules, all operational', ab)

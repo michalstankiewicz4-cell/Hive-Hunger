@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.64.0] — 2026-10-25
+
+### Added
+- **The Hive Carrier's lights light up its hull, live:** its glowing voxels are in groups (rows of windows, patches of honey, the side modules three by three, the vents, the hangar, the bridge, the nozzle pairs — 37 in all); how much light each group throws on the hull round it (facing it, not hidden behind other voxels) is worked out once when you go aboard, and every frame each group has its brightness — rows of windows go out now and then and come back, and the hull round them darkens and lights up with them; honey breathes, vents and nozzles pulse. Cheap: one multiplication per vertex, no shadows. Aboard, six real lights as well — the two nozzle pairs, the hangar, the bridge and the two biggest patches of honey — following their groups.
+
 ## [0.63.0] — 2026-10-25
 
 ### Changed

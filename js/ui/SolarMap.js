@@ -237,7 +237,7 @@ export class SolarMap {
     this.ensureCarrier();
     // full size, every voxel: built the first time someone goes aboard
     if (!this.big) {
-      this.big = this.carrier.group(1, 1);
+      this.big = this.carrier.group(1, 1, true); // (with a few real lights)
       this.aboardScene.add(this.big);
       this.carrierGroups.push(this.big);
     }
