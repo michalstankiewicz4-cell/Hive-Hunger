@@ -27,15 +27,16 @@ export class Hud {
    * @param {string} [s.banner] e.g. who won the planet
    * @param {string[]} [s.notices] e.g. who left or lost the connection
    * @param {number|null} [s.points] your points to spend (1 voxel = 1 point)
+   * @param {Array<{name,color,n}>} [s.collected] what was collected of this planet, by kind of voxel
    */
-  update({ level, body = '', eaten, hint = '', mode = null, scores = null, banner = '', notices = [], points = null }) {
+  update({ level, body = '', eaten, hint = '', mode = null, scores = null, banner = '', notices = [], points = null, collected = [] }) {
     if (this.pointsValue && points !== this.lastPoints) {
       this.lastPoints = points;
       this.pointsEl.hidden = points === null;
       this.pointsValue.textContent = (points ?? 0).toLocaleString('en');
     }
     const title = `${body || `Planet ${level}`} · ${Math.floor(eaten * 100)}% eaten${mode ? ` · ${MODE_LABEL[mode]}` : ''}`;
-    const key = JSON.stringify([title, hint, scores, banner, notices]);
+    const key = JSON.stringify([title, hint, scores, banner, notices, collected]);
     if (key === this.last) return;
     this.last = key;
 
@@ -43,6 +44,23 @@ export class Hud {
     const head = document.createElement('div');
     head.textContent = title;
     this.el.appendChild(head);
+
+    // what was collected of this planet, by kind of voxel
+    if (collected.length) {
+      const row = document.createElement('div');
+      row.className = 'hud-collected';
+      for (const c of collected) {
+        const item = document.createElement('span');
+        item.className = 'hud-kind';
+        item.dataset.kind = c.id;
+        const dot = document.createElement('span');
+        dot.className = 'hud-dot';
+        dot.style.background = c.color;
+        item.append(dot, document.createTextNode(`${c.name} ${c.n.toLocaleString('en')}`));
+        row.appendChild(item);
+      }
+      this.el.appendChild(row);
+    }
 
     if (banner) {
       const b = document.createElement('div');

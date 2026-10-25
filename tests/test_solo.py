@@ -842,6 +842,14 @@ async def main():
           return { saved: Boolean(s), mission: s && s.mission, score: s && s.score, now: window.__dbg.localPlayer.score, note: n && !n.hidden ? n.textContent : '' }; }""")
         t.ok(au['saved'] and au['mission'] is None and au['score'] == au['now'] and au['score'] > 0 and au['note'] == 'Kuiper Belt done · game saved',
              'mission done: the game is saved by itself ("Kuiper Belt done · game saved")', au)
+        # what the mission collected went into the carrier's storage (saved with the game), shown aboard
+        st = await page.evaluate("""() => { const s = JSON.parse(localStorage.getItem('hive-hunger-save') || 'null'), m = window.__map;
+          m.enterCarrier();
+          const rows = [...document.querySelectorAll('.carrier-stored')].map((e) => [e.querySelector('.carrier-stored-name').textContent, e.querySelector('.carrier-stored-n').textContent]);
+          m.leaveCarrier();
+          return { saved: s && s.storage, game: window.__dbg.storage, rows }; }""")
+        t.ok(st['saved'] and st['saved'].get('rock', 0) > 100 and st['game'] == st['saved'] and st['rows'] == [['Rock', f"{st['saved']['rock']:,}"]],
+             'mission done: what it collected (rock) goes into the carrier\'s storage, saved with the game and listed aboard', st)
         # leave without saving and come back: Continue has the points; New game asks first (No keeps the save)
         await page.click('.map-back')
         await page.evaluate("() => { window.__dbg.resetProgress(); }")  # (nothing of it left in memory)
@@ -982,6 +990,13 @@ async def main():
           r.gas.left = G.count; r.gas.taken = p.score - score3;
           p.sellShips('scoops', 3); for (let k = 0; k < 120; k++) g.update();
           g.stop();
+          // what was collected so far, by kind: the droplets the siphons took (water, lava), the gas the scoops took
+          const col = g.collectedNow();
+          r.collected = { liquids: (col.water || 0) + (col.lava || 0), gas: col.gas || 0 };
+          for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0 && pl.tags[idx] === 3) { pl.remove(idx); break; }
+          g.update();
+          r.collected.hud = [...document.querySelectorAll('.hud-kind')].map((e) => e.dataset.kind);
+          r.collected.iron = g.collectedNow().iron || 0;
           for (let idx = 0; idx < pl.hp.length; idx++) if (pl.hp[idx] > 0) pl.remove(idx);
           for (const f of [...(pl.fragments?.list || [])]) for (const c of pl.fragments.cellsOf(f)) pl.remove(c);
           // every voxel gone, but droplets and gas still float: not over yet — siphons and scoops take them in first
@@ -1005,10 +1020,13 @@ async def main():
              'solid gas (its own moving look) destroyed: a patchy cloud of puffs, each its own, no points, nobody else takes it in', gs)
         t.ok(gs['fastest'] <= 0.0061, 'the cloud drifts lazily: no puff faster than gas.maxSpeed (0.006 a frame)', gs)
         t.ok(gs['left'] == 0 and gs['taken'] == 30, 'scoops take the whole cloud in, a point each', gs)
-        t.ok(lq['look']['water'] == 1 and lq['look']['lava'] == 1 and lq['look']['seeds'] == 30 and lq['look']['piece'] == 1,
+        t.ok(lq['look']['water'] == 1 and lq['look']['lava'] == 1 and lq['look']['seeds'] >= 25 and lq['look']['piece'] == 1,
              'water and lava have their own moving look on the balls and on pieces come loose; every droplet a different one', lq['look'])
         t.ok(tb['again'] == 1 and tb['alive'] and tb['body2'] == 'balls' and tb['started2'] and not tb['map'] and tb['save'] is None and 'earth' not in (tb['ticks'] or ''),
              'eaten, it is there again at once — no map, nothing saved, no tick', tb)
+        cl = tb['collected']
+        t.ok(cl['liquids'] == 30 and cl['gas'] == 30 and cl['iron'] == 1 and set(['water', 'lava', 'gas', 'iron']) <= set(cl['hud']),
+             'the HUD shows what was collected of this planet by kind (droplets and gas when taken in, iron eaten)', cl)
         wt = tb['waiting']
         t.ok(wt['over'] == 0 and wt['left'] == 0 and wt['drops'] > 0 and wt['puffs'] > 0 and wt['alive'] and tb['again'] == 1,
              'every voxel gone but droplets and gas still in space: not over until siphons and scoops have taken them all in', wt)

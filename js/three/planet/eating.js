@@ -120,6 +120,9 @@ export const Eating = {
     if (liquid) {
       const c = this.cellCenter(idx, SPILL);
       this.spills.push([liquid, c.x, c.y, c.z]);
+    } else {
+      const kind = (this.kindOf && this.tags && this.kindOf[this.tags[idx]]) || 'rock';
+      this.collected[kind] = (this.collected[kind] || 0) + 1;
     }
   },
 

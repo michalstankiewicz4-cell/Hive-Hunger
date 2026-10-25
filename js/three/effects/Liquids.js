@@ -27,6 +27,7 @@ export class Liquids {
     this.seed = new Float32Array(max);
     this.count = 0;
     this.taken = 0; // (tests) droplets taken in by siphons
+    this.takenKinds = {}; // droplets taken in by kind, this planet (Game3D resets it)
     this.cell = Math.max(...this.kinds.map((k) => cfg[k].reach));
     this.grid = new Grid3D(max, this.cell / 2, 2);
     this.force = new Float32Array(max * 3); // (per frame: apart / together, and how many pull together)
@@ -167,6 +168,8 @@ export class Liquids {
     for (let i = this.count - 1; i >= 0; i--) {
       const i3 = i * 3;
       if ((x - P[i3]) ** 2 + (y - P[i3 + 1]) ** 2 + (z - P[i3 + 2]) ** 2 > radius * radius) continue;
+      const kind = this.kinds[this.kind[i]];
+      this.takenKinds[kind] = (this.takenKinds[kind] || 0) + 1; // (collected: Game3D.collectedNow)
       this.remove(i);
       n++;
     }

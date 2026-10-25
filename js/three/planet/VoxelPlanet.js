@@ -64,6 +64,10 @@ export class VoxelPlanet {
     // liquid voxels (by shape tag → 'water' | 'lava'): when gone they are let loose as droplets (see remove, Liquids.js)
     this.liquidOf = look.liquids && shape.colors ? look.liquids : null;
     this.spills = []; // [kind, x, y, z] of liquid voxels gone since the game last took them
+    // what kind each voxel is (shape tag → 'rock' | 'iron' | …; else all rock) and how many of each were eaten
+    // (liquids and gas: not here — they are collected only when siphons and scoops take them in)
+    this.kindOf = look.kinds && shape.colors ? look.kinds : null;
+    this.collected = {};
     this.sizeScale = look.sizeScale ?? null; // the tunnels and camera × this (else from the size, see Game3D.fitToPlanet)
     this.parts = shape.parts || null; // several objects (each with its own terrain)
     this.fill = shape.fill;            // which voxels the planet started with (for eatenRuns)

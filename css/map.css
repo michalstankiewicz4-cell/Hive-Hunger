@@ -262,6 +262,36 @@
   font-size: 12px;
 }
 
+.carrier-storage {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.carrier-stored {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.carrier-stored-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.carrier-stored-n {
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.carrier-storage-empty {
+  color: var(--hud-dim);
+}
+
 /* phones: the card along the bottom */
 @media (max-width: 520px) {
   .map-card {

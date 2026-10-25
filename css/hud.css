@@ -19,6 +19,19 @@
 
 
 /* HUD: multiplayer banner and scoreboard */
+.hud-collected {
+  display: grid;
+  gap: 1px;
+  margin: 2px 0 4px;
+  font-size: 13px;
+}
+
+.hud-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .hud-banner {
   color: var(--accent);
   font-weight: 600;

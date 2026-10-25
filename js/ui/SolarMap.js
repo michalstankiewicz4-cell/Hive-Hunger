@@ -34,7 +34,7 @@ const CLICK_MOVE = 6;         // px: more than this between press and release is
 export class SolarMap {
   /**
    * @param {HTMLElement} root the full-screen #map element
-   * @param {{playable:(id:string)=>boolean, onStart:(id:string)=>void, onBack:()=>void}} opts
+   * @param {{playable:(id:string)=>boolean, onStart:(id:string)=>void, onBack:()=>void, storage?:()=>Array<{id,name,color,n}>}} opts
    */
   constructor(root, opts) {
     this.root = root;
@@ -260,7 +260,19 @@ export class SolarMap {
       li.append(el('span', 'carrier-module-name', m.name), el('span', 'carrier-module-state', 'Operational ✓'), el('span', 'carrier-module-text', m.text));
       list.append(li);
     }
-    this.card.append(close, el('h3', 'map-card-name', 'Modules'), el('p', 'map-card-status', 'All systems operational'), list);
+    // the storage: what the missions collected, by kind of voxel
+    const stored = this.opts.storage?.() || [];
+    const store = el('ul', 'carrier-storage');
+    if (!stored.length) store.append(el('li', 'carrier-storage-empty', 'Empty — finish a mission to fill it'));
+    for (const s of stored) {
+      const li = el('li', 'carrier-stored');
+      li.dataset.kind = s.id;
+      const dot = el('span', 'carrier-stored-dot');
+      dot.style.background = s.color;
+      li.append(dot, el('span', 'carrier-stored-name', s.name), el('span', 'carrier-stored-n', s.n.toLocaleString('en')));
+      store.append(li);
+    }
+    this.card.append(close, el('h3', 'map-card-name', 'Storage'), store, el('h3', 'map-card-name', 'Modules'), el('p', 'map-card-status', 'All systems operational'), list);
     this.resize();
   }
 

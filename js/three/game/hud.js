@@ -43,6 +43,12 @@ export const HudText = {
     this.notices = this.notices.filter((n) => n.until > now);
     this.hud.update({ level: this.level, body: this.testBoard ? 'Test board' : bodyById(this.bodyId)?.name, eaten, hint, mode: this.mode, scores, banner: this.banner,
       points: me ? me.points : null,
+      collected: collectedList(this.collectedNow(), this.cfg.voxelKinds),
       notices: this.notices.map((n) => n.text) });
   },
 };
+
+/** What was collected, by kind, as the HUD and the carrier's storage list it: [{ id, name, color, n }] (only kinds with some, in CONFIG.voxelKinds' order). */
+export function collectedList(counts, kinds) {
+  return Object.entries(kinds).filter(([id]) => counts[id] > 0).map(([id, k]) => ({ id, name: k.name, color: k.color, n: counts[id] }));
+}

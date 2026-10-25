@@ -68,6 +68,7 @@ export class Game3D {
     this.remote = { left: 0, total: 1 }; // guest: planet progress from the host
     this.netStats = [];      // multiplayer: [{index, host} | {index, rtt, rate}] from the host
     this.notices = [];       // short HUD messages: [{text, until}]
+    this.storage = {};       // single player: the carrier's storage — what missions collected, by kind of voxel (saved)
     this.summary = null;     // multiplayer: results of the planet just eaten (see buildSummary)
     this.onSummaryChange = null; // (summary | null) => void — the UI shows / updates / hides it
 
@@ -305,7 +306,7 @@ export class Game3D {
     const mission = inMission ? this.bodyId : null;
     return {
       mission, seed: pl.seed, eaten: mission ? bytesToText(pl.eatenRuns()) : '',
-      score: p.score, planetScore: p.planetScore, tree: p.tree.toJSON(),
+      score: p.score, planetScore: p.planetScore, tree: p.tree.toJSON(), storage: { ...this.storage },
       settings: Object.fromEntries(['count', 'speed', 'power', 'turn', ...SHIP_KINDS].map((k) => [k, p.getSetting(k)])),
     };
   }
@@ -316,6 +317,7 @@ export class Game3D {
     for (const [k, v] of Object.entries(data.settings || {})) p.setSetting(k, v);
     p.tree.load(data.tree || { owned: ['core'], spent: 0 });
     p.score = data.score || 0;
+    this.storage = { ...(data.storage || {}) };
     p.applyUpgrades();
     this.onTreeChange?.();
     const n = this.cfg.levels.findIndex((l) => l.body === data.mission);
@@ -340,6 +342,7 @@ export class Game3D {
     p.tree.load({ owned: ['core'], spent: 0 });
     p.score = 0;
     p.planetScore = 0;
+    this.storage = {}; // (the carrier's storage: empty)
     p.applyUpgrades();
     this.onTreeChange?.();
   }
@@ -355,6 +358,8 @@ export class Game3D {
     this.holes?.clear();
     this.liquids?.clear(); // (droplets and clouds belonged to the old planet)
     this.gases?.clear();
+    if (this.liquids) this.liquids.takenKinds = {};
+    if (this.gases) this.gases.taken = 0;
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level), this.cfg.fragments);
     if (this.role === 'host') this.planet.log = [];
     this.fitToPlanet();
@@ -428,6 +433,22 @@ export class Game3D {
     return this.multiplayer ? this.cfg.levels[this.missionIndex(this.level + 1)].body : this.cfg.levels[(this.mission + 1) % this.cfg.levels.length].body;
   }
 
+  /**
+   * What was collected of this planet so far, by kind of voxel: eaten voxels (VoxelPlanet.collected) and
+   * the droplets and puffs of gas siphons and scoops took in. (Points stay as they are: a voxel, a point.)
+   */
+  collectedNow() {
+    const c = { ...(this.planet?.collected || {}) };
+    for (const [k, n] of Object.entries(this.liquids?.takenKinds || {})) c[k] = (c[k] || 0) + n;
+    if (this.gases?.taken) c.gas = (c.gas || 0) + this.gases.taken;
+    return c;
+  }
+
+  /** Single player: a mission is done — what was collected goes into the carrier's storage (saved with the game). */
+  store(collected) {
+    for (const [k, n] of Object.entries(collected)) this.storage[k] = (this.storage[k] || 0) + n;
+  }
+
   /** Size and graphics of planet `level` (its mission's entry in CONFIG.levels). Every client builds the same planet from it and the seed. */
   levelLook(level) {
     const l = this.testBoard ? this.cfg.testBoard : this.cfg.levels[this.missionIndex(level)];
@@ -494,7 +515,7 @@ export class Game3D {
       this.returnFrames++;
       const home = players.every((p) => p.departed()) || this.returnFrames > this.cfg.beacon.returnTimeoutFrames;
       if (home && (!this.multiplayer || players.every((p) => p.nextReady))) {
-        const done = this.bodyId;
+        const done = this.bodyId, collected = this.collectedNow();
         pl.dispose();
         // the test board: the same body again at once (a new seed), the ships come out of the tunnel; nothing kept
         if (this.testBoard) {
@@ -509,6 +530,7 @@ export class Game3D {
         this.net?.broadcastPlanet(this);
         if (!this.multiplayer) {
           this.started = false;
+          this.store(collected);
           this.onMissionDone?.(done);
         }
       }

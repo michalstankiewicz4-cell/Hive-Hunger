@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.65.0] — 2026-10-25
+
+### Added
+- **What was collected**, on the screen under the planet's name, one under another: by kind of voxel (rock, water, iron, lava, gas — a coloured dot and the count), this planet so far; liquids and gas count once siphons and scoops take them in. Points are unchanged.
+- **The carrier's storage:** every mission finished in single player adds what it collected; it is saved with the game (a new game empties it) and shown aboard the Hive Carrier above its modules. The test board and multiplayer add nothing.
+
 ## [0.64.2] — 2026-10-25
 
 ### Changed

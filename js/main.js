@@ -7,6 +7,7 @@ import { Lobby } from './ui/Lobby.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { Summary } from './ui/Summary.js';
 import { TreeView } from './ui/TreeView.js';
+import { collectedList } from './three/game/hud.js';
 import { SolarMap } from './ui/SolarMap.js';
 import { progress } from './progress.js';
 import { savedGame } from './save.js';
@@ -65,6 +66,8 @@ if (!window.THREE) {
   };
   const map = new SolarMap(document.getElementById('map'), {
     playable,
+    // the carrier's storage: what the missions collected, by kind of voxel
+    storage: () => collectedList(game.storage, CONFIG.voxelKinds),
     onStart: (id) => {
       if (!game.startMission(id)) return;
       mapFromGame = false;

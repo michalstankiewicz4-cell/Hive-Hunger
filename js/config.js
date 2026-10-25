@@ -156,7 +156,17 @@ export const CONFIG = Object.freeze({
     rows: [[1, 2], [3, 5, 4]],
     colors: [[96, 84, 74], [63, 127, 208], [138, 143, 152], [255, 90, 31], [196, 160, 232]],
     // what is let loose when eaten (the test board only, for now): water and lava as droplets, gas as a cloud
-    liquids: { 2: 'water', 4: 'lava', 5: 'gas' } },
+    liquids: { 2: 'water', 4: 'lava', 5: 'gas' },
+    // what kind of voxel each ball is (what was collected: the HUD, the carrier's storage); elsewhere all rock
+    kinds: { 1: 'rock', 2: 'water', 3: 'iron', 4: 'lava', 5: 'gas' } },
+  // the kinds of voxel, as the HUD and the carrier's storage show them (name, colour)
+  voxelKinds: {
+    rock: { name: 'Rock', color: '#8a7d70' },
+    water: { name: 'Water', color: '#3f7fd0' },
+    iron: { name: 'Iron', color: '#8a8f98' },
+    lava: { name: 'Lava', color: '#ff5a1f' },
+    gas: { name: 'Gas', color: '#c4a0e8' },
+  },
   // gas let loose in space: an eaten or destroyed voxel of solid gas becomes a puff of a cloud (Gases.js) that
   // only scoops can take in; no gravity — puffs drift (`speed` when let loose, `damping`), stir (`stir`),
   // push each other apart within `reach` (`push`: the cloud spreads) and swell from `size` to `maxSize`
