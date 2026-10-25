@@ -216,6 +216,52 @@
   cursor: default;
 }
 
+/* the Hive Carrier: its label, and aboard the list of its modules */
+.map-label.is-carrier {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.map-card.is-modules {
+  top: calc(64px + var(--safe-top));
+  bottom: auto;
+  max-height: calc(100% - 96px);
+  overflow-y: auto;
+}
+
+.carrier-modules {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.carrier-module {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+}
+
+.carrier-module-name {
+  color: var(--hud-text);
+  font-weight: 700;
+}
+
+.carrier-module-state {
+  color: #8de08d;
+  font-size: 12px;
+}
+
+.carrier-module-text {
+  grid-column: 1 / -1;
+  color: var(--hud-dim);
+  font-size: 12px;
+}
+
 /* phones: the card along the bottom */
 @media (max-width: 520px) {
   .map-card {

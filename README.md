@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats planets made of voxels — mission by mission across the solar system, from the Kuiper Belt in to the Sun — alone (with a saved game), or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.43.2 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.60.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -13,6 +13,10 @@ Eating is deliberate. Every unit claims the nearest uneaten, unclaimed voxel to 
 The page opens with a **loader** (the title and a progress bar over a blurred picture) while the start picture, the 3D engine, multiplayer and the game load; then the **start screen**: the picture of a voxel ship cutting into a voxel planet with the title and the menu (Single player, Co-op, PvP, Ship guide, Settings) beside it. The game starts from a **map of the solar system** (single player and multiplayer): the Sun in the middle, the orbits, the planets with their moons and two belts, in 3D, seen from above at an angle — drag to turn it, the wheel (or two fingers) to zoom. The missions go from the outside in: the **Kuiper Belt** (a long, very slightly bent band of small icy asteroids, seen at an angle), Pluto and Charon, Neptune and Triton, Uranus, Saturn and Titan, Jupiter, Europa and Io, the Asteroid Belt, Mars, Deimos and Phobos, Earth and the Moon, Venus, Mercury — and the Sun. A click on a body opens its card: a picture, what it is, the task and **Start**. For now two missions can be played — the Kuiper Belt and **Earth** (the usual planet); the other bodies are on the map as *coming soon*. In single player every playable mission is open; when a planet is eaten the ships jump to hyperspace and you are back on the map, the body ticked (remembered in this browser) and the next mission marked. In multiplayer the missions go in order — the map shows where the room is going, behind the waiting room and the summary. Every planet is drawn as a smooth surface: no steps — slopes, rounded corners and craters. It is graphics only: underneath, the swarm still eats voxels — every voxel is still 1 point.
 
 When eating cuts a piece off — a part no longer connected to the rest — it comes loose: every part smaller than the rest gently drifts away and turns (parts of equal size all stay). It stops at most 4 units from where it came off, and big pieces turn slowly. A piece bitten through breaks up again the same way, and so on until it is eaten. The swarm can chase it and eat it like any other voxel, for the same points; a drone that hasn't eaten anything for 10 s stops for half a second and takes another bite (or the same one, if there is no other). A planet counts as eaten only when its last voxel is gone, drifting pieces included. The ships then escape into hyperspace — one after another at random moments (several at once in a big swarm), each speeding off with a blue streak behind it — and the next planet appears once they are all gone. Ships arrive through a subspace tunnel at the spawn point: it opens into a wide blue vortex, the ships fly out of it, and it closes to a small swirl (click it to call the swarm back; it opens for a moment to take in a piece a tug brings home). The camera never turns by itself — only when you turn it.
+
+## Hive Carrier
+
+Beyond the Kuiper Belt on the solar system map waits the **Hive Carrier**, your mothership — a voxel carrier five times as long as Earth is wide. Click it (instead of a mission): its card shows it from above, and **Go aboard** shows it full size (drag to turn, wheel to zoom; **Back** or **Esc** to the map) with its modules — hull, bridge, reactor, engines, launch hive, refinery, sensor array — all operational for now (later they will be repaired one by one). Sunk into its deck is the **launch hive**: a honeycomb of launch cells in a bee's colours — a rim of light wax round every cell, a little lighter than the honey glowing inside, each cell pulsing on its own — on the grey deck, inside black-and-yellow stripes; an island tower with the bridge and a mast, windows down both sides, reactor vents, tanks for water, lava and gas, four glowing nozzles and blinking running lights. It is only on the map: during a mission it is not seen.
 
 ## Points and upgrades
 
@@ -126,6 +130,7 @@ js/
                         a guest's copy, hyperspace, laser and storm beams, tractor beams; steering
   three/planet/         VoxelPlanet and its parts (look, eating, search, runs, grid), its smooth surface,
                         drifting pieces (Fragments), level shapes (the belt of asteroids too)
+  three/carrier/        the Hive Carrier: its voxels (modules) and how it is drawn
   three/effects/        lightning, support ships' bolts, orbs, black holes, debris, droplets and gas (and their grid)
   three/scene/          sky, the subspace tunnel at the spawn point, click marker
   three/textures.js     glow and gradient textures shared by the effects

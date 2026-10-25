@@ -1,5 +1,7 @@
 import { SOLAR, bodyById, taskOf } from '../solar.js';
 import { el, button } from './dom.js';
+import { CarrierModel, paintCarrier } from '../three/carrier/CarrierModel.js';
+import { MODULES } from '../three/carrier/carrierVoxels.js';
 
 const THREE = window.THREE;
 
@@ -12,7 +14,17 @@ const THREE = window.THREE;
  *
  * Single player: Start on a card begins that mission. Multiplayer: the missions go in order — the map
  * shows where the room is going, without Start.
+ *
+ * Beyond the Kuiper Belt waits the Hive Carrier, the player's mothership (CarrierModel): its card's
+ * Go aboard shows it full size on its own (drag, zoom; Back or Esc to the map) with its modules.
  */
+
+/** The carrier on the map: beyond the Kuiper Belt, standing still on its own orbit. */
+export const CARRIER = Object.freeze({
+  id: 'carrier', name: 'Hive Carrier', kind: 'Your mothership', type: 'carrier', orbit: 74, angle: -2.55, size: 2.6, length: 6.5,
+  color: [143, 208, 255],
+  text: 'The swarm’s home: a carrier five times as long as Earth is wide, waiting beyond the Kuiper Belt. Its ships take off from the honeycomb of launch cells in its deck.',
+});
 
 const PITCH = [0.18, 1.45];   // how far it may tilt (radians from the orbit plane)
 const DIST = [18, 170];       // zoom
@@ -36,7 +48,7 @@ export class SolarMap {
     const head = el('div', 'map-head');
     this.title = el('h2', 'map-title', 'Solar system');
     this.hint = el('p', 'map-hint', 'Drag to turn · wheel to zoom · click a body');
-    this.back = button('Back', () => opts.onBack(), 'map-back');
+    this.back = button('Back', () => (this.aboard ? this.leaveCarrier() : opts.onBack()), 'map-back');
     head.append(this.title, this.hint, this.back);
     this.card = el('div', 'map-card');
     this.card.hidden = true;
@@ -107,6 +119,23 @@ export class SolarMap {
       item.label = label;
       this.items.set(b.id, item);
     }
+    // the Hive Carrier (its model is built the first time the map is shown)
+    {
+      const b = CARRIER, item = { body: b, angle0: b.angle, label: null };
+      item.mesh = new THREE.Group();
+      sc.add(item.mesh);
+      item.hit = new THREE.Mesh(new THREE.BoxGeometry(b.length * 1.15, b.size * 1.2, b.size * 1.6), new THREE.MeshBasicMaterial({ visible: false }));
+      item.hit.userData.id = b.id;
+      sc.add(item.hit);
+      item.orbitLine = orbitLine(b.orbit, 0x3c4a6a, 0.3);
+      sc.add(item.orbitLine);
+      const label = el('div', 'map-label is-carrier', b.name);
+      label.addEventListener('click', () => this.select(b.id));
+      this.labels.appendChild(label);
+      item.label = label;
+      this.items.set(b.id, item);
+      this.carrierItem = item;
+    }
     // the next mission's marker and the selected body's ring
     this.nextRing = marker(0x8fd0ff);
     this.selRing = marker(0xffffff);
@@ -118,6 +147,7 @@ export class SolarMap {
   place(item, t, out) {
     const b = item.body;
     if (b.type === 'belt' || b.type === 'star') return out.set(0, 0, 0);
+    if (b.type === 'carrier') return out.set(Math.cos(b.angle) * b.orbit, 0, Math.sin(b.angle) * b.orbit); // (it stands still)
     const a = item.angle0 + t * b.speed;
     out.set(Math.cos(a) * b.orbit, 0, Math.sin(a) * b.orbit);
     if (b.tilt) out.applyAxisAngle(X_AXIS, b.tilt);
@@ -146,6 +176,8 @@ export class SolarMap {
       this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     }
     this.resize();
+    this.ensureCarrier();
+    this.leaveCarrier();
     this.select(this.state.playing || this.state.next || this.state.current, false);
     if (!this.visible) {
       this.visible = true;
@@ -169,8 +201,79 @@ export class SolarMap {
     this.noteTimer = setTimeout(() => { this.noteEl.hidden = true; }, ms);
   }
 
+  /** The carrier's model on the map (built once, the first time the map is shown). */
+  ensureCarrier() {
+    if (this.carrier) return;
+    this.carrier = CarrierModel.shared();
+    const item = this.carrierItem, b = item.body;
+    const small = this.carrier.group(b.length / this.carrier.voxels.NX, 2); // (half the detail: it is small here)
+    item.mesh.add(small);
+    // along its orbit, the bow ahead
+    item.mesh.rotation.y = -b.angle;
+    this.carrierGroups = [small];
+    // aboard: the same carrier full size in a scene of its own
+    const sc = (this.aboardScene = new THREE.Scene());
+    sc.background = new THREE.Color(0x05060c);
+    sc.add(stars());
+    sc.add(new THREE.AmbientLight(0xffffff, 0.35));
+    sc.add(new THREE.HemisphereLight(0xbfd8ff, 0x1a1408, 0.35));
+    const sun = new THREE.DirectionalLight(0xfff2d8, 0.95);
+    sun.position.set(-0.6, 0.9, 0.45);
+    sc.add(sun);
+    this.aboardCamera = new THREE.PerspectiveCamera(40, 1, 1, 4000);
+  }
+
+  /** Go aboard: the carrier full size, its modules beside it (Back / Esc: the map). */
+  enterCarrier() {
+    this.ensureCarrier();
+    // full size, every voxel: built the first time someone goes aboard
+    if (!this.big) {
+      this.big = this.carrier.group(1, 1);
+      this.aboardScene.add(this.big);
+      this.carrierGroups.push(this.big);
+    }
+    this.aboard = true;
+    this.aboardView = { yaw: 2.25, pitch: 0.42, dist: 330 };
+    this.root.classList.add('is-aboard');
+    this.title.textContent = CARRIER.name;
+    this.hint.textContent = 'Drag to turn · wheel to zoom · Esc: back to the map';
+    this.back.hidden = false;
+    this.labels.hidden = true;
+    this.card.replaceChildren();
+    this.card.hidden = false;
+    this.card.classList.add('is-modules');
+    const close = button('×', () => this.leaveCarrier(), 'map-close');
+    close.setAttribute('aria-label', 'Back to the map');
+    const list = el('ul', 'carrier-modules');
+    for (const m of MODULES) {
+      const li = el('li', 'carrier-module');
+      li.dataset.module = m.id;
+      li.append(el('span', 'carrier-module-name', m.name), el('span', 'carrier-module-state', 'Operational ✓'), el('span', 'carrier-module-text', m.text));
+      list.append(li);
+    }
+    this.card.append(close, el('h3', 'map-card-name', 'Modules'), el('p', 'map-card-status', 'All systems operational'), list);
+    this.resize();
+  }
+
+  /** Back from aboard to the map (with the carrier's card). */
+  leaveCarrier() {
+    if (!this.aboard) return;
+    this.aboard = false;
+    this.root.classList.remove('is-aboard');
+    this.card.classList.remove('is-modules');
+    this.title.textContent = 'Solar system';
+    this.labels.hidden = false;
+    this.show(this.state);
+    this.select(CARRIER.id, false);
+  }
+
   hide() {
     this.visible = false;
+    this.aboard = false;
+    this.root.classList.remove('is-aboard');
+    this.card.classList.remove('is-modules');
+    this.title.textContent = 'Solar system';
+    this.labels.hidden = false;
     cancelAnimationFrame(this.frame);
     this.root.hidden = true;
   }
@@ -181,17 +284,28 @@ export class SolarMap {
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    if (this.aboardCamera) { this.aboardCamera.aspect = w / h; this.aboardCamera.updateProjectionMatrix(); }
   }
 
   /** One frame: bodies along their orbits, the camera, the markers and the labels. */
   draw() {
     const t = this.time, v = this.view, tmp = new THREE.Vector3();
+    if (this.carrier) this.carrier.update(t, this.carrierGroups);
+    if (this.aboard) {
+      // aboard: only the carrier, the camera round it
+      const a = this.aboardView, cp = Math.cos(a.pitch), cam = this.aboardCamera;
+      cam.position.set(Math.cos(a.yaw) * cp * a.dist, Math.sin(a.pitch) * a.dist, Math.sin(a.yaw) * cp * a.dist);
+      cam.lookAt(0, 0, 0);
+      this.renderer.render(this.aboardScene, cam);
+      return;
+    }
     for (const item of this.items.values()) {
       const b = item.body;
       if (b.type === 'belt') { item.mesh.rotation.y = -t * b.speed; continue; }
       this.place(item, t, tmp);
       item.mesh.position.copy(tmp);
-      item.mesh.rotation.y = t * 0.3;
+      if (b.type !== 'carrier') item.mesh.rotation.y = t * 0.3;
+      else if (item.hit) { item.hit.rotation.y = item.mesh.rotation.y; }
       if (item.hit) item.hit.position.copy(tmp);
       if (b.type === 'moon' && item.orbitLine) item.orbitLine.position.copy(this.place(this.items.get(b.parent), t, new THREE.Vector3()));
     }
@@ -240,7 +354,7 @@ export class SolarMap {
       label.style.transform = `translate(${((p.x + 1) / 2) * w}px, ${((1 - p.y) / 2) * h}px) translate(-50%, -100%)`;
       label.classList.toggle('is-next', b.id === this.state.next);
       label.classList.toggle('is-done', this.state.done.has(b.id));
-      label.classList.toggle('is-soon', !this.opts.playable(b.id));
+      label.classList.toggle('is-soon', b.type !== 'carrier' && !this.opts.playable(b.id));
       label.classList.toggle('is-selected', b.id === this.selected);
     }
   }
@@ -254,7 +368,7 @@ export class SolarMap {
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       c.setPointerCapture(e.pointerId);
       if (pts.size === 1) down = { x: e.clientX, y: e.clientY, moved: 0 };
-      else if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: v.dist }; down = null; }
+      else if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: this.aboard ? this.aboardView.dist : v.dist }; down = null; }
     });
     c.addEventListener('pointermove', (e) => {
       const last = pts.get(e.pointerId);
@@ -263,24 +377,28 @@ export class SolarMap {
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pinch && pts.size === 2) {
         const [a, b] = [...pts.values()];
-        v.dist = clamp(pinch.dist * (pinch.d / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y))), DIST[0], DIST[1]);
+        const k = pinch.d / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+        if (this.aboard) this.aboardView.dist = clamp(pinch.dist * k, ABOARD_DIST[0], ABOARD_DIST[1]);
+        else v.dist = clamp(pinch.dist * k, DIST[0], DIST[1]);
       } else if (down) {
         down.moved += Math.abs(dx) + Math.abs(dy);
-        v.yaw += dx * 0.006;
-        v.pitch = clamp(v.pitch + dy * 0.006, PITCH[0], PITCH[1]);
+        const w = this.aboard ? this.aboardView : v;
+        w.yaw += dx * 0.006;
+        w.pitch = this.aboard ? clamp(w.pitch + dy * 0.006, -1.45, 1.45) : clamp(v.pitch + dy * 0.006, PITCH[0], PITCH[1]);
       }
     });
     const up = (e) => {
       pts.delete(e.pointerId);
       if (pts.size < 2) pinch = null;
-      if (down && down.moved <= CLICK_MOVE && e.type === 'pointerup') this.pick(e.clientX, e.clientY);
+      if (down && down.moved <= CLICK_MOVE && e.type === 'pointerup' && !this.aboard) this.pick(e.clientX, e.clientY);
       if (!pts.size) down = null;
     };
     c.addEventListener('pointerup', up);
     c.addEventListener('pointercancel', up);
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
-      v.dist = clamp(v.dist * Math.exp(e.deltaY * 0.0012), DIST[0], DIST[1]);
+      if (this.aboard) this.aboardView.dist = clamp(this.aboardView.dist * Math.exp(e.deltaY * 0.0012), ABOARD_DIST[0], ABOARD_DIST[1]);
+      else v.dist = clamp(v.dist * Math.exp(e.deltaY * 0.0012), DIST[0], DIST[1]);
     }, { passive: false });
   }
 
@@ -308,6 +426,7 @@ export class SolarMap {
   /** Opens the card of body `id` (null closes it). */
   select(id, focus = true) {
     this.selected = id;
+    if (id === CARRIER.id) return this.carrierCard(focus);
     const b = id && bodyById(id);
     this.card.hidden = !b;
     if (!b) return;
@@ -339,6 +458,27 @@ export class SolarMap {
   }
 }
 
+Object.defineProperty(SolarMap.prototype, 'carrierCard', {
+  /** The carrier's card: a picture from above, what it is, Go aboard. */
+  value(focus) {
+    const b = CARRIER;
+    this.card.hidden = false;
+    this.card.replaceChildren();
+    const pic = el('canvas', 'map-pic');
+    pic.width = pic.height = 192;
+    paintCarrier(pic.getContext('2d'), 192);
+    const close = button('×', () => this.select(null), 'map-close');
+    close.setAttribute('aria-label', 'Close');
+    const head = el('div', 'map-card-head');
+    head.append(pic, el('div', 'map-card-names'));
+    head.lastChild.append(el('h3', 'map-card-name', b.name), el('p', 'map-card-kind', b.kind), el('p', 'map-card-status', 'All systems operational'));
+    const go = button('Go aboard', () => this.enterCarrier(), 'menu-start map-start');
+    this.card.append(close, head, el('p', 'map-card-text', b.text), go);
+    if (focus) go.focus();
+  },
+});
+
+const ABOARD_DIST = [90, 700];
 const X_AXIS = new THREE.Vector3(1, 0, 0);
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));

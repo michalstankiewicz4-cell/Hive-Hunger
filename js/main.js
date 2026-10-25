@@ -255,6 +255,7 @@ if (!window.THREE) {
       else if (game.started && map.root.hidden && !game.testBoard) openGameMap(); // (not on the test board)
     } else if (e.key === 'Escape') {
       if (tree.isOpen) tree.close();
+      else if (map.aboard) map.leaveCarrier(); // aboard the carrier → back to the map
       else if (mapFromGame) closeGameMap();
       else if (game.role === 'solo' && !map.root.hidden) {
         map.hide(); // the map → the start screen

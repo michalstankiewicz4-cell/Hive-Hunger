@@ -1,7 +1,7 @@
 """Shared helpers for the browser tests: a static server for the game, a local PeerJS
 server, and pages that load Three.js / PeerJS from tests/node_modules instead of the CDNs.
 
-The game exposes nothing global, so every page gets `window.__dbg = game` by rewriting
+The game exposes nothing global, so every page gets `window.__dbg = game` (and `window.__map = map`) by rewriting
 js/main.js on the fly (the files in the repository stay untouched)."""
 
 import functools
@@ -72,7 +72,7 @@ async def open_page(browser, url, errors, tag, peer=False):
     await page.route('**/peerjs.min.js', lambda r: r.fulfill(path=PEERJS, content_type='application/javascript'))
 
     main_js = open(os.path.join(ROOT, 'js', 'main.js'), encoding='utf-8').read()
-    hooked = main_js.replace('  game.start();', '  window.__dbg = game;\n  game.start();')
+    hooked = main_js.replace('  game.start();', '  window.__dbg = game;\n  window.__map = map;\n  game.start();')
     assert hooked != main_js, 'could not add the debug hook to js/main.js'
     await page.route('**/js/main.js', lambda r: r.fulfill(body=hooked, content_type='application/javascript'))
     await page.goto(url)

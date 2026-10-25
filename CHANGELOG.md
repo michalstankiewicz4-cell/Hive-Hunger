@@ -2,6 +2,12 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.60.0] — 2026-10-25
+
+### Added
+- **Hive Carrier** — your mothership, on the solar system map beyond the Kuiper Belt (top right). A voxel carrier 240 voxels long (5 × Earth across), with the planets' smooth surface: a wedge of a bow, an island tower with the bridge, a mast and antennas, an engine block with four glowing nozzles, a stripe in the player's blue, windows down both sides (some dark, flickering now and then), reactor vents, three tanks (water, lava, gas) and blinking running lights. Sunk into its deck the **launch hive**: 56 hexagonal launch cells in a bee's colours — a rim of light wax round every cell, a little lighter than the honey glowing inside, golden wax walls down into it, each cell pulsing on its own — on the grey deck, inside a dashed black-and-yellow stripe.
+- Click it instead of a mission: its card (a picture from above, Go aboard); **Go aboard** shows it full size — drag to turn, wheel to zoom, Back or Esc to the map — with its seven modules (hull, bridge, reactor, engines, launch hive, refinery, sensor array), all operational for now. Every voxel knows its module, for repairs later. Not seen during missions.
+
 ## [0.59.1] — 2026-10-24
 
 ### Changed

@@ -158,10 +158,35 @@ async def main():
           card: document.querySelector('.map-card-name')?.textContent, status: document.querySelector('.map-card-status')?.textContent,
           start: document.querySelector('.map-start')?.textContent, pic: document.querySelector('.map-pic')?.width,
           task: document.querySelector('.map-card-task')?.textContent })""")
-        t.ok(mp['map'] and not mp['started'] and len(mp['labels']) == 20 and mp['labels'][0] == 'Kuiper Belt' and mp['labels'][-1] == 'Sun',
+        t.ok(mp['map'] and not mp['started'] and len(mp['labels']) == 21 and mp['labels'][0] == 'Kuiper Belt' and mp['labels'][19] == 'Sun' and mp['labels'][20] == 'Hive Carrier',
              'Single player opens the solar system map: from the Kuiper Belt in to the Sun', mp['labels'])
         t.ok(mp['card'] == 'Kuiper Belt' and mp['status'] == 'Next mission' and mp['start'] == 'Start' and mp['pic'] and 'Task' in (mp['task'] or ''),
              'the next mission\'s card: a picture, what it is, the task and Start', mp)
+        # the Hive Carrier beyond the Kuiper Belt: its card, Go aboard (full size, its modules), Esc back to the map
+        hc = await page.evaluate("""async () => { const m = window.__map, it = m.items.get('carrier'), kb = m.items.get('kuiper').body;
+          const { CONFIG } = await import('./js/config.js'), v = m.carrier.voxels;
+          const p = it.mesh.position.clone().project(m.camera);
+          const tags = new Set(); for (let i = 0; i < v.hp.length; i++) if (v.hp[i]) tags.add(v.tags[i]); for (const l of v.lights) tags.add(l.tags ?? 0);
+          return { r: Math.hypot(it.mesh.position.x, it.mesh.position.z), belt: kb.orbit + kb.width, screen: [p.x, p.y], NX: v.NX, earth: CONFIG.planet.radius * 2,
+            cells: v.cells, lights: v.lights.length, kinds: [...new Set(v.lights.map((l) => l.kind))].sort(), tags: [...tags].filter(Boolean).sort((a, b) => a - b), tris: m.carrier.triangles }; }""")
+        t.ok(hc['r'] > hc['belt'] and hc['screen'][0] > 0.3 and hc['screen'][1] > 0.3,
+             'the Hive Carrier waits beyond the Kuiper Belt, at the top right', hc)
+        t.ok(hc['NX'] == 5 * hc['earth'] and hc['cells'] >= 40 and hc['kinds'] == ['bridge', 'cell', 'nozzle', 'vent', 'window'] and hc['tags'] == [1, 2, 3, 4, 5, 6, 7] and hc['tris'] > 20000,
+             'the carrier: 5 × Earth long, a honeycomb of lit launch cells, windows, vents, nozzles; every voxel in a module', hc)
+        await page.click('.map-label >> text=Hive Carrier', force=True)
+        cc = await page.evaluate("() => [document.querySelector('.map-card-name').textContent, document.querySelector('.map-card-status').textContent, document.querySelector('.map-start').textContent]")
+        t.ok(cc == ['Hive Carrier', 'All systems operational', 'Go aboard'], 'its card: what it is, all systems operational, Go aboard', cc)
+        await page.click('.map-start')
+        await page.wait_for_timeout(300)
+        ab = await page.evaluate("""() => ({ aboard: window.__map.aboard, title: document.querySelector('.map-title').textContent,
+          modules: [...document.querySelectorAll('.carrier-module')].map((e) => [e.querySelector('.carrier-module-name').textContent, e.querySelector('.carrier-module-state').textContent]),
+          labels: document.querySelector('.map-labels').hidden, started: window.__dbg.started })""")
+        t.ok(ab['aboard'] and ab['title'] == 'Hive Carrier' and ab['labels'] and not ab['started']
+             and [m[0] for m in ab['modules']] == ['Hull', 'Bridge', 'Reactor', 'Engines', 'Launch hive', 'Refinery', 'Sensor array'] and all(m[1] == 'Operational ✓' for m in ab['modules']),
+             'Go aboard: the carrier full size and its modules, all operational', ab)
+        await page.keyboard.press('Escape')
+        back = await page.evaluate("() => [window.__map.aboard, !document.getElementById('map').hidden, document.querySelector('.map-title').textContent, document.querySelector('.map-card-name').textContent]")
+        t.ok(back == [False, True, 'Solar system', 'Hive Carrier'], 'Esc aboard: back to the map, the carrier\'s card', back)
         await page.click('.map-label >> text=Saturn', force=True)
         soon = await page.evaluate("() => [document.querySelector('.map-card-name').textContent, document.querySelector('.map-start').textContent, document.querySelector('.map-start').disabled]")
         t.ok(soon == ['Saturn', 'Coming soon', True], 'a body without a level yet: coming soon', soon)
