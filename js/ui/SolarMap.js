@@ -248,6 +248,12 @@ export class SolarMap {
     this.hint.textContent = 'Drag to turn · wheel to zoom · Esc: back to the map';
     this.back.hidden = false;
     this.labels.hidden = true;
+    this.aboardCard();
+    this.resize();
+  }
+
+  /** Aboard: the card — the storage, processing, the modules (built again after processing). */
+  aboardCard() {
     this.card.replaceChildren();
     this.card.hidden = false;
     this.card.classList.add('is-modules');
@@ -272,8 +278,21 @@ export class SolarMap {
       li.append(dot, el('span', 'carrier-stored-name', s.name), el('span', 'carrier-stored-n', s.n.toLocaleString('en')));
       store.append(li);
     }
-    this.card.append(close, el('h3', 'map-card-name', 'Storage'), store, el('h3', 'map-card-name', 'Modules'), el('p', 'map-card-status', 'All systems operational'), list);
-    this.resize();
+    // processing: each recipe, its button (Shift: 10 times), off while the storage hasn't enough
+    const name = (k) => this.opts.kindName?.(k) || k;
+    const side = (o) => Object.entries(o).map(([k, v]) => `${v} ${name(k)}`).join(' + ');
+    const procs = el('ul', 'carrier-recipes');
+    for (const r of this.opts.recipes?.() || []) {
+      const li = el('li', 'carrier-recipe');
+      li.dataset.recipe = r.id;
+      const go = button('Process', (e) => { this.opts.process?.(r.id, e.shiftKey ? 10 : 1); this.aboardCard(); }, 'carrier-process');
+      go.disabled = !r.can;
+      go.title = 'Once (Shift: 10 times)';
+      li.append(el('span', 'carrier-recipe-name', r.name), go, el('span', 'carrier-recipe-io', `${side(r.in)} → ${side(r.out)}`));
+      procs.append(li);
+    }
+    this.card.append(close, el('h3', 'map-card-name', 'Storage'), store, el('h3', 'map-card-name', 'Processing'), procs,
+      el('h3', 'map-card-name', 'Modules'), el('p', 'map-card-status', 'All systems operational'), list);
   }
 
   /** Back from aboard to the map (with the carrier's card). */

@@ -68,6 +68,14 @@ if (!window.THREE) {
     playable,
     // the carrier's storage: what the missions collected, by kind of voxel
     storage: () => collectedList(game.storage, CONFIG.voxelKinds),
+    // processing aboard (CONFIG.recipes): what the storage has decides; outside a mission the game is saved at once
+    recipes: () => CONFIG.recipes.map((r) => ({ ...r, can: Object.entries(r.in).every(([k, v]) => (game.storage[k] || 0) >= v) })),
+    process: (id, n) => {
+      const done = game.process(id, n);
+      if (done && !mapFromGame) savedGame.write(game.saveData(false));
+      return done;
+    },
+    kindName: (k) => CONFIG.voxelKinds[k]?.name || k,
     onStart: (id) => {
       if (!game.startMission(id)) return;
       mapFromGame = false;

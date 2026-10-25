@@ -449,6 +449,23 @@ export class Game3D {
     for (const [k, n] of Object.entries(collected)) this.storage[k] = (this.storage[k] || 0) + n;
   }
 
+  /**
+   * Processing aboard the carrier: recipe `id` (CONFIG.recipes) up to `times` times, as long as the
+   * storage has what it takes. Returns how many times it ran.
+   */
+  process(id, times = 1) {
+    const r = this.cfg.recipes.find((x) => x.id === id), S = this.storage;
+    if (!r) return 0;
+    let n = 0;
+    while (n < times && Object.entries(r.in).every(([k, v]) => (S[k] || 0) >= v)) {
+      for (const [k, v] of Object.entries(r.in)) S[k] -= v;
+      for (const [k, v] of Object.entries(r.out)) S[k] = (S[k] || 0) + v;
+      n++;
+    }
+    for (const k of Object.keys(S)) if (!S[k]) delete S[k];
+    return n;
+  }
+
   /** Size and graphics of planet `level` (its mission's entry in CONFIG.levels). Every client builds the same planet from it and the seed. */
   levelLook(level) {
     const l = this.testBoard ? this.cfg.testBoard : this.cfg.levels[this.missionIndex(level)];

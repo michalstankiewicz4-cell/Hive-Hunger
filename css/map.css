@@ -292,6 +292,47 @@
   color: var(--hud-dim);
 }
 
+.carrier-recipes {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.carrier-recipe {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+}
+
+.carrier-recipe-io {
+  grid-column: 1 / -1;
+  color: var(--hud-dim);
+  font-size: 12px;
+}
+
+.carrier-process {
+  padding: 3px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.carrier-process:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.carrier-process:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 /* phones: the card along the bottom */
 @media (max-width: 520px) {
   .map-card {

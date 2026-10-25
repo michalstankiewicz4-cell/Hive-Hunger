@@ -850,6 +850,25 @@ async def main():
           return { saved: s && s.storage, game: window.__dbg.storage, rows }; }""")
         t.ok(st['saved'] and st['saved'].get('rock', 0) > 100 and st['game'] == st['saved'] and st['rows'] == [['Rock', f"{st['saved']['rock']:,}"]],
              'mission done: what it collected (rock) goes into the carrier\'s storage, saved with the game and listed aboard', st)
+        # processing aboard: 50 rock → 5 iron + 45 waste, 1 water + 1 lava → 5 iron; Shift: 10 times; off without enough; saved
+        pr = await page.evaluate("""() => { const g = window.__dbg, m = window.__map, keep = { ...g.storage };
+          g.storage = { rock: 120, water: 3, lava: 2 };
+          m.enterCarrier();
+          const btn = (id) => document.querySelector(`.carrier-recipe[data-recipe=${id}] .carrier-process`);
+          const click = (id, shift) => btn(id).dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: shift }));
+          const r = { io: [...document.querySelectorAll('.carrier-recipe-io')].map((e) => e.textContent) };
+          click('smelt', false); r.a = { ...g.storage };
+          click('smelt', true); r.b = { ...g.storage }; r.smeltOff = btn('smelt').disabled;
+          click('fuse', true); r.c = { ...g.storage }; r.fuseOff = btn('fuse').disabled;
+          r.rows = [...document.querySelectorAll('.carrier-stored')].map((e) => e.dataset.kind + ':' + e.querySelector('.carrier-stored-n').textContent);
+          r.saved = JSON.parse(localStorage.getItem('hive-hunger-save')).storage;
+          m.leaveCarrier(); g.storage = keep;
+          return r; }""")
+        t.ok(pr['io'] == ['50 Rock → 5 Iron + 45 Waste', '1 Water + 1 Lava → 5 Iron'] and pr['a'] == {'rock': 70, 'water': 3, 'lava': 2, 'iron': 5, 'waste': 45}
+             and pr['b'] == {'rock': 20, 'water': 3, 'lava': 2, 'iron': 10, 'waste': 90} and pr['smeltOff']
+             and pr['c'] == {'rock': 20, 'water': 1, 'iron': 20, 'waste': 90} and pr['fuseOff']
+             and pr['rows'] == ['rock:20', 'water:1', 'iron:20', 'waste:90'] and pr['saved'] == pr['c'],
+             'processing aboard: 50 rock → 5 iron + 45 waste, 1 water + 1 lava → 5 iron (Shift: 10 times, off without enough), saved', pr)
         # leave without saving and come back: Continue has the points; New game asks first (No keeps the save)
         await page.click('.map-back')
         await page.evaluate("() => { window.__dbg.resetProgress(); }")  # (nothing of it left in memory)

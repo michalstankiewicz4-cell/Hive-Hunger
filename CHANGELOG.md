@@ -2,6 +2,14 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.66.0] — 2026-10-25
+
+### Added
+- **Processing aboard the Hive Carrier**, under its storage: *Smelt rock* — 50 rock → 5 iron + 45 waste; *Fuse water and lava* — 1 water + 1 lava → 5 iron. **Process** runs it once (**Shift**: 10 times) and is off while the storage hasn't enough; outside a mission the game is saved at once. Waste is kept in the storage; nothing uses it yet.
+
+### Changed
+- What was collected (top left) is listed one under another.
+
 ## [0.65.0] — 2026-10-25
 
 ### Added

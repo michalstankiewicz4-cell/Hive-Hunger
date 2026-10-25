@@ -166,7 +166,13 @@ export const CONFIG = Object.freeze({
     iron: { name: 'Iron', color: '#8a8f98' },
     lava: { name: 'Lava', color: '#ff5a1f' },
     gas: { name: 'Gas', color: '#c4a0e8' },
+    waste: { name: 'Waste', color: '#5e5852' }, // (what processing leaves; nothing uses it yet)
   },
+  // processing aboard the carrier (its storage): `in` → `out`, by kind of voxel, once per click (Shift: 10 times)
+  recipes: [
+    { id: 'smelt', name: 'Smelt rock', in: { rock: 50 }, out: { iron: 5, waste: 45 } },
+    { id: 'fuse', name: 'Fuse water and lava', in: { water: 1, lava: 1 }, out: { iron: 5 } },
+  ],
   // gas let loose in space: an eaten or destroyed voxel of solid gas becomes a puff of a cloud (Gases.js) that
   // only scoops can take in; no gravity — puffs drift (`speed` when let loose, `damping`), stir (`stir`),
   // push each other apart within `reach` (`push`: the cloud spreads) and swell from `size` to `maxSize`

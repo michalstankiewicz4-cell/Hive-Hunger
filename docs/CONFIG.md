@@ -74,6 +74,10 @@ Per liquid (`water`, `lava`): a voxel of it eaten or destroyed becomes a droplet
 
 `voxelKinds`: rock, water, iron, lava, gas — each `name` and `color`, as the HUD (what was collected) and the carrier's storage show them, in this order. A level's `kinds` (shape tag → kind; the test board: `{1: 'rock', 2: 'water', 3: 'iron', 4: 'lava', 5: 'gas'}`) says what its voxels are; without it every voxel is rock.
 
+## Processing (`recipes`)
+
+Aboard the Hive Carrier, from its storage: each recipe `id`, `name`, `in` → `out` (amounts by kind of voxel). `smelt` — 50 rock → 5 iron + 45 waste; `fuse` — 1 water + 1 lava → 5 iron. One click runs it once (Shift: 10 times) while the storage has enough. `waste` (in `voxelKinds`) is only kept for now.
+
 ## Gas (`gas`)
 
 Solid gas eaten or destroyed becomes puffs of a cloud (`Gases.js`) — no point for it, only scoops take it in. No gravity: `speed` (0.004) when let loose, `damping` (0.96) per frame, `stir` (0.0001) a slow swirl, `push` (0.0005) apart within `reach` (1.1) so the cloud spreads, never faster than `maxSpeed` (0.006 a frame, about a third of a voxel a second — a scoop's pull is not held to it); `size` (1.2) grows by `grow` (0.006) a frame up to `maxSize` (3); `opacity` (0.45); `colors` — each puff a mix of two of them (lilac, pale blue, pink).
