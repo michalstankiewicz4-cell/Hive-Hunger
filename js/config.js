@@ -136,7 +136,7 @@ export const CONFIG = Object.freeze({
       surface: { seaLevel: 0.47, iceLatitude: 0.72, clouds: { threshold: 2 },
         palette: { deepOcean: [196, 200, 208], shallowOcean: [210, 214, 222], beach: [186, 190, 196], lowland: [172, 176, 184],
           highland: [156, 160, 168], mountain: [140, 144, 152], snow: [224, 228, 236], ice: [238, 243, 250] } } },
-    { body: 'earth', radiusScale: 1, style: 'smooth' },
+    { body: 'earth', radiusScale: 1, style: 'smooth', enemies: 10 },
   ],
   // liquids let loose in space: an eaten or destroyed voxel of a liquid becomes a droplet (Liquids.js) that
   // only siphons can take in; no gravity — `damping` per frame, `cohesion` pulls droplets of the same liquid
@@ -152,7 +152,7 @@ export const CONFIG = Object.freeze({
   // buy them on the ship bar); nothing saved.
   // Small, so the tunnels and the camera come in (`sizeScale` × Earth's distances)
   // Balls 1 rock, 2 water, 3 iron, 4 lava, 5 gas (solid): rock and water on top, iron, gas and lava below
-  testBoard: { body: 'earth', shape: 'balls', size: 10, gap: 6, style: 'smooth', sizeScale: 0.4, each: 0,
+  testBoard: { body: 'earth', shape: 'balls', size: 10, gap: 6, style: 'smooth', sizeScale: 0.4, each: 0, enemies: 10,
     rows: [[1, 2], [3, 5, 4]],
     colors: [[96, 84, 74], [63, 127, 208], [138, 143, 152], [255, 90, 31], [196, 160, 232]],
     // what is let loose when eaten (the test board only, for now): water and lava as droplets, gas as a cloud
@@ -312,6 +312,20 @@ export const CONFIG = Object.freeze({
     color: 0x8fd0ff,         // the swarm's colour in single player (click marker)
     eaterColor: 0xffd84a,    // eaters are yellow (every player)
     size: [0.14, 0.14, 0.7],
+    hp: 3,                   // how many enemy hits a ship takes (the last one and it is gone)
+    // our attack ships' guns against enemy ships: within `range` × the planet's scale, every `cooldown`
+    // frames, a beam (`beamFrames` long) that takes `damage` of an enemy's hp
+    gun: { range: 0.55, cooldown: 50, damage: 1, beamFrames: 8 },
+  },
+
+  // enemy ships round a planet (a level's `enemies`; single player only for now — Enemies.js): cones
+  // with a cockpit, as long as our ships; `orbit` × the planet's scale (Earth's radius × sizeScale), a
+  // speed along it, `hp`; they fire bolts at our ships within `range` × the scale, every `cooldown`
+  // [min, + random] frames, `boltSpeed` a frame for at most `boltLife` frames, hitting within `hitRadius`
+  enemy: {
+    max: 64, radius: 0.22, length: 0.7, color: 0x8c2424, cockpit: 0x8fe8ff, engine: 0xff9a3c,
+    orbit: [1.3, 1.7], speed: 0.07, hp: 8,
+    range: 1, cooldown: [70, 60], boltSpeed: 0.5, boltLife: 140, hitRadius: 0.5, boltLength: 0.9, boltColor: 0xff3b2f,
   },
 
   // the spawn point: a subspace tunnel. Closed: a small vortex (`closedRadius`); it opens (`openFrames`)

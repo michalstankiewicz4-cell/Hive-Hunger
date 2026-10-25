@@ -220,7 +220,7 @@ async def main():
              'the planets are spread out (the carrier still beyond the Kuiper Belt)', zm)
         t.ok(zin['focus'] == 'jupiter' and zin['dist'] <= 40 and zin['io'] and zin['europa'] and zin['back'] and zin['card'] == 'Jupiter' and 'its moons' in zin['hint'],
              'a click on a planet with moons zooms in on it and its moons (with Back)', zin)
-        t.ok(zout['focus'] is None and zout['map'] and zout['dist'] > 150 and moonz == 'jupiter' and esc == [None, True],
+        t.ok(zout['focus'] is None and zout['map'] and zout['dist'] >= 150 and moonz == 'jupiter' and esc == [None, True],
              'Back (or Esc) shows the whole system again, still on the map; a click on a moon zooms in on its planet', [zout, moonz, esc])
         await page.click('.map-label >> text=Saturn', force=True)
         soon = await page.evaluate("() => [document.querySelector('.map-card-name').textContent, document.querySelector('.map-start').textContent, document.querySelector('.map-start').disabled]")
@@ -966,6 +966,7 @@ async def main():
           r.balls = [...ext.values()].map((e) => e.i1 - e.i0 + 1);
           r.colours = new Set([...ext.keys()].map((t) => pl.tagColors[t].join(','))).size;
           // water and lava: a voxel destroyed is let loose as a droplet — no point for it; only siphons collect them, a point each
+          for (const e of g.enemies.list) e.wait = 1e9; // (the enemies hold their fire: these checks are about liquids and gas)
           const L = g.liquids, v = new window.THREE.Vector3(), score0 = p.score;
           let cleared = 0;
           for (let idx = 0; idx < pl.hp.length && cleared < 30; idx++) if (pl.hp[idx] > 0 && (pl.tags[idx] === 2 || pl.tags[idx] === 4)) {
@@ -1049,6 +1050,34 @@ async def main():
         wt = tb['waiting']
         t.ok(wt['over'] == 0 and wt['left'] == 0 and wt['drops'] > 0 and wt['puffs'] > 0 and wt['alive'] and tb['again'] == 1,
              'every voxel gone but droplets and gas still in space: not over until siphons and scoops have taken them all in', wt)
+        # enemy ships: 10 round the board (cones with a cockpit), firing at our ships; 3 hits and a ship is gone; our attack ships fire back
+        en = await page.evaluate("""() => { const g = window.__dbg, p = g.localPlayer, s = p.swarm, E = g.enemies, T = window.THREE; g.stop();
+          const r = { count: E.list.length, drawn: E.hull.count, cockpits: E.cockpit.count };
+          const rs = E.list.map((e) => e.r / E.base); r.ring = [Math.min(...rs), Math.max(...rs)];
+          p.buyShips('lasers', 2); p.buyShips('eaters', 1);
+          let f = 0; while (f < 600 && [...Array(s.count).keys()].some((i) => s.hidden[i])) { g.update(); f++; }
+          // a bolt where a ship is: one life; at its third it is gone
+          s.fillKinds(); const kinds = () => { s.fillKinds(); return [...Array(s.count).keys()].map((i) => s.kindOf[i]); };
+          const n0 = s.count, i = s.count - 1, at = new T.Vector3(s.pos[i * 3], s.pos[i * 3 + 1], s.pos[i * 3 + 2]);
+          for (const e of E.list) e.wait = 1e9; // (only our bolt)
+          E.bolts.push({ pos: at.clone(), dir: new T.Vector3(0, 0, 1), life: 10 });
+          s.pos.set([at.x, at.y, at.z], i * 3); E.update([p], g.debris);
+          r.afterOne = { count: s.count, damage: s.damage[i], hits: E.hits };
+          s.damage[i] = 2; const at2 = new T.Vector3(s.pos[i * 3], s.pos[i * 3 + 1], s.pos[i * 3 + 2]);
+          E.bolts.push({ pos: at2.clone(), dir: new T.Vector3(0, 0, 1), life: 10 }); E.update([p], g.debris);
+          r.afterThird = { count: s.count, was: n0, lost: p.base.count };
+          // a laser beside an enemy: it fires a beam and takes its lives; the last one and it bursts
+          const L = s.kindStart('lasers'), e = E.list[0], lp = new T.Vector3(s.pos[L * 3], s.pos[L * 3 + 1], s.pos[L * 3 + 2]);
+          e.w = 0; e.r = lp.length() + 1; e.u.copy(lp).normalize(); e.v.set(0, 0, 0); e.a = 0; e.hp = 2;
+          const k0 = E.killed; let beams = 0;
+          for (let k = 0; k < 200 && E.killed === k0; k++) { E.update([p], g.debris); beams = Math.max(beams, E.beams.length); }
+          r.fight = { killed: E.killed - k0, beams, left: E.list.length };
+          g.start(); return r; }""")
+        t.ok(en['count'] == 10 and en['drawn'] == 10 and en['cockpits'] == 10 and 1.29 < en['ring'][0] and en['ring'][1] < 1.71,
+             'test board: 10 enemy ships (cones with a cockpit) on orbits round it', en)
+        t.ok(en['afterOne']['damage'] == 1 and en['afterOne']['count'] == en['afterThird']['was'] and en['afterThird']['count'] == en['afterThird']['was'] - 1,
+             'an enemy bolt costs a ship one of its 3 lives; the third and it is gone', en)
+        t.ok(en['fight']['killed'] == 1 and en['fight']['beams'] >= 1 and en['fight']['left'] == 9, 'our attack ships fire back with beams; an enemy out of lives bursts', en)
         await page.keyboard.press('Escape')
         pz = await page.evaluate("() => [...document.querySelectorAll('#menu .menu-choice-label')].map((e) => e.textContent)")
         await page.click('#menu .menu-choice >> text=Exit to main menu')

@@ -71,7 +71,7 @@ export const ShipTypes = {
     for (const arr of [this.pos, this.dir, this.look, this.foodPos, this.beamTo, this.tugGoal, this.drillDir, this.pierceDir, this.pierceEnd, this.cutDir, this.cutSide, this.cutL, this.cutR]) swap(arr, 3);
     swap(this.stormSides, 6);
     for (const arr of [this.food, this.landed, this.redirect, this.best, this.stuck, this.lastBlock, this.blockAge,
-      this.hungry, this.pause, this.firing, this.aimed, this.stormSideN, this.tugHas, this.orbOut, this.splashOut, this.boosted, this.cutOn, this.cutPiece, this.cutAfter, this.cutBody, this.snipePhase, this.snipeT, this.zapWait, this.hidden, this.warpDelay, this.warpT, this.leaving,
+      this.hungry, this.pause, this.firing, this.aimed, this.stormSideN, this.tugHas, this.orbOut, this.splashOut, this.boosted, this.cutOn, this.cutPiece, this.cutAfter, this.cutBody, this.snipePhase, this.snipeT, this.zapWait, this.damage, this.gunWait, this.hidden, this.warpDelay, this.warpT, this.leaving,
       this.drillLeft, this.drillIdle, this.drillHit, this.drillAim, this.pierceOn, this.pierceAfter]) swap(arr, 1);
     swap(this.warpDir, 3);
     swap(this.warpFrom, 3);

@@ -74,6 +74,10 @@ Per liquid (`water`, `lava`): a voxel of it eaten or destroyed becomes a droplet
 
 `voxelKinds`: rock, water, iron, lava, gas — each `name` and `color`, as the HUD (what was collected) and the carrier's storage show them, in this order. A level's `kinds` (shape tag → kind; the test board: `{1: 'rock', 2: 'water', 3: 'iron', 4: 'lava', 5: 'gas'}`) says what its voxels are; without it every voxel is rock.
 
+## Enemy ships (`enemy`, `swarm.hp`, `swarm.gun`, a level's `enemies`)
+
+A level's `enemies` (Earth and the test board: 10; single player only) — that many on orbits round the planet. `enemy`: `max` (64), looks (`radius` 0.22, `length` 0.7, `color`, `cockpit`, `engine`), `orbit` [1.3, 1.7] × the planet's scale (Earth's radius × sizeScale), `speed` 0.07 a frame, `hp` 8; firing: `range` 1 × the scale, `cooldown` [70, + up to 60] frames, `boltSpeed` 0.5, `boltLife` 140, `hitRadius` 0.5, `boltLength`, `boltColor`. `swarm.hp` (3): hits a ship takes. `swarm.gun`: our attack ships' beams — `range` 0.55 × the scale, `cooldown` 50, `damage` 1, `beamFrames` 8.
+
 ## Processing (`recipes`)
 
 Aboard the Hive Carrier, from its storage: each recipe `id`, `name`, `in` → `out` (amounts by kind of voxel). `smelt` — 50 rock → 5 iron + 45 waste; `fuse` — 1 water + 1 lava → 5 iron. One click runs it once (Shift: 10 times) while the storage has enough. `waste` (in `voxelKinds`) is only kept for now.

@@ -2,6 +2,11 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.67.0] — 2026-10-25
+
+### Added
+- **Enemy ships** round Earth and the test board (single player for now): 10 red cones with a glass cockpit and an engine glow, as long as our ships, each on its own tilted orbit between the planet and the tunnels. They fire glowing red bolts (aimed ahead) at our ships within range; a ship takes 3 hits, then it is gone. Our attack ships fire back with beams in their own colour (about once a second, within range); an enemy takes 8, flashes white when hit and bursts into debris.
+
 ## [0.66.0] — 2026-10-25
 
 ### Added

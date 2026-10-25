@@ -102,6 +102,8 @@ export class Swarm3D {
     // frames one fires a lightning bolt that jumps between ships of its swarm (Player.updateSupport)
     this.supports = 0;
     this.zapWait = new Uint16Array(this.max);
+    this.damage = new Uint8Array(this.max);   // enemy hits taken (Enemies.js; swarm.hp of them and it is gone)
+    this.gunWait = new Uint16Array(this.max); // frames until it may fire at an enemy again
     // the next `cleaners` units are grey cleaners: they eat only drifting pieces of at most
     // `cleaner.maxPiece` voxels (world.pickScrap / isScrap); with none about they fly with the swarm
     this.cleaners = 0;

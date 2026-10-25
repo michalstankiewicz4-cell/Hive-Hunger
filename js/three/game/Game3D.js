@@ -11,6 +11,7 @@ import { Bubbles } from '../effects/Bubbles.js';
 import { Zaps } from '../effects/Zaps.js';
 import { Liquids } from '../effects/Liquids.js';
 import { Gases } from '../effects/Gases.js';
+import { Enemies } from './Enemies.js';
 import { LIQUID_TIME } from '../liquidShader.js';
 import { Player } from './Player.js';
 import { PLAYERS } from './players.js';
@@ -104,6 +105,7 @@ export class Game3D {
     this.bubbles = new Bubbles(this.cfg.swarm.splasher);
     this.soaks = []; // blocks soaking where a splasher's bubble landed (host), see splash()
     this.zaps = new Zaps(this.scene, this.cfg.swarm.support);
+    this.enemies = new Enemies(this.scene, this.cfg.enemy, { ...this.cfg.swarm.gun, hp: this.cfg.swarm.hp }); // (a level's `enemies`)
     this.liquids = new Liquids(this.scene, this.cfg.liquids); // droplets of liquid voxels let loose (the test board)
     this.gases = new Gases(this.scene, this.cfg.gas); // clouds of gas voxels let loose (the test board)
     this.debris.scale = this.orbs.scale = this.effectsScale; // Settings → Graphics → Effects
@@ -363,6 +365,9 @@ export class Game3D {
     this.planet = new VoxelPlanet(this.scene, this.cfg.planet, seed, this.levelLook(this.level), this.cfg.fragments);
     if (this.role === 'host') this.planet.log = [];
     this.fitToPlanet();
+    // enemy ships round it (a level's `enemies`; single player only for now)
+    const look = this.levelLook(this.level);
+    this.enemies?.reset(this.multiplayer ? 0 : look.enemies || 0, this.cfg.planet.radius * (this.sizeScale || 1));
     const fr = this.planet.fragments;
     if (fr) {
       // pieces come off on the host (and in single player); guests get them from the host
@@ -508,6 +513,7 @@ export class Game3D {
     const players = this.activePlayers();
     // before the start, swarms wait at their tunnels
     if (this.started) for (const p of players) p.update();
+    if (this.started && this.enemies && (this.enemies.list.length || this.enemies.bolts.length || this.enemies.beams.length)) this.enemies.update(players, this.debris);
     // liquid voxels that went this frame: droplets, and no points for them (only siphons collect them)
     this.takeSpills();
     if (this.started) { this.liquids.step(this.planet); this.gases.step(this.planet); }

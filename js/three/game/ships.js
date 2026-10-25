@@ -143,6 +143,16 @@ export const ShipRoles = {
     this.onLost?.();
   },
 
+  /** Ships `list` (indices) were shot down by enemies (Enemies.js): gone for good, one fewer of each type. */
+  shipsDestroyed(list) {
+    const s = this.swarm;
+    s.fillKinds();
+    const kinds = new Map(list.map((i) => [i, GROUP_KINDS[s.kindOf[i]]]));
+    // highest first, so moving one doesn't move another that is still to go
+    for (const i of [...list].sort((a, b) => b - a)) this.removeUnit(i, kinds.get(i));
+    this.onLost?.();
+  },
+
   /**
    * Unit i of type `kind` (GROUP_KINDS) is gone for good: one ship fewer (the base count and that
    * type's setting go down by one). It is moved to the end of the swarm first — past the rest of
@@ -167,6 +177,8 @@ export const ShipRoles = {
     if (s.food[last] >= 0) this.game.planet.release(s.food[last]);
     s.food[last] = -1;
     s.leaving[last] = 0;
+    s.damage[last] = 0;
+    s.gunWait[last] = 0;
     const t = this.towing.get(last);
     if (t) this.letGo(last, t);
     // one fewer in all — also when it is one of the Brood upgrades' ships (then the base goes below
