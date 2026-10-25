@@ -44,7 +44,7 @@ export class CarrierModel {
           vBaked = aLitA.rgb * uGroup[int(aLitA.w + 0.5)] + aLitB.rgb * uGroup[int(aLitB.w + 0.5)];`);
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vBaked;')
-        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vBaked * diffuseColor.rgb * 2.4;');
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vBaked * diffuseColor.rgb * 3.2;');
     };
     this.lightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     this.lightMaterial.onBeforeCompile = (shader) => {

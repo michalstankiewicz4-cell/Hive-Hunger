@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats planets made of voxels — mission by mission across the solar system, from the Kuiper Belt in to the Sun — alone (with a saved game), or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.64.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.64.1 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
