@@ -187,9 +187,35 @@ async def main():
         await page.keyboard.press('Escape')
         back = await page.evaluate("() => [window.__map.aboard, !document.getElementById('map').hidden, document.querySelector('.map-title').textContent, document.querySelector('.map-card-name').textContent]")
         t.ok(back == [False, True, 'Solar system', 'Hive Carrier'], 'Esc aboard: back to the map, the carrier\'s card', back)
+        # the planets spread out; a click on a planet with moons zooms in on them, Back (or Esc) shows the whole system again
+        zm = await page.evaluate("""() => { const m = window.__map, o = (id) => m.items.get(id).body.orbit;
+          return { mercury: o('mercury'), earth: o('earth'), kuiper: o('kuiper'), carrier: o('carrier') }; }""")
+        await page.click('.map-label >> text=Jupiter', force=True)
+        await page.wait_for_function("() => { const m = window.__map; return m.camera.position.distanceTo(m.items.get('jupiter').mesh.position) < 40; }", timeout=15000)
+        zin = await page.evaluate("""() => { const m = window.__map, j = m.items.get('jupiter').mesh.position;
+          const vis = (n) => { const l = [...document.querySelectorAll('.map-label')].find((e) => e.textContent === n); return l && !l.hidden; };
+          return { focus: m.focus, dist: Math.round(m.camera.position.distanceTo(j)), io: vis('Io'), europa: vis('Europa'), back: !m.back.hidden,
+            card: document.querySelector('.map-card-name').textContent, hint: document.querySelector('.map-hint').textContent }; }""")
+        await page.click('.map-back')
+        await page.wait_for_function("() => window.__map.camera.position.length() > 150", timeout=15000)
+        zout = await page.evaluate("() => { const m = window.__map; return { focus: m.focus, map: !m.root.hidden, dist: Math.round(m.camera.position.length()) }; }")
+        await page.click('.map-label >> text=Europa', force=True)
+        await page.wait_for_timeout(300)
+        moonz = await page.evaluate("() => window.__map.focus")
+        await page.keyboard.press('Escape')
+        await page.wait_for_timeout(200)
+        esc = await page.evaluate("() => [window.__map.focus, !window.__map.root.hidden]")
+        t.ok(zm['mercury'] >= 10 and zm['earth'] > 18 and zm['kuiper'] >= 77 and zm['carrier'] > zm['kuiper'] + 7.5,
+             'the planets are spread out (the carrier still beyond the Kuiper Belt)', zm)
+        t.ok(zin['focus'] == 'jupiter' and zin['dist'] <= 40 and zin['io'] and zin['europa'] and zin['back'] and zin['card'] == 'Jupiter' and 'its moons' in zin['hint'],
+             'a click on a planet with moons zooms in on it and its moons (with Back)', zin)
+        t.ok(zout['focus'] is None and zout['map'] and zout['dist'] > 150 and moonz == 'jupiter' and esc == [None, True],
+             'Back (or Esc) shows the whole system again, still on the map; a click on a moon zooms in on its planet', [zout, moonz, esc])
         await page.click('.map-label >> text=Saturn', force=True)
         soon = await page.evaluate("() => [document.querySelector('.map-card-name').textContent, document.querySelector('.map-start').textContent, document.querySelector('.map-start').disabled]")
         t.ok(soon == ['Saturn', 'Coming soon', True], 'a body without a level yet: coming soon', soon)
+        await page.click('.map-back')  # (zoomed on Saturn and its moon: back to the whole system)
+        await page.wait_for_function("() => window.__map.camera.position.length() > 150", timeout=15000)
         await page.click('.map-label >> text=Kuiper Belt', force=True)
         await page.click('.map-start')
         await page.wait_for_timeout(500)

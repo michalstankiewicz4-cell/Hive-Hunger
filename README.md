@@ -2,7 +2,7 @@
 
 A free 3D browser game: a swarm flies on its own, finds the nearest matter and eats planets made of voxels — mission by mission across the solar system, from the Kuiper Belt in to the Sun — alone (with a saved game), or with up to four players in Co-op or PvP.
 
-**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.60.0 ([changelog](CHANGELOG.md))
+**Play:** https://michalstankiewicz4-cell.github.io/Hive-Hunger/ · **Version:** 0.61.0 ([changelog](CHANGELOG.md))
 
 ## How the swarm behaves
 
@@ -16,7 +16,7 @@ When eating cuts a piece off — a part no longer connected to the rest — it c
 
 ## Hive Carrier
 
-Beyond the Kuiper Belt on the solar system map waits the **Hive Carrier**, your mothership — a voxel carrier five times as long as Earth is wide. Click it (instead of a mission): its card shows it from above, and **Go aboard** shows it full size (drag to turn, wheel to zoom; **Back** or **Esc** to the map) with its modules — hull, bridge, reactor, engines, launch hive, refinery, sensor array — all operational for now (later they will be repaired one by one). Sunk into its deck is the **launch hive**: a honeycomb of launch cells in a bee's colours — a rim of light wax round every cell, a little lighter than the honey glowing inside, each cell pulsing on its own — on the grey deck, inside black-and-yellow stripes; an island tower with the bridge and a mast, windows down both sides, reactor vents, tanks for water, lava and gas, four glowing nozzles and blinking running lights. It is only on the map: during a mission it is not seen.
+Beyond the Kuiper Belt on the solar system map waits the **Hive Carrier**, your mothership (its bow to the left and a little down) — a voxel carrier five times as long as Earth is wide. Click it (instead of a mission): its card shows it from above, and **Go aboard** shows it full size (drag to turn, wheel to zoom; **Back** or **Esc** to the map) with its modules — hull, bridge, reactor, engines, launch hive, refinery, sensor array — all operational for now (later they will be repaired one by one). Sunk into its deck is the **launch hive**: a honeycomb of launch cells in a bee's colours — a rim of light wax round every cell, a little lighter than the honey glowing inside, each cell pulsing on its own — on the grey deck, inside black-and-yellow stripes; an island tower with the bridge and a mast, windows down both sides, reactor vents, tanks for water, lava and gas, four glowing nozzles and blinking running lights. It is only on the map: during a mission it is not seen.
 
 ## Points and upgrades
 
@@ -31,6 +31,7 @@ Every eaten voxel is 1 point (counter at the top). **Tab** (or a click on the co
 - **Mouse wheel** — zoom
 - **Tab** (or a click on the points counter) — upgrade tree (Esc closes it); in single player the game stands still while it is open
 - **M** — single player, during a mission: the solar system map (the game pauses; nothing is saved). **M**, **Esc** or **Back to it** carry on; **Start** on another body leaves this mission for it (the game saves itself only when a mission is done)
+- **The solar system map** — drag turns it, the wheel (or two fingers) zooms; a click on a body opens its card. A click on a planet with moons (or on one of its moons) zooms in on that planet and its moons, following it round its orbit — **Back** or **Esc** shows the whole system again (so does a click on anything else)
 - **Space** — single player: pause (nothing moves, the camera still turns; "Paused" at the bottom), Space again carries on
 - **Esc** — single player: pause — **Resume** (or Esc again), **Save game** (saves and stays paused), **Save and exit** (keeps the game in this browser and goes to the main menu), **Exit to main menu** (without saving), **Settings**. With a saved game, **Single player** says so under it (*New game or continue your saved game*) and asks: **Continue** (the same planet with the voxels eaten so far, your points, upgrades and settings) or **New game** (it asks first; then the save and the map's ticks are deleted). When a mission is done the game **saves itself** ("Kuiper Belt done · game saved" on the map), so the ticks, points and upgrades stay together. **Settings → Delete save game** deletes them too (it asks once more). Esc also closes the upgrade tree
 - **Ship guide** (start screen) — every ship type with a small picture and what it does, attack and support ships apart, in a window that fits the screen (only the ships scroll; the title and Back stay); pointing at a ship plays its shot.

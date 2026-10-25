@@ -2,6 +2,15 @@
 
 All notable changes to Hive Hunger. Versions follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`); while the game is below 1.0, a new minor version may change how things play. The current version is also in `js/version.js` and shown in the bottom-right corner of the game. Each version has a git tag (`v0.6.0`, …).
 
+## [0.61.0] — 2026-10-25
+
+### Added
+- **Zoom on a planet and its moons:** on the solar system map a click on a planet with moons (or on one of its moons) brings the camera in to that planet, following it round its orbit, with its moons' names; **Back** (also in multiplayer) or **Esc** — or a click on anything else — shows the whole system again.
+
+### Changed
+- The planets are spread out on the map (orbits round the Sun × 1.25 + 2, the belts a quarter wider); the map starts a little further out and zooms out further; the Hive Carrier moved out with the Kuiper Belt.
+- The Hive Carrier is turned round: its bow to the left and a little down, on the map and aboard; its card's picture turned round too.
+
 ## [0.60.0] — 2026-10-25
 
 ### Added

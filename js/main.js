@@ -256,6 +256,7 @@ if (!window.THREE) {
     } else if (e.key === 'Escape') {
       if (tree.isOpen) tree.close();
       else if (map.aboard) map.leaveCarrier(); // aboard the carrier → back to the map
+      else if (!map.root.hidden && map.focus) map.zoomOut(); // zoomed on a planet → the whole system
       else if (mapFromGame) closeGameMap();
       else if (game.role === 'solo' && !map.root.hidden) {
         map.hide(); // the map → the start screen

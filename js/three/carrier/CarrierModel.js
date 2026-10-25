@@ -179,8 +179,8 @@ export function paintCarrier(g, W) {
       if (!v.hp[i] && !light) continue;
       const c = light || [v.colors[i * 3], v.colors[i * 3 + 1], v.colors[i * 3 + 2]], d = light ? 1 : 0.55 + 0.45 * (y / NY) * 1.6;
       g.fillStyle = `rgb(${Math.min(255, c[0] * d) | 0},${Math.min(255, c[1] * d) | 0},${Math.min(255, c[2] * d) | 0})`;
-      // the bow points up-right: x across the picture
-      g.fillRect(8 + x * k, oy + z * k, Math.ceil(k), Math.ceil(k));
+      // turned round like on the map: the bow to the left
+      g.fillRect(8 + (NX - 1 - x) * k, oy + (NZ - 1 - z) * k, Math.ceil(k), Math.ceil(k));
       break;
     }
   }

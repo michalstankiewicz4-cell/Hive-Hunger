@@ -21,13 +21,14 @@ const THREE = window.THREE;
 
 /** The carrier on the map: beyond the Kuiper Belt, standing still on its own orbit. */
 export const CARRIER = Object.freeze({
-  id: 'carrier', name: 'Hive Carrier', kind: 'Your mothership', type: 'carrier', orbit: 74, angle: -2.55, size: 2.6, length: 6.5,
+  id: 'carrier', name: 'Hive Carrier', kind: 'Your mothership', type: 'carrier', orbit: 94, angle: -2.55, size: 2.6, length: 6.5,
   color: [143, 208, 255],
   text: 'The swarm’s home: a carrier five times as long as Earth is wide, waiting beyond the Kuiper Belt. Its ships take off from the honeycomb of launch cells in its deck.',
 });
 
 const PITCH = [0.18, 1.45];   // how far it may tilt (radians from the orbit plane)
-const DIST = [18, 170];       // zoom
+const DIST = [18, 230];       // zoom (the whole system)
+const NEAR = [3, 60];         // zoom on a planet and its moons
 const CLICK_MOVE = 6;         // px: more than this between press and release is a drag, not a click
 
 export class SolarMap {
@@ -48,7 +49,7 @@ export class SolarMap {
     const head = el('div', 'map-head');
     this.title = el('h2', 'map-title', 'Solar system');
     this.hint = el('p', 'map-hint', 'Drag to turn · wheel to zoom · click a body');
-    this.back = button('Back', () => (this.aboard ? this.leaveCarrier() : opts.onBack()), 'map-back');
+    this.back = button('Back', () => (this.aboard ? this.leaveCarrier() : this.focus ? this.zoomOut() : opts.onBack()), 'map-back');
     head.append(this.title, this.hint, this.back);
     this.card = el('div', 'map-card');
     this.card.hidden = true;
@@ -60,7 +61,12 @@ export class SolarMap {
     this.renderer = null; // made when first shown (a second WebGL context only while the map is used)
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
-    this.view = { yaw: -0.5, pitch: 1.0, dist: 135 };
+    this.view = { yaw: -0.5, pitch: 1.0, dist: 175 };
+    // zoomed on a planet with moons (`focus`: its id): the camera looks at it from `near` instead of
+    // the Sun from `view.dist`; `target` eases between them
+    this.focus = null;
+    this.near = 12;
+    this.target = new THREE.Vector3();
     this.build();
     this.bindInput();
     window.addEventListener('resize', () => this.resize());
@@ -114,7 +120,7 @@ export class SolarMap {
         sc.add(line);
       }
       const label = el('div', `map-label is-${b.type}`, b.name);
-      label.addEventListener('click', () => this.select(b.id));
+      label.addEventListener('click', () => this.choose(b.id));
       this.labels.appendChild(label);
       item.label = label;
       this.items.set(b.id, item);
@@ -165,12 +171,7 @@ export class SolarMap {
   show(state = {}) {
     this.state = { ...this.state, ...state, done: new Set(state.done || this.state.done) };
     this.root.hidden = false;
-    this.back.hidden = this.state.mode !== 'solo';
-    this.hint.textContent = this.state.playing
-      ? 'Drag to turn · wheel to zoom · click a body · M / Esc: back to the game'
-      : this.state.mode === 'solo'
-      ? 'Drag to turn · wheel to zoom · click a body'
-      : 'Missions go in order, from the outside in';
+    this.heading();
     if (!this.renderer) {
       this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
       this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -209,7 +210,7 @@ export class SolarMap {
     const small = this.carrier.group(b.length / this.carrier.voxels.NX, 2); // (half the detail: it is small here)
     item.mesh.add(small);
     // along its orbit, the bow ahead
-    item.mesh.rotation.y = -b.angle;
+    item.mesh.rotation.y = Math.PI - b.angle; // (turned round: the bow to the left and a little down in the first view)
     this.carrierGroups = [small];
     // aboard: the same carrier full size in a scene of its own
     const sc = (this.aboardScene = new THREE.Scene());
@@ -233,7 +234,7 @@ export class SolarMap {
       this.carrierGroups.push(this.big);
     }
     this.aboard = true;
-    this.aboardView = { yaw: 2.25, pitch: 0.42, dist: 330 };
+    this.aboardView = { yaw: 2.25 - Math.PI, pitch: 0.42, dist: 330 };
     this.root.classList.add('is-aboard');
     this.title.textContent = CARRIER.name;
     this.hint.textContent = 'Drag to turn · wheel to zoom · Esc: back to the map';
@@ -269,6 +270,7 @@ export class SolarMap {
 
   hide() {
     this.visible = false;
+    this.focus = null; // (next time: the whole system)
     this.aboard = false;
     this.root.classList.remove('is-aboard');
     this.card.classList.remove('is-modules');
@@ -311,8 +313,13 @@ export class SolarMap {
     }
     // the camera on a sphere round the Sun
     const cp = Math.cos(v.pitch);
-    this.camera.position.set(Math.cos(v.yaw) * cp * v.dist, Math.sin(v.pitch) * v.dist, Math.sin(v.yaw) * cp * v.dist);
-    this.camera.lookAt(0, 0, 0);
+    // zoomed on a planet: the camera follows it round its orbit; back out: the Sun again
+    const goal = this.focus ? this.place(this.items.get(this.focus), t, new THREE.Vector3()) : tmp.set(0, 0, 0);
+    this.target.lerp(goal, this.focus && this.target.distanceTo(goal) < 0.5 ? 1 : 0.12);
+    this.shownDist = this.shownDist ? this.shownDist + ((this.focus ? this.near : v.dist) - this.shownDist) * 0.12 : v.dist;
+    const d = this.shownDist;
+    this.camera.position.set(this.target.x + Math.cos(v.yaw) * cp * d, this.target.y + Math.sin(v.pitch) * d, this.target.z + Math.sin(v.yaw) * cp * d);
+    this.camera.lookAt(this.target);
     this.camera.updateMatrixWorld();
     // markers: the next mission (pulsing) and the selected body
     for (const item of this.items.values()) item.lit = 0;
@@ -347,7 +354,7 @@ export class SolarMap {
       if (b.type === 'belt') p.set(0, 0, -(b.orbit + b.width / 2)).applyAxisAngle(Y_AXIS, -this.time * b.speed + 0.6);
       else p.copy(item.mesh.position).add(new THREE.Vector3(0, (b.size || 0) + 0.5, 0));
       p.project(this.camera);
-      const moonFar = b.type === 'moon' && this.view.dist > 60 && this.selected !== b.id && this.selected !== b.parent;
+      const moonFar = b.type === 'moon' && (this.shownDist ?? this.view.dist) > 60 && this.selected !== b.id && this.selected !== b.parent && this.focus !== b.parent;
       const off = p.z > 1 || Math.abs(p.x) > 1.1 || Math.abs(p.y) > 1.1 || moonFar;
       label.hidden = off;
       if (off) continue;
@@ -368,7 +375,7 @@ export class SolarMap {
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       c.setPointerCapture(e.pointerId);
       if (pts.size === 1) down = { x: e.clientX, y: e.clientY, moved: 0 };
-      else if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: this.aboard ? this.aboardView.dist : v.dist }; down = null; }
+      else if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: this.aboard ? this.aboardView.dist : this.focus ? this.near : v.dist }; down = null; }
     });
     c.addEventListener('pointermove', (e) => {
       const last = pts.get(e.pointerId);
@@ -379,6 +386,7 @@ export class SolarMap {
         const [a, b] = [...pts.values()];
         const k = pinch.d / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
         if (this.aboard) this.aboardView.dist = clamp(pinch.dist * k, ABOARD_DIST[0], ABOARD_DIST[1]);
+        else if (this.focus) this.near = clamp(pinch.dist * k, NEAR[0], NEAR[1]);
         else v.dist = clamp(pinch.dist * k, DIST[0], DIST[1]);
       } else if (down) {
         down.moved += Math.abs(dx) + Math.abs(dy);
@@ -398,6 +406,7 @@ export class SolarMap {
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
       if (this.aboard) this.aboardView.dist = clamp(this.aboardView.dist * Math.exp(e.deltaY * 0.0012), ABOARD_DIST[0], ABOARD_DIST[1]);
+      else if (this.focus) this.near = clamp(this.near * Math.exp(e.deltaY * 0.0012), NEAR[0], NEAR[1]);
       else v.dist = clamp(v.dist * Math.exp(e.deltaY * 0.0012), DIST[0], DIST[1]);
     }, { passive: false });
   }
@@ -407,7 +416,7 @@ export class SolarMap {
     const ndc = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.camera);
     const hits = this.raycaster.intersectObjects([...this.items.values()].map((i) => i.hit).filter(Boolean));
-    if (hits.length) return this.select(hits[0].object.userData.id);
+    if (hits.length) return this.choose(hits[0].object.userData.id);
     // the belts: where the ray meets the orbit plane
     const ray = this.raycaster.ray;
     if (Math.abs(ray.direction.y) > 1e-4) {
@@ -421,6 +430,47 @@ export class SolarMap {
       }
     }
     this.select(null);
+  }
+
+  /**
+   * A click on body `id` (or its name): its card — and a planet with moons (or one of its moons)
+   * zooms in on that planet and its moons (Back or Esc: the whole system again); anything else zooms out.
+   */
+  choose(id) {
+    this.select(id);
+    const b = id && (id === CARRIER.id ? null : bodyById(id));
+    const planet = b && (b.type === 'moon' ? b.parent : SOLAR.some((m) => m.parent === b.id) ? b.id : null);
+    if (planet) this.zoomTo(planet);
+    else this.zoomOut(); // (anything else: the whole system)
+  }
+
+  /** The hint and Back over the map (the whole system, or zoomed on a planet). */
+  heading() {
+    const b = this.focus && bodyById(this.focus);
+    this.back.hidden = this.state.mode !== 'solo' && !b;
+    this.hint.textContent = b
+      ? `${b.name} and its moons · drag to turn · wheel to zoom · Back / Esc: the whole system`
+      : this.state.playing
+      ? 'Drag to turn · wheel to zoom · click a body · M / Esc: back to the game'
+      : this.state.mode === 'solo'
+      ? 'Drag to turn · wheel to zoom · click a body'
+      : 'Missions go in order, from the outside in';
+  }
+
+  /** Zooms in on planet `id` and its moons. */
+  zoomTo(id) {
+    const b = bodyById(id), far = Math.max(...SOLAR.filter((m) => m.parent === id).map((m) => m.orbit));
+    this.focus = id;
+    this.near = clamp(far * 3.4 + b.size * 4, 7, 40);
+    this.heading();
+  }
+
+  /** Back to the whole solar system. */
+  zoomOut() {
+    if (!this.focus) return false;
+    this.focus = null;
+    this.heading();
+    return true;
   }
 
   /** Opens the card of body `id` (null closes it). */
